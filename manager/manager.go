@@ -1,0 +1,188 @@
+package manager
+
+import (
+	"fmt"
+	"path/filepath"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/spf13/viper"
+	zero "github.com/wdvxdr1123/ZeroBot"
+)
+
+type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
+
+// PluginManager 插件管理器结构
+type PluginManager struct {
+	engine  *zero.Engine // zeroBot引擎
+	configs *viper.Viper // viper配置实例
+
+	plugins   map[string]*PluginProxy // plugin.key -> pluginContext
+	preHooks  []PluginHook            // 插件Pre Hook
+	postHooks []PluginHook            // 插件Post Hook
+}
+
+// NewPluginManager 新建插件管理器
+func NewPluginManager() *PluginManager {
+	m := &PluginManager{
+		engine:  zero.New(),
+		configs: viper.New(),
+		plugins: make(map[string]*PluginProxy),
+	}
+	// 添加前置Pre Hook
+	m.engine.UsePreHandler(m.preHandlerWithHook)
+	// 添加后置Post Hook
+	m.engine.UsePostHandler(m.postHandlerWithHook)
+	return m
+}
+
+// RegisterPlugin 注册一个插件，并返回插件代理，用于添加事件动作、读写配置、获取插件锁、添加定时任务
+func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
+	key := utils.CallerPackageName(utils.GetFuncInPkgName(NewPluginManager)) // 暂时使用包名作为key值
+	log.Debugf("RegisterPlugin key=%s", key)
+	// 注册插件
+	if _, ok := manager.plugins[key]; ok { // 已存在同名插件
+		return nil
+	}
+	proxy := &PluginProxy{ // 创建插件代理
+		key: key,
+		u:   manager,
+		c: PluginCondition{
+			PluginInfo: info,
+		},
+	}
+	manager.plugins[key] = proxy
+	// 返回上下文
+	return proxy
+}
+
+// FlushConfig 从文件中刷新所有插件配置，若文件不存在将会把配置写入该文件
+func (manager *PluginManager) FlushConfig(configPath string, configFileName string) error {
+	manager.configs.AddConfigPath(configPath)
+	manager.configs.SetConfigFile(configFileName)
+	fullPath := filepath.Join(configPath, configFileName)
+	//fileType := filepath.Ext(fullPath)
+	//manager.configs.SetConfigType(fileType)
+	if utils.FileExists(fullPath) { // 配置文件已存在：读出配置
+		err := manager.configs.ReadInConfig()
+		if err != nil {
+			log.Error("FlushConfig error in ReadInConfig")
+			return err
+		}
+	} else { // 配置文件不存在：写入配置
+		err := manager.configs.SafeWriteConfigAs(fullPath)
+		if err != nil {
+			log.Error("FlushConfig error in SafeWriteConfig")
+			return err
+		}
+	}
+	manager.configs.WatchConfig()
+	return nil
+}
+
+// GetAllPluginConditions 获取所有插件的详细信息
+func (manager *PluginManager) GetAllPluginConditions() []PluginCondition {
+	var res []PluginCondition
+	for _, c := range manager.plugins {
+		if c == nil {
+			continue
+		}
+		res = append(res, c.c)
+	}
+	return res
+}
+
+// AddPreHook 添加前置hook
+func (manager *PluginManager) AddPreHook(hook ...PluginHook) {
+	manager.preHooks = append(manager.preHooks, hook...)
+}
+
+// AddPostHook 添加后置hook
+func (manager *PluginManager) AddPostHook(hook ...PluginHook) {
+	manager.postHooks = append(manager.postHooks, hook...)
+}
+
+// ---- 非公开方法 ----
+
+// 默认插件管理器
+var defaultManager = NewPluginManager()
+
+// 通过Matcher获取其从属的PluginProxy
+func (manager *PluginManager) getProxyByMatcher(matcher *zero.Matcher) *PluginProxy {
+	if manager == nil {
+		return nil
+	}
+	/* TODO　由于zeroBot在处理event时会copy原matcher，无法使用原matcher进行映射
+	   因此只能通过matcher.Handler来拿取其所在的包名，来作为插件的key */
+	key := utils.GetFuncInPkgName(matcher.Handler)
+	res, ok := manager.plugins[key]
+	if !ok {
+		log.Debugf("getProxyByMatcher No Such key=%s", key)
+		return nil
+	}
+	return res
+}
+
+// 前置总Hook Handler，会调用所有前置hook
+func (manager *PluginManager) preHandlerWithHook(ctx *zero.Ctx) bool {
+	matcher := ctx.GetMatcher()
+	if matcher == nil {
+		log.Debug("preHookLogMatcher matcher == nil")
+		return true
+	}
+	proxy := manager.getProxyByMatcher(matcher)
+	if proxy == nil { // 未注册插件
+		log.Debug("preHookLogMatcher proxy == nil")
+		return true
+	}
+	log.Infof("The message starts to be handled by the <%s> plugin", proxy.key)
+	// 调用所有前置hook
+	for _, hook := range manager.preHooks {
+		err := hook(&proxy.c, ctx)
+		if err != nil {
+			log.Infof("handle has been canceled by pre hook reason: %v", err)
+			panic(err) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
+		}
+	}
+	return true
+}
+
+// 后置总Hook Handler，会调用所有后置hook
+func (manager *PluginManager) postHandlerWithHook(ctx *zero.Ctx) {
+	matcher := ctx.GetMatcher()
+	if matcher == nil {
+		log.Debug("postHookLogMatcher matcher == nil")
+		return
+	}
+	proxy := manager.getProxyByMatcher(matcher)
+	if proxy == nil {
+		log.Debug("postHookLogMatcher proxy == nil")
+		return
+	}
+	log.Infof("The message is handled finish by the <%s> plugin", proxy.key)
+	// 调用所有后置hook
+	for _, hook := range manager.postHooks {
+		err := hook(&proxy.c, ctx)
+		if err != nil {
+			log.Infof("other matchers has been blocked by post hook reason: %v", err)
+			panic(err) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
+		}
+	}
+}
+
+// 添加配置并设置默认值
+func (manager *PluginManager) addConfig(prefix string, key string, defaultValue interface{}) {
+	if len(prefix) > 0 {
+		key = fmt.Sprintf("%s.%s", prefix, key)
+	}
+	manager.configs.SetDefault(key, defaultValue)
+}
+
+// 获取配置
+func (manager *PluginManager) getConfig(prefix string, key string) interface{} {
+	if len(prefix) > 0 {
+		key = fmt.Sprintf("%s.%s", prefix, key)
+	}
+	return manager.configs.Get(key)
+}
