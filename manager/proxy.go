@@ -3,6 +3,8 @@ package manager
 import (
 	"fmt"
 
+	"github.com/robfig/cron/v3"
+
 	"github.com/RicheyJang/PaimengBot/utils"
 
 	"github.com/spf13/cast"
@@ -57,6 +59,41 @@ func (p *PluginProxy) checkRules(rules ...zero.Rule) []zero.Rule {
 		return append(rules, zero.SuperUserPermission)
 	}
 	return rules
+}
+
+// ---- 定时任务 ----
+
+// AddScheduleFunc 添加定时任务，并自动启动
+func (p *PluginProxy) AddScheduleFunc(spec string, fn func()) (id cron.EntryID, err error) {
+	if p.c.schedule == nil {
+		p.c.schedule = cron.New(cron.WithLogger(utils.NewCronLogger()), // 设置日志
+			cron.WithChain(cron.SkipIfStillRunning(utils.NewCronLogger()))) // 若前一任务仍在执行，则跳过当前任务
+	}
+	id, err = p.c.schedule.AddFunc(spec, fn)
+	if err == nil { // 尝试开启定时任务
+		p.c.StartCron()
+	}
+	return
+}
+
+// AddScheduleEveryFunc 便携添加定时任务，固定时间间隔执行，duration符合time.ParseDuration
+func (p *PluginProxy) AddScheduleEveryFunc(duration string, fn func()) (id cron.EntryID, err error) {
+	spec := fmt.Sprintf("@every %s", duration)
+	return p.AddScheduleFunc(spec, fn)
+}
+
+// AddScheduleDailyFunc 便携添加定时任务，每天hour:minute时执行
+func (p *PluginProxy) AddScheduleDailyFunc(hour, minute int, fn func()) (id cron.EntryID, err error) {
+	spec := fmt.Sprintf("%d %d * * *", minute, hour)
+	return p.AddScheduleFunc(spec, fn)
+}
+
+// DeleteSchedule 删除定时任务
+func (p *PluginProxy) DeleteSchedule(id cron.EntryID) {
+	if p.c.schedule == nil {
+		return
+	}
+	p.c.schedule.Remove(id)
 }
 
 // ---- 配置 ----

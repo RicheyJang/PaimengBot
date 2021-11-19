@@ -59,3 +59,20 @@ func (l *loggerGorm) Trace(ctx context.Context, begin time.Time, fc func() (stri
 
 	log.WithContext(ctx).WithFields(fields).Debugf("%s [%s]", sql, elapsed)
 }
+
+type LoggerCron struct{}
+
+func NewCronLogger() *LoggerCron {
+	return new(LoggerCron)
+}
+
+func (l *LoggerCron) Info(msg string, keysAndValues ...interface{}) {
+	if msg == "wake" || msg == "run" {
+		return
+	}
+	log.Info("cron msg: ", msg)
+}
+
+func (l *LoggerCron) Error(err error, msg string, keysAndValues ...interface{}) {
+	log.Error("cron msg: ", msg, "err: ", err)
+}

@@ -16,6 +16,12 @@ func init() {
 	}
 	proxy.OnCommands([]string{"echo"}).SetBlock(true).FirstPriority().Handle(EchoHandler)
 	proxy.AddConfig("times", 2)
+	//_, err := proxy.AddScheduleFunc("@every 1s", func() {
+	//	log.Info("echo schedule")
+	//})
+	//if err != nil {
+	//	log.Error("echo AddScheduleFunc err:", err)
+	//}
 }
 
 var info = manager.PluginInfo{

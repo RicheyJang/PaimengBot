@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/fsnotify/fsnotify v1.5.1
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
+	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.8.1
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/pflag v1.0.5
