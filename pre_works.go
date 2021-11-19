@@ -1,10 +1,12 @@
-package utils
+package PaimengBot
 
 import (
 	"io"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/RicheyJang/PaimengBot/utils"
 
 	"github.com/fsnotify/fsnotify"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -105,7 +107,7 @@ func flushMainConfig(configPath string, configFileName string) error {
 	fullPath := filepath.Join(configPath, configFileName)
 	//fileType := filepath.Ext(fullPath)
 	//viper.SetConfigType(fileType)
-	if FileExists(fullPath) { // 配置文件已存在：读出配置
+	if utils.FileExists(fullPath) { // 配置文件已存在：读出配置
 		err := viper.ReadInConfig()
 		if err != nil {
 			log.Error("FlushMainConfig error in ReadInConfig")

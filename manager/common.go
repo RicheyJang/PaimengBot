@@ -1,14 +1,34 @@
 package manager
 
 import (
-	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 // ---- 初始化相关 ----
 
 // 全局初始化
 func init() {
-	utils.DoPreWorks()
+	// 初始化命令行参数、主配置、logger
+	PaimengBot.DoPreWorks()
+
+	// 读取插件配置
+	err := FlushConfig(".", "config-plugins.yaml")
+	if err != nil {
+		log.Fatal("FlushConfig err: ", err)
+	}
+	// 初始化数据库
+	dbV := viper.Sub("db")
+	dbC := new(DBConfig)
+	err = dbV.Unmarshal(dbC)
+	if err != nil {
+		log.Fatal("Unmarshal DB Config err: ", err)
+	}
+	err = SetupDatabase(dbV.GetString("type"), *dbC)
+	if err != nil {
+		log.Fatal("SetupDatabase err: ", err)
+	}
 }
 
 // FlushConfig 从文件中刷新所有插件配置
