@@ -46,9 +46,9 @@ func NewPluginManager() *PluginManager {
 // RegisterPlugin 注册一个插件，并返回插件代理，用于添加事件动作、读写配置、获取插件锁、添加定时任务
 func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
 	key := utils.CallerPackageName(utils.GetFuncInPkgName(NewPluginManager)) // 暂时使用包名作为key值
-	log.Debugf("RegisterPlugin key=%s", key)
 	// 注册插件
 	if _, ok := manager.plugins[key]; ok { // 已存在同名插件
+		log.Errorf("插件注册失败：已存在同名插件%s", key)
 		return nil
 	}
 	proxy := &PluginProxy{ // 创建插件代理
@@ -59,6 +59,7 @@ func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
 		},
 	}
 	manager.plugins[key] = proxy
+	log.Infof("成功注册插件：%s", proxy.key)
 	// 返回上下文
 	return proxy
 }
