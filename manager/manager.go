@@ -1,14 +1,19 @@
 package manager
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
-
-	log "github.com/sirupsen/logrus"
+	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils"
+
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
@@ -17,6 +22,7 @@ type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
 type PluginManager struct {
 	engine  *zero.Engine // zeroBot引擎
 	configs *viper.Viper // viper配置实例
+	db      *gorm.DB     // DB
 
 	plugins   map[string]*PluginProxy // plugin.key -> pluginContext
 	preHooks  []PluginHook            // 插件Pre Hook
@@ -78,6 +84,42 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 		}
 	}
 	manager.configs.WatchConfig()
+	return nil
+}
+
+func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
+	// 初始化数据库
+	gormC := &gorm.Config{
+		Logger: utils.NewGormLogger(),
+	}
+	switch strings.ToLower(tp) {
+	case "mysql":
+		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+			config.User, config.Passwd, config.Host, config.Port, config.Name)
+		db, err := gorm.Open(mysql.New(mysql.Config{
+			DSN:                       dsn,   // DSN data source name
+			DefaultStringSize:         256,   // string 类型字段的默认长度
+			SkipInitializeWithVersion: false, // 根据当前 MySQL 版本自动配置
+		}), gormC)
+		if err != nil {
+			log.Errorf("初始化数据库失败；%v", err)
+			return err
+		}
+		manager.db = db
+		log.Infof("初始化MySQL数据库成功：%v", dsn)
+	case "postgresql":
+		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
+			config.Host, config.User, config.Passwd, config.Name, config.Port)
+		db, err := gorm.Open(postgres.Open(dsn), gormC)
+		if err != nil {
+			log.Errorf("初始化数据库失败；%v", err)
+			return err
+		}
+		manager.db = db
+		log.Infof("初始化Postgresql数据库成功：%v", dsn)
+	default:
+		return errors.New("暂不支持此类型数据库")
+	}
 	return nil
 }
 

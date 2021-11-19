@@ -2,3 +2,4 @@
 *.yaml
 *.exe
 log
+go.sum

@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"gorm.io/gorm"
 )
 
 // PluginProxy 插件代理，呈现给插件，用于添加事件动作、读写配置、获取插件锁、添加定时任务
@@ -88,4 +89,11 @@ func (p *PluginProxy) GetConfigFloat64(key string) float64 {
 // GetConfigBool 获取Bool配置
 func (p *PluginProxy) GetConfigBool(key string) bool {
 	return cast.ToBool(p.GetConfig(key))
+}
+
+// ---- 数据库 ----
+
+// GetDB 获取数据库
+func (p *PluginProxy) GetDB() *gorm.DB {
+	return p.u.db
 }

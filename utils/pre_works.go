@@ -6,14 +6,13 @@ import (
 	"path/filepath"
 	"time"
 
-	zero "github.com/wdvxdr1123/ZeroBot"
-
 	"github.com/fsnotify/fsnotify"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	easy "github.com/t-tomalak/logrus-easy-formatter"
+	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
 func init() {
@@ -22,17 +21,30 @@ func init() {
 	pflag.StringP("nickname", "n", "派蒙", "the bot's nickname")
 	pflag.StringP("log", "l", "info", "the level of logging")
 	pflag.Parse()
+	// 从命令行读取
+	_ = viper.BindPFlag("server", pflag.Lookup("server"))
+	_ = viper.BindPFlag("superuser", pflag.Lookup("superuser"))
+	_ = viper.BindPFlag("nickname", pflag.Lookup("nickname"))
+	_ = viper.BindPFlag("log.level", pflag.Lookup("log"))
+	viper.SetDefault("log.date", 30)
+	viper.SetDefault("db.type", "postgresql")
+	viper.SetDefault("db.host", "localhost")
+	viper.SetDefault("db.port", 5432)
+	viper.SetDefault("db.user", "username")
+	viper.SetDefault("db.passwd", "password")
+	viper.SetDefault("db.name", "database")
+	// 此init会在manager.common前被调用，随后manager.common.init调用DoPreWorks
 }
 
 // DoPreWorks 进行全局初始化工作
 func DoPreWorks() {
 	// 读取主配置
-	viper.SetDefault("logDate", 30)
 	err := flushMainConfig(".", "config-main.yaml")
 	if err != nil {
 		log.Fatal("FlushMainConfig err: ", err)
 		return
 	}
+	// 初始化日志
 	err = setupLogger()
 	if err != nil {
 		log.Fatal("setupLogger err: ", err)
@@ -44,7 +56,7 @@ func DoPreWorks() {
 func setupLogger() error {
 	// 日志等级
 	log.SetLevel(log.InfoLevel)
-	if l, ok := flagLToLevel[viper.GetString("log")]; ok {
+	if l, ok := flagLToLevel[viper.GetString("log.level")]; ok {
 		log.SetLevel(l)
 	}
 	// 日志格式
@@ -56,7 +68,7 @@ func setupLogger() error {
 	logf, err := rotatelogs.New(
 		"./log/bot-%Y-%m-%d.log",
 		rotatelogs.WithLinkName("./log/bot.log"),
-		rotatelogs.WithMaxAge(time.Duration(viper.GetInt("logDate"))*24*time.Hour),
+		rotatelogs.WithMaxAge(time.Duration(viper.GetInt("log.date"))*24*time.Hour),
 		rotatelogs.WithRotationTime(24*time.Hour),
 	)
 	if err != nil {
@@ -64,7 +76,8 @@ func setupLogger() error {
 		return err
 	}
 	// 日志输出
-	logWriter := io.MultiWriter(os.Stdout, logf)
+	var stdOuter io.Writer = os.Stdout
+	logWriter := io.MultiWriter(stdOuter, logf)
 	log.SetOutput(logWriter) // logrus 设置日志的输出方式
 	return nil
 }
@@ -86,12 +99,6 @@ var flagLToLevel = map[string]log.Level{
 
 // 从文件和命令行中刷新所有主配置，若文件不存在将会把配置写入该文件
 func flushMainConfig(configPath string, configFileName string) error {
-	// 从命令行读取
-	err := viper.BindPFlags(pflag.CommandLine)
-	if err != nil {
-		log.Error("FlushMainConfig error in BindPFlags")
-		return err
-	}
 	// 从文件读取
 	viper.AddConfigPath(configPath)
 	viper.SetConfigFile(configFileName)
@@ -99,17 +106,18 @@ func flushMainConfig(configPath string, configFileName string) error {
 	//fileType := filepath.Ext(fullPath)
 	//viper.SetConfigType(fileType)
 	if FileExists(fullPath) { // 配置文件已存在：读出配置
-		err = viper.ReadInConfig()
+		err := viper.ReadInConfig()
 		if err != nil {
 			log.Error("FlushMainConfig error in ReadInConfig")
 			return err
 		}
 	} else { // 配置文件不存在：写入配置
-		err = viper.SafeWriteConfigAs(fullPath)
+		err := viper.SafeWriteConfigAs(fullPath)
 		if err != nil {
 			log.Error("FlushMainConfig error in SafeWriteConfig")
 			return err
 		}
+		log.Fatal("初始化配置文件%v完成，请对该配置文件进行配置后，重启本程序", configFileName)
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) { // 配置文件发生变更之后会调用的回调函数

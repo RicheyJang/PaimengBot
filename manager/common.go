@@ -4,10 +4,33 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils"
 )
 
+// ---- 初始化相关 ----
+
 // 全局初始化
 func init() {
 	utils.DoPreWorks()
 }
+
+// FlushConfig 从文件中刷新所有插件配置
+func FlushConfig(configPath, configFileName string) error {
+	return defaultManager.FlushConfig(configPath, configFileName)
+}
+
+// DBConfig 数据库设置
+type DBConfig struct {
+	Host   string // 地址
+	Port   int    // 端口
+	User   string // 用户名
+	Passwd string // 密码
+	Name   string // 数据库名
+}
+
+// SetupDatabase 初始化数据库
+func SetupDatabase(tp string, config DBConfig) error {
+	return defaultManager.SetupDatabase(tp, config)
+}
+
+// ---- 插件相关 ----
 
 // PluginInfo 插件信息
 type PluginInfo struct {
@@ -18,11 +41,6 @@ type PluginInfo struct {
 	IsHidden    bool   // Option 是否为隐藏插件
 	IsSuperOnly bool   // Option 是否为超级用户专属插件
 	AdminLevel  int    // Option 群管理员使用最低级别： 0 表示非群管理员专用插件 >0 表示数字越低，权限要求越高
-}
-
-// FlushConfig 从文件中刷新所有插件配置
-func FlushConfig(configPath, configFileName string) error {
-	return defaultManager.FlushConfig(configPath, configFileName)
 }
 
 // RegisterPlugin 注册一个插件至默认插件管理器，并返回插件代理

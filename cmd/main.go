@@ -20,6 +20,19 @@ func main() {
 		log.Error("FlushConfig err: ", err)
 		return
 	}
+	// 初始化数据库
+	dbV := viper.Sub("db")
+	dbC := new(manager.DBConfig)
+	err = dbV.Unmarshal(dbC)
+	if err != nil {
+		log.Error("Unmarshal DB Config err: ", err)
+		return
+	}
+	err = manager.SetupDatabase(dbV.GetString("type"), *dbC)
+	if err != nil {
+		log.Error("SetupDatabase err: ", err)
+		return
+	}
 	// 启动服务
 	zero.RunAndBlock(zero.Config{
 		NickName:      []string{viper.GetString("nickname")},
