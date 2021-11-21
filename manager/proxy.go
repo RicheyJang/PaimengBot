@@ -2,6 +2,8 @@ package manager
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/robfig/cron/v3"
 
@@ -15,8 +17,9 @@ import (
 // PluginProxy 插件代理，呈现给插件，用于添加事件动作、读写配置、获取插件锁、添加定时任务
 // 插件在注册后，应只与此代理交互，与Manager再无交际
 type PluginProxy struct {
-	key string         // 插件Key
-	u   *PluginManager // 所从属的插件管理器
+	key      string         // 插件Key
+	u        *PluginManager // 所从属的插件管理器
+	userLock sync.Map       // 用户锁
 
 	c PluginCondition // 插件状态（被管理器控制）
 }
@@ -133,4 +136,20 @@ func (p *PluginProxy) GetConfigBool(key string) bool {
 // GetDB 获取数据库
 func (p *PluginProxy) GetDB() *gorm.DB {
 	return p.u.db
+}
+
+// ---- 插件锁 ----
+
+// LockUser 对用户上锁，返回能否继续操作，true表示该用户正在被锁定，false表示该用户未被锁定、可以进行下一步操作，同时会对其上锁
+func (p *PluginProxy) LockUser(userID int64) bool {
+	_, ok := p.userLock.Load(userID)
+	// 上锁 or 更新获得锁时间
+	now := time.Now().Unix()
+	p.userLock.Store(userID, now)
+	return ok
+}
+
+// UnlockUser 解锁用户
+func (p *PluginProxy) UnlockUser(userID int64) {
+	p.userLock.Delete(userID)
 }
