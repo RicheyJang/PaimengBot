@@ -4,6 +4,7 @@ import (
 	"github.com/RicheyJang/PaimengBot"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"gorm.io/gorm"
 )
 
 // ---- 初始化相关 ----
@@ -81,4 +82,9 @@ func AddPreHook(hook ...PluginHook) {
 // AddPostHook 添加后置hook
 func AddPostHook(hook ...PluginHook) {
 	defaultManager.AddPostHook(hook...)
+}
+
+// GetDB 获取数据库
+func GetDB() *gorm.DB {
+	return defaultManager.GetDB()
 }

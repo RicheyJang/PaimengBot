@@ -34,6 +34,13 @@ func (p *PluginProxy) On(tp string, rules ...zero.Rule) *zero.Matcher {
 	return matcher
 }
 
+// OnRegex 添加新的正则匹配器
+func (p *PluginProxy) OnRegex(reg string, rules ...zero.Rule) *zero.Matcher {
+	rules = p.checkRules(rules...)
+	matcher := p.u.engine.OnRegex(reg, rules...)
+	return matcher
+}
+
 // OnCommands 添加新的命令匹配器
 func (p *PluginProxy) OnCommands(cmd []string, rules ...zero.Rule) *zero.Matcher {
 	rules = p.checkRules(rules...)
@@ -135,7 +142,7 @@ func (p *PluginProxy) GetConfigBool(key string) bool {
 
 // GetDB 获取数据库
 func (p *PluginProxy) GetDB() *gorm.DB {
-	return p.u.db
+	return p.u.GetDB()
 }
 
 // ---- 插件锁 ----

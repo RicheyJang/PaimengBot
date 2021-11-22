@@ -14,6 +14,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
@@ -90,8 +91,12 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 
 func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 	// 初始化数据库
-	gormC := &gorm.Config{
+	gormC := &gorm.Config{ // 数据库配置
 		Logger: utils.NewGormLogger(),
+		NamingStrategy: schema.NamingStrategy{
+			TablePrefix:   "t_", // 表名前缀，`User`表为`t_users`
+			SingularTable: true, // 使用单数表名，启用该选项后，`User` 表将是`user`
+		},
 	}
 	switch strings.ToLower(tp) {
 	case "mysql":
@@ -144,6 +149,11 @@ func (manager *PluginManager) AddPreHook(hook ...PluginHook) {
 // AddPostHook 添加后置hook
 func (manager *PluginManager) AddPostHook(hook ...PluginHook) {
 	manager.postHooks = append(manager.postHooks, hook...)
+}
+
+// GetDB 获取数据库
+func (manager *PluginManager) GetDB() *gorm.DB {
+	return manager.db
 }
 
 // ---- 非公开方法 ----
