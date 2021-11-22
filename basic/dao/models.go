@@ -9,7 +9,7 @@ type UserSetting struct {
 	ID           int64  `gorm:"primaryKey;autoIncrement:false"`
 	BlackPlugins string `gorm:"size:512"`
 	WhitePlugins string `gorm:"size:512"`
-	NickName     string
+	Nickname     string
 	Likeability  float64
 }
 
