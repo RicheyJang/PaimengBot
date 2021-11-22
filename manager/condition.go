@@ -6,6 +6,7 @@ import "github.com/robfig/cron/v3"
 // Hook类型插件应该只与此结构交互
 type PluginCondition struct {
 	PluginInfo            // 插件信息（由插件提供，只读）
+	Key        string     // 插件Key
 	NormalCmd  [][]string // 普通用户专用命令
 	SuperCmd   [][]string // 超级用户专用命令
 

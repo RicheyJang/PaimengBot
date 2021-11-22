@@ -56,6 +56,7 @@ func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
 		key: key,
 		u:   manager,
 		c: PluginCondition{
+			Key:        key,
 			PluginInfo: info,
 		},
 	}
