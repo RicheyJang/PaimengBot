@@ -19,6 +19,7 @@ func init() {
 	if err != nil {
 		log.Fatal("FlushConfig err: ", err)
 	}
+	log.Infof("读取超级管理员列表：%v", viper.GetStringSlice("superuser"))
 	// 初始化数据库
 	dbV := viper.Sub("db")
 	dbC := new(DBConfig)

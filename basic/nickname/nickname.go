@@ -68,8 +68,5 @@ func GetNickname(userID int64, defaultName string) string {
 	if res.RowsAffected > 0 {
 		return user.Nickname
 	}
-	if res.Error != nil {
-		log.Errorf("GetNickname error(sql): %v", res.Error)
-	}
 	return defaultName
 }
