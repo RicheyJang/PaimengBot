@@ -4,6 +4,9 @@ import (
 	"image"
 	"image/color"
 	"io/ioutil"
+	"math"
+
+	"github.com/fogleman/gg"
 
 	"github.com/golang/freetype/truetype"
 )
@@ -47,4 +50,23 @@ func MeasureStringDefault(str string, fontSize, lineSpace float64) (float64, flo
 	img := NewImageCtx(1, 1)
 	_ = img.UseDefaultFont(fontSize)
 	return img.MeasureMultilineString(str, lineSpace)
+}
+
+// ClipImgToCircle 裁切图像成圆形
+func ClipImgToCircle(img image.Image) image.Image {
+	w := img.Bounds().Size().X
+	h := img.Bounds().Size().Y
+	// 计算半径与长宽
+	radius := math.Max(float64(w), float64(h)) / 2
+	w = int(radius * 2)
+	h = w
+
+	dc := gg.NewContext(w, h)
+	// 画圆形
+	dc.DrawCircle(float64(w/2), float64(h/2), radius)
+	// 对画布进行裁剪
+	dc.Clip()
+	// 加载图片
+	dc.DrawImageAnchored(img, w/2, h/2, 0.5, 0.5)
+	return dc.Image()
 }

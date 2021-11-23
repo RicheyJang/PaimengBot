@@ -2,6 +2,10 @@ package invite
 
 import (
 	"fmt"
+	"image"
+	"io"
+
+	"github.com/RicheyJang/PaimengBot/utils"
 
 	"github.com/wdvxdr1123/ZeroBot/message"
 
@@ -40,6 +44,7 @@ func handleAllFriends(ctx *zero.Ctx) {
 	res := ctx.GetFriendList()
 	friends := res.Array()
 	// 生成所有好友信息
+	data := make(map[int64]string)
 	info := "所有好友：\n"
 	for _, friend := range friends {
 		id := friend.Get("user_id").Int()
@@ -47,15 +52,22 @@ func handleAllFriends(ctx *zero.Ctx) {
 			continue
 		}
 		name := friend.Get("nickname").String()
-		info += fmt.Sprintf("ID:%v 用户名：%v", id, name)
+		str := fmt.Sprintf("ID:%v 用户名：%v", id, name)
 		nick := nickname.GetNickname(id, "")
 		if len(nick) > 0 {
-			info += fmt.Sprintf(" 昵称：%v\n", nick)
-		} else {
-			info += "\n"
+			str += fmt.Sprintf(" 昵称：%v", nick)
 		}
+		data[id] = str
+		info += str + "\n"
 	}
-	// 形成回包消息
+	// 生成图片
+	w, _ := images.MeasureStringDefault(info, 24, 1.3)
+	msg, err := formQQImgResponse(data, w, true)
+	if err == nil {
+		ctx.SendChain(msg)
+		return
+	}
+	// 形成兜底回包消息
 	ctx.SendChain(formResponse(info))
 }
 
@@ -67,15 +79,58 @@ func handleAllGroups(ctx *zero.Ctx) {
 		return
 	}
 	// 生成所有群组信息
+	data := make(map[int64]string)
 	info := "所有群组：\n"
 	for _, group := range groups {
 		id := group.Get("group_id").Int()
 		name := group.Get("group_name").String()
 		num := group.Get("member_count").Int()
-		info += fmt.Sprintf("ID:%v 群名：%v (%v)\n", id, name, num)
+		str := fmt.Sprintf("ID:%v 群名：%v (%v)", id, name, num)
+		data[id] = str
+		info += str + "\n"
 	}
-	// 形成回包消息
+	// 生成图片
+	w, _ := images.MeasureStringDefault(info, 24, 1.3)
+	msg, err := formQQImgResponse(data, w, false)
+	if err == nil {
+		ctx.SendChain(msg)
+		return
+	}
+	// 形成兜底回包消息
 	ctx.SendChain(formResponse(info))
+}
+
+func formQQImgResponse(data map[int64]string, w float64, isFriend bool) (msg message.MessageSegment, err error) {
+	var avaReader io.Reader
+	avaSize, fontSize, height := 100, 24.0, 10
+	img := images.NewImageCtxWithBGRGBA255(int(w)+avaSize+30, len(data)*(avaSize+20)+30, 255, 255, 255, 255)
+	for id, str := range data {
+		if isFriend {
+			avaReader, err = utils.GetQQAvatar(id, avaSize)
+		} else {
+			avaReader, err = utils.GetQQGroupAvatar(id, avaSize)
+		}
+		if err != nil {
+			return msg, err
+		}
+		ava, _, err := image.Decode(avaReader)
+		ava = images.ClipImgToCircle(ava)
+		if err != nil {
+			log.Errorf("Decode avatar err: %v", err)
+			return msg, err
+		}
+		img.DrawImage(ava, 10, height)
+		err = img.PasteStringDefault(str, fontSize, 1.3, float64(10+avaSize+10), float64(height+25), w)
+		if err != nil {
+			return msg, err
+		}
+		height += avaSize + 20
+	}
+	file, err := img.SaveTempDefault()
+	if err != nil {
+		return msg, err
+	}
+	return message.Image("file:///" + file), nil
 }
 
 func formResponse(info string) message.MessageSegment {

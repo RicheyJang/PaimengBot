@@ -41,6 +41,21 @@ func GetQQAvatar(qq int64, size int) (io.Reader, error) {
 	return res, err
 }
 
+// GetQQGroupAvatar 快捷获取QQ群头像
+func GetQQGroupAvatar(id int64, size int) (io.Reader, error) {
+	c := client.NewHttpClient(&client.HttpOptions{
+		Timeout: 3 * time.Second,
+		TryTime: 2,
+	})
+	url := fmt.Sprintf("http://p.qlogo.cn/gh/%v/%v/%v/", id, id, size)
+	res, err := c.GetReader(url) // 尝试
+	if err != nil {
+		log.Errorf("获取QQ群头像失败, err: %v", err)
+		return nil, err
+	}
+	return res, err
+}
+
 // GetBotConfig 获取机器人配置
 func GetBotConfig() zero.Config {
 	return zero.BotConfig
