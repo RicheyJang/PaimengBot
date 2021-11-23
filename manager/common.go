@@ -2,7 +2,6 @@ package manager
 
 import (
 	"github.com/RicheyJang/PaimengBot"
-	"github.com/RicheyJang/PaimengBot/utils/consts"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -15,16 +14,10 @@ func init() {
 	// 初始化命令行参数、主配置、logger
 	PaimengBot.DoPreWorks()
 
-	// 读取插件配置
-	err := FlushConfig(consts.DefaultConfigDir, consts.PluginConfigFileName)
-	if err != nil {
-		log.Fatal("FlushConfig err: ", err)
-	}
-	log.Infof("读取超级管理员列表：%v", viper.GetStringSlice("superuser"))
 	// 初始化数据库
 	dbV := viper.Sub("db")
 	dbC := new(DBConfig)
-	err = dbV.Unmarshal(dbC)
+	err := dbV.Unmarshal(dbC)
 	if err != nil {
 		log.Fatal("Unmarshal DB Config err: ", err)
 	}

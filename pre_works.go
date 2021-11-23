@@ -28,14 +28,18 @@ func init() {
 	_ = viper.BindPFlag("server", pflag.Lookup("server"))
 	_ = viper.BindPFlag("superuser", pflag.Lookup("superuser"))
 	_ = viper.BindPFlag("nickname", pflag.Lookup("nickname"))
+	// 日志配置
 	_ = viper.BindPFlag("log.level", pflag.Lookup("log"))
 	viper.SetDefault("log.date", 30)
+	// 数据库配置
 	viper.SetDefault("db.type", "postgresql")
 	viper.SetDefault("db.host", "localhost")
 	viper.SetDefault("db.port", 5432)
 	viper.SetDefault("db.user", "username")
 	viper.SetDefault("db.passwd", "password")
 	viper.SetDefault("db.name", "database")
+	// 其它配置
+	viper.SetDefault("tmp.maxcount", 1000) // 同种类临时文件同时存在的最大数量
 	// 此init会在manager.common前被调用，随后manager.common.init调用DoPreWorks
 }
 

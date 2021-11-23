@@ -2,8 +2,10 @@ package images
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"io/ioutil"
+	"sync"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
@@ -11,6 +13,7 @@ import (
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 var defaultFont *truetype.Font
@@ -70,6 +73,19 @@ func NewImageCtxWithBG(w, h int, bg image.Image, opacity float64) *ImageCtx {
 	return res
 }
 
+// NewImageCtxWithBGRGBA255 以RGBA255形式创建纯色背景的图片上下文
+func NewImageCtxWithBGRGBA255(w, h int, r, g, b, a int) *ImageCtx {
+	res := NewImageCtx(w, h)
+	// 记录原始状态
+	res.Push()
+	// 设置背景
+	res.SetRGBA255(r, g, b, a)
+	res.Clear()
+	// 恢复原始状态
+	res.Pop()
+	return res
+}
+
 // NewImageCtx 创建全透明背景的图片上下文
 func NewImageCtx(w, h int) *ImageCtx {
 	dc := gg.NewContext(w, h)
@@ -100,4 +116,35 @@ func (img *ImageCtx) SetFont(font *truetype.Font, size float64) error {
 // UseDefaultFont 使用默认字体并设置字体大小
 func (img *ImageCtx) UseDefaultFont(size float64) error {
 	return img.SetFont(defaultFont, size)
+}
+
+var tempCountMutex sync.Mutex
+var tempCount int64 = 0
+
+// SaveTemp 以前缀prefix保存至临时图片文件夹
+func (img *ImageCtx) SaveTemp(prefix string) (string, error) {
+	// 获取临时序号
+	tempCountMutex.Lock()
+	tempCount = (tempCount + 1) % (viper.GetInt64("tmp.maxcount") + 1)
+	fileName := fmt.Sprintf("%s_%v.png", prefix, tempCount)
+	tempCountMutex.Unlock()
+
+	// 尝试创建临时文件夹
+	fullDir, err := utils.MakeDir(consts.TempImageDir)
+	if err != nil {
+		log.Errorf("创建临时目录或获取绝对路径失败 err：%v", err)
+		return "", err
+	}
+	// 保存图片
+	err = img.SavePNG(utils.PathJoin(consts.TempImageDir, fileName))
+	if err != nil {
+		log.Errorf("保存临时图片失败 err：%v", err)
+		return "", err
+	}
+	return utils.PathJoin(fullDir, fileName), nil
+}
+
+// SaveTempDefault 以默认前缀(tempimg)保存至临时图片文件夹
+func (img *ImageCtx) SaveTempDefault() (string, error) {
+	return img.SaveTemp("tempimg")
 }
