@@ -3,10 +3,11 @@ package PaimengBot
 import (
 	"io"
 	"os"
-	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	"github.com/fsnotify/fsnotify"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
@@ -41,7 +42,7 @@ func init() {
 // DoPreWorks 进行全局初始化工作
 func DoPreWorks() {
 	// 读取主配置
-	err := flushMainConfig(".", "config-main.yaml")
+	err := flushMainConfig(consts.DefaultConfigDir, consts.MainConfigFileName)
 	if err != nil {
 		log.Fatal("FlushMainConfig err: ", err)
 		return
@@ -58,7 +59,7 @@ func DoPreWorks() {
 func setupLogger() error {
 	// 日志等级
 	log.SetLevel(log.InfoLevel)
-	if l, ok := flagLToLevel[viper.GetString("log.level")]; ok {
+	if l, ok := flagLToLevel[strings.ToLower(viper.GetString("log.level"))]; ok {
 		log.SetLevel(l)
 	}
 	// 日志格式
@@ -68,8 +69,8 @@ func setupLogger() error {
 	})
 	// 日志滚动切割
 	logf, err := rotatelogs.New(
-		"./log/bot-%Y-%m-%d.log",
-		rotatelogs.WithLinkName("./log/bot.log"),
+		utils.PathJoin(consts.DefaultLogDir, "bot-%Y-%m-%d.log"),
+		rotatelogs.WithLinkName(utils.PathJoin(consts.DefaultLogDir, "bot.log")),
 		rotatelogs.WithMaxAge(time.Duration(viper.GetInt("log.date"))*24*time.Hour),
 		rotatelogs.WithRotationTime(24*time.Hour),
 	)
@@ -85,18 +86,11 @@ func setupLogger() error {
 }
 
 var flagLToLevel = map[string]log.Level{
-	"debug": log.DebugLevel,
-	"Debug": log.DebugLevel,
-	"DEBUG": log.DebugLevel,
-	"info":  log.InfoLevel,
-	"Info":  log.InfoLevel,
-	"INFO":  log.InfoLevel,
-	"warn":  log.WarnLevel,
-	"Warn":  log.WarnLevel,
-	"WARN":  log.WarnLevel,
-	"error": log.ErrorLevel,
-	"Error": log.ErrorLevel,
-	"ERROR": log.ErrorLevel,
+	"debug":   log.DebugLevel,
+	"info":    log.InfoLevel,
+	"warn":    log.WarnLevel,
+	"warning": log.WarnLevel,
+	"error":   log.ErrorLevel,
 }
 
 // 从文件和命令行中刷新所有主配置，若文件不存在将会把配置写入该文件
@@ -104,7 +98,7 @@ func flushMainConfig(configPath string, configFileName string) error {
 	// 从文件读取
 	viper.AddConfigPath(configPath)
 	viper.SetConfigFile(configFileName)
-	fullPath := filepath.Join(configPath, configFileName)
+	fullPath := utils.PathJoin(configPath, configFileName)
 	//fileType := filepath.Ext(fullPath)
 	//viper.SetConfigType(fileType)
 	if utils.FileExists(fullPath) { // 配置文件已存在：读出配置

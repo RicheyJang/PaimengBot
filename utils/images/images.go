@@ -1,31 +1,41 @@
 package images
 
 import (
+	"errors"
 	"image"
-	"image/color"
+	"io/ioutil"
+
+	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	"github.com/fogleman/gg"
+	"github.com/golang/freetype/truetype"
+	log "github.com/sirupsen/logrus"
 )
 
-// AdjustOpacity 将输入图像m的透明度变为原来的倍数的图像返回。若原来为完成全不透明，则percentage = 0.5将变为半透明
-func AdjustOpacity(m image.Image, percentage float64) image.Image {
-	bounds := m.Bounds()
-	dx := bounds.Dx()
-	dy := bounds.Dy()
-	newRgba := image.NewRGBA64(bounds)
-	for i := 0; i < dx; i++ {
-		for j := 0; j < dy; j++ {
-			colorRgb := m.At(i, j)
-			r, g, b, a := colorRgb.RGBA()
-			opacity := uint16(float64(a) * percentage)
-			//颜色模型转换，至关重要！
-			v := newRgba.ColorModel().Convert(color.NRGBA64{R: uint16(r), G: uint16(g), B: uint16(b), A: opacity})
-			//Alpha = 0: Full transparent
-			rr, _g, bb, aa := v.RGBA()
-			newRgba.SetRGBA64(i, j, color.RGBA64{R: uint16(rr), G: uint16(_g), B: uint16(bb), A: uint16(aa)})
+var defaultFont *truetype.Font
+
+func init() {
+	font, err := ParseFont(consts.DefaultTTFPath) // 加载默认字体文件
+	if err != nil {                               // 加载失败，从默认字体目录中尝试遍历
+		rd, _ := ioutil.ReadDir(consts.DefaultTTFDir)
+		for _, file := range rd {
+			if file.IsDir() {
+				continue
+			}
+			font, err = ParseFont(utils.PathJoin(consts.DefaultTTFDir, file.Name()))
+			if err == nil {
+				log.Infof("成功加载字体文件：%v", file.Name())
+				break
+			}
 		}
 	}
-	return newRgba
+	if err != nil || font == nil { // 全部失败
+		log.Errorf("加载默认字体文件(%v)失败 err: %v", consts.DefaultTTFDir, err)
+		return
+	}
+	defaultFont = font
+	log.Infof("成功加载默认字体")
 }
 
 // ImageCtx 图片上下文
@@ -73,4 +83,21 @@ func NewImageCtx(w, h int) *ImageCtx {
 	return &ImageCtx{
 		Context: dc,
 	}
+}
+
+// SetFont 通过truetype.Font设置字体与字体大小
+func (img *ImageCtx) SetFont(font *truetype.Font, size float64) error {
+	if font == nil {
+		return errors.New("point font is nil")
+	}
+	face := truetype.NewFace(font, &truetype.Options{
+		Size: size,
+	})
+	img.SetFontFace(face)
+	return nil
+}
+
+// UseDefaultFont 使用默认字体并设置字体大小
+func (img *ImageCtx) UseDefaultFont(size float64) error {
+	return img.SetFont(defaultFont, size)
 }

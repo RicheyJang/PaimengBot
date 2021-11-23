@@ -2,4 +2,5 @@
 *.yaml
 *.exe
 log
+ttf
 go.sum

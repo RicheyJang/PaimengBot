@@ -2,6 +2,7 @@ package manager
 
 import (
 	"github.com/RicheyJang/PaimengBot"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"gorm.io/gorm"
@@ -15,7 +16,7 @@ func init() {
 	PaimengBot.DoPreWorks()
 
 	// 读取插件配置
-	err := FlushConfig(".", "config-plugins.yaml")
+	err := FlushConfig(consts.DefaultConfigDir, consts.PluginConfigFileName)
 	if err != nil {
 		log.Fatal("FlushConfig err: ", err)
 	}
