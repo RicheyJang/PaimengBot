@@ -27,7 +27,7 @@ var blackName = []string{"爸", "妈", "爹", "主人"}
 func init() {
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
-		log.Error("nickname init fail")
+		return
 	}
 	proxy.OnRegex("(以后)?叫我.+", zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(setNickName)
 }

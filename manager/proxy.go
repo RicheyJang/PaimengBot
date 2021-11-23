@@ -71,6 +71,14 @@ func (p *PluginProxy) checkRules(rules ...zero.Rule) []zero.Rule {
 	return rules
 }
 
+func (p *PluginProxy) OnRequest(rules ...zero.Rule) *zero.Matcher {
+	return p.u.engine.OnRequest(rules...)
+}
+
+func (p *PluginProxy) OnNotice(rules ...zero.Rule) *zero.Matcher {
+	return p.u.engine.OnNotice(rules...)
+}
+
 // ---- 定时任务 ----
 
 // AddScheduleFunc 添加定时任务，并自动启动

@@ -32,7 +32,7 @@ func CallerPackageName(skipPkgName string) string {
 	return name
 }
 
-func GetFuncInPkgName(fn interface{}) string {
+func GetPkgNameByFunc(fn interface{}) string {
 	fnName := runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
 	return getPkgNameByFuncName(fnName)
 }

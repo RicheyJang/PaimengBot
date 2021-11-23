@@ -46,3 +46,15 @@ func SendToSuper(message ...message.MessageSegment) {
 		return true
 	})
 }
+
+// ---- Rules ----
+
+// CheckDetailType 检查事件DetailType(MessageType/NoticeType/RequestType)
+func CheckDetailType(tp string) zero.Rule {
+	return func(ctx *zero.Ctx) bool {
+		if ctx.Event != nil {
+			return ctx.Event.DetailType == tp
+		}
+		return false
+	}
+}

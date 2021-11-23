@@ -46,7 +46,7 @@ func NewPluginManager() *PluginManager {
 
 // RegisterPlugin 注册一个插件，并返回插件代理，用于添加事件动作、读写配置、获取插件锁、添加定时任务
 func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
-	key := utils.CallerPackageName(utils.GetFuncInPkgName(NewPluginManager)) // 暂时使用包名作为key值
+	key := utils.CallerPackageName(utils.GetPkgNameByFunc(NewPluginManager)) // 暂时使用包名作为key值
 	// 注册插件
 	if _, ok := manager.plugins[key]; ok { // 已存在同名插件
 		log.Errorf("插件注册失败：已存在同名插件%s", key)
@@ -169,10 +169,10 @@ func (manager *PluginManager) getProxyByMatcher(matcher *zero.Matcher) *PluginPr
 	}
 	/* TODO　由于zeroBot在处理event时会copy原matcher，无法使用原matcher进行映射
 	   因此只能通过matcher.Handler来拿取其所在的包名，来作为插件的key */
-	key := utils.GetFuncInPkgName(matcher.Handler)
+	key := utils.GetPkgNameByFunc(matcher.Handler)
 	res, ok := manager.plugins[key]
 	if !ok {
-		log.Debugf("getProxyByMatcher No Such key=%s", key)
+		log.Warnf("getProxyByMatcher No Such handler pkg name as key=%s", key)
 		return nil
 	}
 	return res

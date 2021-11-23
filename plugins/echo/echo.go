@@ -3,7 +3,6 @@ package echo
 import (
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
-	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
@@ -12,7 +11,7 @@ var proxy *manager.PluginProxy
 func init() {
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
-		log.Error("echo init fail")
+		return
 	}
 	proxy.OnCommands([]string{"echo"}).SetBlock(true).FirstPriority().Handle(EchoHandler)
 	proxy.AddConfig("times", 2)
