@@ -1,8 +1,14 @@
 package utils
 
 import (
+	"fmt"
+	"io"
 	"strconv"
+	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils/client"
+
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
@@ -14,6 +20,25 @@ func GetArgs(ctx *zero.Ctx) string {
 		return ""
 	}
 	return cast.ToString(res)
+}
+
+// GetQQAvatar 快捷获取QQ头像
+func GetQQAvatar(qq int64, size int) (io.Reader, error) {
+	c := client.NewHttpClient(&client.HttpOptions{
+		Timeout: 3 * time.Second,
+		TryTime: 2,
+	})
+	url1 := fmt.Sprintf("http://q1.qlogo.cn/g?b=qq&nk=%v&s=%v", qq, size)
+	url2 := fmt.Sprintf("https://q2.qlogo.cn/headimg_dl?dst_uin=%v&spec=%v", qq, size)
+	res, err := c.GetReader(url2) // 尝试q2
+	if err != nil {
+		res, err = c.GetReader(url1) // 失败则尝试q1
+		if err != nil {
+			log.Errorf("获取QQ头像失败, err: %v", err)
+			return nil, err
+		}
+	}
+	return res, err
 }
 
 // GetBotConfig 获取机器人配置
