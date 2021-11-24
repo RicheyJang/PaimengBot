@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/basic/dao"
@@ -26,6 +28,7 @@ var info = manager.PluginInfo{
 	查看所有群组[请求]?
 	同意/拒绝好友请求 [XXX]+
 	同意/拒绝群组请求 [XXX]+
+	退群 [XXX]+
 `,
 	IsSuperOnly: true,
 }
@@ -37,6 +40,98 @@ func init() {
 	}
 	proxy.OnCommands([]string{"查看所有好友"}).SetBlock(true).FirstPriority().Handle(handleAllFriends)
 	proxy.OnCommands([]string{"查看所有群组", "查看所有群"}).SetBlock(true).FirstPriority().Handle(handleAllGroups)
+	proxy.OnRegex("(同意|拒绝)好友(请求)?(.+)").SetBlock(true).FirstPriority().Handle(setFriendRequest)
+	proxy.OnRegex("(同意|拒绝)(群|群组)(请求|邀请)?(.+)").SetBlock(true).FirstPriority().Handle(setGroupRequest)
+	proxy.OnCommands([]string{"退群"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(quitGroup)
+}
+
+func setFriendRequest(ctx *zero.Ctx) {
+	// 初始化
+	reg := regexp.MustCompile("(同意|拒绝)好友(请求)?(.+)")
+	sub := reg.FindStringSubmatch(ctx.MessageString())
+	if len(sub) <= 3 {
+		ctx.Send("谁嘛？")
+		return
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(sub[3]), 10, 64)
+	if err != nil {
+		ctx.Send("格式错误了哦")
+		return
+	}
+	var userS dao.UserSetting
+	if res := proxy.GetDB().Take(&userS, id); res.RowsAffected == 0 || len(userS.Flag) == 0 {
+		ctx.Send("脑袋里没有这个人的好友请求哦，或者你可以试试手动添加") // 数据库里没有（没捕获到事件）
+		return
+	}
+	approve := false
+	if sub[1] == "同意" {
+		approve = true
+	}
+	flag := userS.Flag
+	if approve { // 同意 -> 将flag清空
+		if err = proxy.GetDB().Model(&userS).Update("flag", "").Error; err != nil {
+			log.Errorf("更新数据库表项(UserSetting)失败，err: %v", err)
+		}
+	} else { // 拒绝 -> 删除请求
+		if err = proxy.GetDB().Delete(&userS, id).Error; err != nil {
+			log.Errorf("删除数据库表项(UserSetting)失败，err: %v", err)
+		}
+	}
+	// 设置请求
+	ctx.SetFriendAddRequest(flag, approve, "")
+	ctx.Send("好哒")
+}
+
+func setGroupRequest(ctx *zero.Ctx) {
+	// 初始化
+	reg := regexp.MustCompile("(同意|拒绝)(群|群组)(请求|邀请)?(.+)")
+	sub := reg.FindStringSubmatch(ctx.MessageString())
+	if len(sub) <= 4 {
+		ctx.Send("谁嘛？")
+		return
+	}
+	id, err := strconv.ParseInt(strings.TrimSpace(sub[4]), 10, 64)
+	if err != nil {
+		ctx.Send("格式错误了哦")
+		return
+	}
+	var groupS dao.GroupSetting
+	if res := proxy.GetDB().Take(&groupS, id); res.RowsAffected == 0 || len(groupS.Flag) == 0 {
+		ctx.Send("脑袋里没有这个群的邀请哦，或者你可以试试手动加入") // 数据库里没有（没捕获到事件）
+		return
+	}
+	approve := false
+	if sub[1] == "同意" {
+		approve = true
+	}
+	flag := groupS.Flag
+	// 更新数据库
+	if approve { // 同意 -> 将flag清空，could_add = true
+		if err = proxy.GetDB().Model(&groupS).Updates(map[string]interface{}{"flag": "", "could_add": true}).Error; err != nil {
+			log.Errorf("更新数据库表项(GroupSetting)失败，err: %v", err)
+		}
+	} else { // 拒绝 -> 删除请求
+		if err = proxy.GetDB().Delete(&groupS, id).Error; err != nil {
+			log.Errorf("删除数据库表项(GroupSetting)失败，err: %v", err)
+		}
+	}
+	// 设置请求
+	ctx.SetGroupAddRequest(flag, "invite", approve, "")
+	ctx.Send("好哒")
+}
+
+func quitGroup(ctx *zero.Ctx) {
+	arg := utils.GetArgs(ctx)
+	id, err := strconv.ParseInt(strings.TrimSpace(arg), 10, 64)
+	if err != nil || id == 0 {
+		ctx.Send("格式错误了哦")
+		return
+	}
+	if err = proxy.GetDB().Delete(&dao.GroupSetting{}, id).Error; err != nil {
+		log.Errorf("删除数据库表项(GroupSetting)失败，err: %v", err)
+	}
+	ctx.SetGroupLeave(id, false)
+	ctx.Send(fmt.Sprintf("已退出群聊%v", id))
 }
 
 func handleAllFriends(ctx *zero.Ctx) {

@@ -61,6 +61,15 @@ func GetBotConfig() zero.Config {
 	return zero.BotConfig
 }
 
+// GetBotNickname 获取机器人昵称
+func GetBotNickname() string {
+	nick := GetBotConfig().NickName
+	if len(nick) == 0 || len(nick[0]) == 0 {
+		return "我"
+	}
+	return nick[0]
+}
+
 // IsSuperUser userID是否为超级用户
 func IsSuperUser(userID int64) bool {
 	uid := strconv.FormatInt(userID, 10)
