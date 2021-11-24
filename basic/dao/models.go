@@ -6,17 +6,19 @@ import (
 )
 
 type UserSetting struct {
-	ID           int64  `gorm:"primaryKey;autoIncrement:false"`
-	BlackPlugins string `gorm:"size:512"`
-	WhitePlugins string `gorm:"size:512"`
-	Nickname     string
-	Likeability  float64
+	ID           int64   `gorm:"primaryKey;autoIncrement:false"`
+	BlackPlugins string  `gorm:"size:512"` // 白名单插件
+	WhitePlugins string  `gorm:"size:512"` // 黑名单插件
+	Nickname     string  // 昵称
+	Likeability  float64 // 好感度
+	Flag         string  // 非空时代表该用户尚未成为好友，是他的好友请求flag
 }
 
 type GroupSetting struct {
 	ID           int64  `gorm:"primaryKey;autoIncrement:false"`
 	BlackPlugins string `gorm:"size:512"`
 	WhitePlugins string `gorm:"size:512"`
+	Flag         string // 非空时代表该群尚未加入，是邀请入群请求flag
 }
 
 type UserPriority struct {

@@ -29,7 +29,9 @@ type PluginProxy struct {
 // On 添加新的指定消息类型的匹配器
 // zero.Engine.On的附加处理拷贝
 func (p *PluginProxy) On(tp string, rules ...zero.Rule) *zero.Matcher {
-	rules = p.checkRules(rules...)
+	if tp == "message" {
+		rules = p.checkRules(rules...)
+	}
 	matcher := p.u.engine.On(tp, rules...)
 	return matcher
 }
@@ -72,11 +74,11 @@ func (p *PluginProxy) checkRules(rules ...zero.Rule) []zero.Rule {
 }
 
 func (p *PluginProxy) OnRequest(rules ...zero.Rule) *zero.Matcher {
-	return p.u.engine.OnRequest(rules...)
+	return p.On("request", rules...)
 }
 
 func (p *PluginProxy) OnNotice(rules ...zero.Rule) *zero.Matcher {
-	return p.u.engine.OnNotice(rules...)
+	return p.On("notice", rules...)
 }
 
 // ---- 定时任务 ----
