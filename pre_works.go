@@ -25,9 +25,11 @@ func init() {
 	pflag.StringP("log", "l", "info", "the level of logging")
 	pflag.Parse()
 	// 从命令行读取
-	_ = viper.BindPFlag("server", pflag.Lookup("server"))
 	_ = viper.BindPFlag("superuser", pflag.Lookup("superuser"))
 	_ = viper.BindPFlag("nickname", pflag.Lookup("nickname"))
+	// 后端配置
+	_ = viper.BindPFlag("server.address", pflag.Lookup("server"))
+	viper.SetDefault("server.token", "")
 	// 日志配置
 	_ = viper.BindPFlag("log.level", pflag.Lookup("log"))
 	viper.SetDefault("log.date", 30)

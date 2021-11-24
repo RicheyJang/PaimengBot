@@ -31,7 +31,7 @@ func main() {
 		CommandPrefix: "",
 		SuperUsers:    viper.GetStringSlice("superuser"),
 		Driver: []zero.Driver{
-			driver.NewWebSocketClient(viper.GetString("server"), ""),
+			driver.NewWebSocketClient(viper.GetString("server.address"), viper.GetString("server.token")),
 		},
 	})
 }
