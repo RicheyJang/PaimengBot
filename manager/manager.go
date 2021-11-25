@@ -131,13 +131,13 @@ func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 }
 
 // GetAllPluginConditions 获取所有插件的详细信息
-func (manager *PluginManager) GetAllPluginConditions() []PluginCondition {
-	var res []PluginCondition
+func (manager *PluginManager) GetAllPluginConditions() []*PluginCondition {
+	var res []*PluginCondition
 	for _, c := range manager.plugins {
 		if c == nil {
 			continue
 		}
-		res = append(res, c.c)
+		res = append(res, &c.c)
 	}
 	return res
 }
