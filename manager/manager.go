@@ -46,7 +46,8 @@ func NewPluginManager() *PluginManager {
 
 // RegisterPlugin 注册一个插件，并返回插件代理，用于添加事件动作、读写配置、获取插件锁、添加定时任务
 func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
-	key := utils.CallerPackageName(utils.GetPkgNameByFunc(NewPluginManager)) // 暂时使用包名作为key值
+	thisPkgName := utils.GetPkgNameByFunc(NewPluginManager)
+	key := utils.CallerPackageName(thisPkgName) // 暂时使用包名作为key值
 	// 注册插件
 	if _, ok := manager.plugins[key]; ok { // 已存在同名插件
 		log.Errorf("插件注册失败：已存在同名插件%s", key)
@@ -195,7 +196,7 @@ func (manager *PluginManager) preHandlerWithHook(ctx *zero.Ctx) bool {
 	for _, hook := range manager.preHooks {
 		err := hook(&proxy.c, ctx)
 		if err != nil {
-			log.Infof("handle has been canceled by pre hook reason: %v", err)
+			log.Infof("<%s> handle has been canceled by pre hook reason: %v", proxy.key, err)
 			panic(err) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
 		}
 	}

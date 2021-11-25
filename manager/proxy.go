@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/robfig/cron/v3"
-
 	"github.com/RicheyJang/PaimengBot/utils"
 
+	"github.com/robfig/cron/v3"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"gorm.io/gorm"
@@ -92,6 +92,9 @@ func (p *PluginProxy) AddScheduleFunc(spec string, fn func()) (id cron.EntryID, 
 	id, err = p.c.schedule.AddFunc(spec, fn)
 	if err == nil { // 尝试开启定时任务
 		p.c.StartCron()
+		log.Infof("%v成功添加定时任务 spec: %v", p.key, spec)
+	} else {
+		log.Errorf("%v添加定时任务失败, err: %v", p.key, err)
 	}
 	return
 }

@@ -65,7 +65,7 @@ func RegisterPlugin(info PluginInfo) *PluginProxy {
 }
 
 // GetAllPluginConditions 获取所有插件的详细信息
-func GetAllPluginConditions() []PluginCondition {
+func GetAllPluginConditions() []*PluginCondition {
 	return defaultManager.GetAllPluginConditions()
 }
 

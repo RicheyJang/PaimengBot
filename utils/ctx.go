@@ -56,6 +56,19 @@ func GetQQGroupAvatar(id int64, size int) (io.Reader, error) {
 	return res, err
 }
 
+// GetBotCtx 获取一个全局ctx
+func GetBotCtx() *zero.Ctx {
+	var res *zero.Ctx
+	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
+		if ctx != nil {
+			res = ctx
+			return false
+		}
+		return true
+	})
+	return res
+}
+
 // GetBotConfig 获取机器人配置
 func GetBotConfig() zero.Config {
 	return zero.BotConfig

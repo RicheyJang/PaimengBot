@@ -9,6 +9,7 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/driver"
 
 	// 基本插件，建议不要删除，可能会造成依赖问题
+	_ "github.com/RicheyJang/PaimengBot/basic/auth"
 	_ "github.com/RicheyJang/PaimengBot/basic/event"
 	_ "github.com/RicheyJang/PaimengBot/basic/invite"
 	_ "github.com/RicheyJang/PaimengBot/basic/nickname"
