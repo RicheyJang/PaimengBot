@@ -1,14 +1,19 @@
 package images
 
 import (
+	"bytes"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"image"
+	"image/png"
 	"io/ioutil"
+	"strings"
 	"sync"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
+	"github.com/wdvxdr1123/ZeroBot/message"
 
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
@@ -147,4 +152,57 @@ func (img *ImageCtx) SaveTemp(prefix string) (string, error) {
 // SaveTempDefault 以默认前缀(tempimg)保存至临时图片文件夹
 func (img *ImageCtx) SaveTempDefault() (string, error) {
 	return img.SaveTemp("tempimg")
+}
+
+func (img *ImageCtx) GenMessageBase64() (message.MessageSegment, error) {
+	resultBuff := bytes.NewBuffer(nil) // 结果缓冲区
+	// 新建Base64编码器（Base64结果写入结果缓冲区resultBuff）
+	encoder := base64.NewEncoder(base64.StdEncoding, resultBuff)
+	// 将图片PNG格式写入Base64编码器
+	err := png.Encode(encoder, img.Image())
+	if err != nil {
+		_ = encoder.Close()
+		return message.Text("图片生成失败"), err
+	}
+	// 结束Base64编码
+	err = encoder.Close()
+	if err != nil {
+		return message.Text("图片Base64生成失败"), err
+	}
+	return message.Image("base64://" + resultBuff.String()), nil
+}
+
+var tmpAddressBuff = make(map[string]bool)
+
+// 判断OneBot(消息收发端)是否在本地
+func isOneBotLocal() (res bool) {
+	addr := viper.GetString("server.address")
+	defer func() {
+		tmpAddressBuff[addr] = res
+	}()
+	if res, ok := tmpAddressBuff[addr]; ok { // 读取缓存
+		return res
+	}
+	sub := strings.Split(addr, "//")
+	if len(sub) < 2 {
+		return false
+	}
+	if strings.HasPrefix(sub[1], "127") || strings.HasPrefix(sub[1], "local") {
+		return true
+	}
+	return false
+}
+
+// GenMessageAuto 自动生成ZeroBot图片消息
+func (img *ImageCtx) GenMessageAuto() (message.MessageSegment, error) {
+	// 消息收发端不在本地
+	if !isOneBotLocal() {
+		return img.GenMessageBase64()
+	}
+	// 消息收发端位于本地
+	file, err := img.SaveTempDefault()
+	if err != nil { // 生成文件出错，尝试Base64
+		return img.GenMessageBase64()
+	}
+	return message.Image("file:///" + file), nil
 }

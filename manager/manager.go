@@ -215,7 +215,7 @@ func (manager *PluginManager) postHandlerWithHook(ctx *zero.Ctx) {
 		log.Debug("postHookLogMatcher proxy == nil")
 		return
 	}
-	log.Infof("The message is handled finish by the <%s> plugin", proxy.key)
+	log.Infof("The message is handled finish by the <%s> plugin\n", proxy.key)
 	// 调用所有后置hook
 	for _, hook := range manager.postHooks {
 		err := hook(&proxy.c, ctx)

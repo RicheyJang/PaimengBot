@@ -268,7 +268,7 @@ func formQQImgResponse(data map[int64]string, w float64, isFriend bool) (msg mes
 		ava, _, err := image.Decode(avaReader)
 		ava = images.ClipImgToCircle(ava)
 		if err != nil {
-			log.Errorf("Decode avatar err: %v", err)
+			log.Warnf("Decode avatar err: %v", err)
 			return msg, err
 		}
 		img.DrawImage(ava, 10, height)
@@ -278,11 +278,12 @@ func formQQImgResponse(data map[int64]string, w float64, isFriend bool) (msg mes
 		}
 		height += avaSize + 20
 	}
-	file, err := img.SaveTempDefault()
+	imgMsg, err := img.GenMessageAuto()
 	if err != nil {
+		log.Warnf("生成图片失败, err: %v", err)
 		return msg, err
 	}
-	return message.Image("file:///" + file), nil
+	return imgMsg, nil
 }
 
 func formResponse(info string) message.MessageSegment {
@@ -290,12 +291,13 @@ func formResponse(info string) message.MessageSegment {
 	img := images.NewImageCtxWithBGRGBA255(int(w)+20, int(h), 255, 255, 255, 255)
 	err := img.PasteStringDefault(info, 16, 1.3, 10, 0, w)
 	if err != nil {
-		log.Errorf("PasteStringDefault err: %v", err)
+		log.Warnf("PasteStringDefault err: %v", err)
 		return message.Text(info)
 	}
-	file, err := img.SaveTempDefault()
+	msg, err := img.GenMessageAuto()
 	if err != nil {
+		log.Warnf("生成图片失败, err: %v", err)
 		return message.Text(info)
 	}
-	return message.Image("file:///" + file)
+	return msg
 }

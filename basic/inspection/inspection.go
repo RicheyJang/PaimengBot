@@ -127,7 +127,7 @@ func selfCheck(ctx *zero.Ctx) {
 		formatPercent(pidPercent), formatPercent(float64(pidMem)), runtime.NumGoroutine(), formatTime(uint64(pidTime/1000)))
 	self += fmt.Sprintf("网络连接：共%v条连接\n", len(pidConn))
 	maxShowNum := 4
-	if ctx.Event.SubType != "friend" { // 非好友私聊，保护网络连接信息，不展示
+	if !utils.IsSuperUser(ctx.Event.UserID) || ctx.Event.SubType != "friend" { // 非超级用户好友私聊，保护网络连接信息，不展示
 		maxShowNum = 0
 	}
 	for i, conn := range pidConn {
@@ -173,7 +173,7 @@ func formResponse(env, self string) message.MessageSegment {
 	// 贴环境状态描述文字
 	err := img.PasteStringDefault(env, fontSize, 1.3, 10, 15, w-10)
 	if err != nil {
-		log.Errorf("PasteStringDefault err: %v", err)
+		log.Warnf("PasteStringDefault err: %v", err)
 		return message.Text(defaultInfo)
 	}
 	// 画线
@@ -182,13 +182,14 @@ func formResponse(env, self string) message.MessageSegment {
 	// 贴本进程状态描述文字
 	err = img.PasteStringDefault(self, fontSize, 1.3, 10, 15+envHeight+20, w-10)
 	if err != nil {
-		log.Errorf("PasteStringDefault err: %v", err)
+		log.Warnf("PasteStringDefault err: %v", err)
 		return message.Text(defaultInfo)
 	}
 	// 生成图片文件
-	file, err := img.SaveTempDefault()
+	msg, err := img.GenMessageAuto()
 	if err != nil {
+		log.Warnf("生成图片失败, err: %v", err)
 		return message.Text(defaultInfo)
 	}
-	return message.Image("file:///" + file)
+	return msg
 }
