@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils/consts"
+
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
@@ -23,10 +25,11 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name: "自检",
+	Name: "自检与清理",
 	Usage: `
 用法：
 	自检：展示程序与环境状态
+	清理临时数据：清空临时文件夹，并统计大小
 `,
 	IsSuperOnly: true,
 }
@@ -37,6 +40,18 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).FirstPriority().Handle(selfCheck)
+	proxy.OnCommands([]string{"清理临时数据"}).SetBlock(true).FirstPriority().Handle(cleanTemp)
+}
+
+func cleanTemp(ctx *zero.Ctx) {
+	usage := utils.PathSize(consts.TempRootDir)
+	err := utils.RemovePath(consts.TempRootDir)
+	if err != nil {
+		log.Errorf("cleanTemp err: %v", err)
+		ctx.Send("清理失败了...")
+	} else {
+		ctx.Send(fmt.Sprintf("成功清理%v大小的空间", formatBytesSize(usage)))
+	}
 }
 
 func selfCheck(ctx *zero.Ctx) {

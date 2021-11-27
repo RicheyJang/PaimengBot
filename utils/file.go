@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -21,6 +22,35 @@ func FileExists(path string) bool {
 func DirExists(path string) bool {
 	fs, err := os.Stat(path)
 	return (err == nil || os.IsExist(err)) && fs.IsDir()
+}
+
+// PathSize 获取指定路径文件大小，若路径为文件夹，可能会导致效率较低
+func PathSize(path string) uint64 {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return 0
+	}
+	if fi.IsDir() {
+		return getDirSizeSlow(path)
+	}
+	return uint64(fi.Size())
+}
+
+// 获取文件夹占用空间大小（效率较低）
+func getDirSizeSlow(dirPath string) uint64 {
+	dirSize := uint64(0)
+	files, e := ioutil.ReadDir(dirPath)
+	if e != nil {
+		return 0
+	}
+	for _, f := range files {
+		if f.IsDir() {
+			dirSize += getDirSizeSlow(dirPath + "/" + f.Name())
+		} else {
+			dirSize += uint64(f.Size())
+		}
+	}
+	return dirSize
 }
 
 // MakeDir 创建文件夹并返回文件夹绝对路径
