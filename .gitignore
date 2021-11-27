@@ -1,6 +1,7 @@
 .idea
 *.yaml
 *.exe
+*.db
 log
 ttf
 data

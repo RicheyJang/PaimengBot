@@ -31,6 +31,6 @@ type UserPriority struct {
 func init() {
 	err := manager.GetDB().AutoMigrate(&UserSetting{}, &GroupSetting{}, &UserPriority{})
 	if err != nil {
-		log.Errorf("init basic models err: %v", err)
+		log.Fatalf("初始化基本数据库失败 err: %v", err)
 	}
 }

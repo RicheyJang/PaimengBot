@@ -13,6 +13,7 @@ import (
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
@@ -125,6 +126,29 @@ func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 		}
 		manager.db = db
 		log.Infof("初始化Postgresql数据库成功：%v", dsn)
+	case "sqlite":
+		dsn := config.Name
+		// 创建文件夹
+		prePath := "."
+		for i, c := range dsn {
+			if c == '/' || c == '\\' {
+				prePath = dsn[:i]
+				break
+			}
+		}
+		_, err := utils.MakeDirWithMode(prePath, 0o755)
+		if err != nil {
+			log.Errorf("初始化创建SQLite数据库文件夹失败；%v", err)
+			return err
+		}
+		// 连接数据库
+		db, err := gorm.Open(sqlite.Open(dsn), gormC)
+		if err != nil {
+			log.Errorf("初始化数据库失败；%v", err)
+			return err
+		}
+		manager.db = db
+		log.Infof("初始化SQLite数据库成功：%v", dsn)
 	default:
 		return errors.New("暂不支持此类型数据库")
 	}

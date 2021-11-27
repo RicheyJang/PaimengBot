@@ -17,6 +17,7 @@ require (
 	github.com/wdvxdr1123/ZeroBot v1.4.1
 	gorm.io/driver/mysql v1.2.0
 	gorm.io/driver/postgres v1.2.2
+	gorm.io/driver/sqlite v1.2.6
 	gorm.io/gorm v1.22.3
 )
 
@@ -40,6 +41,7 @@ require (
 	github.com/lestrrat-go/strftime v1.0.5 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
+	github.com/mattn/go-sqlite3 v1.14.9 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.8.1 // indirect

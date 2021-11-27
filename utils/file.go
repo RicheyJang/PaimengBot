@@ -55,10 +55,15 @@ func getDirSizeSlow(dirPath string) uint64 {
 
 // MakeDir 创建文件夹并返回文件夹绝对路径
 func MakeDir(path string) (string, error) {
+	return MakeDirWithMode(path, os.ModePerm)
+}
+
+// MakeDirWithMode 依据文件夹权限创建文件夹并返回文件夹绝对路径
+func MakeDirWithMode(path string, perm os.FileMode) (string, error) {
 	if DirExists(path) {
 		return filepath.Abs(path)
 	}
-	err := os.MkdirAll(path, os.ModePerm)
+	err := os.MkdirAll(path, perm)
 	if err == nil {
 		return filepath.Abs(path)
 	}

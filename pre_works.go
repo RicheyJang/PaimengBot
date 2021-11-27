@@ -119,7 +119,11 @@ func flushMainConfig(configPath string, configFileName string) error {
 			log.Error("FlushMainConfig error in SafeWriteConfig")
 			return err
 		}
-		log.Fatal("初始化配置文件%v完成，请对该配置文件进行配置后，重启本程序", configFileName)
+		log.SetFormatter(&easy.Formatter{
+			TimestampFormat: "2006-01-02 15:04:05",
+			LogFormat:       "[%time%]: %msg% \n",
+		})
+		log.Fatalf("初始化配置文件%v完成，请对该配置文件进行配置后，重启本程序", configFileName)
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) { // 配置文件发生变更之后会调用的回调函数
