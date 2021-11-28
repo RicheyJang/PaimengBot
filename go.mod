@@ -15,6 +15,7 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/t-tomalak/logrus-easy-formatter v0.0.0-20190827215021-c074f06c5816
 	github.com/wdvxdr1123/ZeroBot v1.4.1
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	gorm.io/driver/mysql v1.2.0
 	gorm.io/driver/postgres v1.2.2
 	gorm.io/driver/sqlite v1.2.6

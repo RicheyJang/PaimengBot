@@ -131,6 +131,11 @@ func (p *PluginProxy) GetConfig(key string) interface{} {
 	return p.u.getConfig(fmt.Sprintf("plugins.%s", p.key), key)
 }
 
+// GetPluginConfig 获取其它插件的指定配置
+func (p *PluginProxy) GetPluginConfig(plugin string, key string) interface{} {
+	return p.u.getConfig(fmt.Sprintf("plugins.%s", plugin), key)
+}
+
 // GetConfigString 获取String配置
 func (p *PluginProxy) GetConfigString(key string) string {
 	return cast.ToString(p.GetConfig(key))

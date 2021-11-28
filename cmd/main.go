@@ -13,6 +13,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/basic/event"
 	_ "github.com/RicheyJang/PaimengBot/basic/inspection"
 	_ "github.com/RicheyJang/PaimengBot/basic/invite"
+	_ "github.com/RicheyJang/PaimengBot/basic/limiter"
 	_ "github.com/RicheyJang/PaimengBot/basic/nickname"
 
 	// 普通插件
