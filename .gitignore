@@ -2,6 +2,8 @@
 *.yaml
 *.exe
 *.db
+*.bat
+*.sh
 log
 ttf
 data
