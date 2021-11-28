@@ -40,6 +40,7 @@ func (p *PluginProxy) On(tp string, rules ...zero.Rule) *zero.Matcher {
 func (p *PluginProxy) OnRegex(reg string, rules ...zero.Rule) *zero.Matcher {
 	rules = p.checkRules(rules...)
 	matcher := p.u.engine.OnRegex(reg, rules...)
+	p.addCommands([]string{reg}, rules...)
 	return matcher
 }
 
@@ -47,6 +48,11 @@ func (p *PluginProxy) OnRegex(reg string, rules ...zero.Rule) *zero.Matcher {
 func (p *PluginProxy) OnCommands(cmd []string, rules ...zero.Rule) *zero.Matcher {
 	rules = p.checkRules(rules...)
 	matcher := p.u.engine.OnCommandGroup(cmd, rules...)
+	p.addCommands(cmd, rules...)
+	return matcher
+}
+
+func (p *PluginProxy) addCommands(cmd []string, rules ...zero.Rule) {
 	// 检查是否包含Rule：SuperUserPermission
 	hasSuper := false
 	for _, rule := range rules {
@@ -61,7 +67,6 @@ func (p *PluginProxy) OnCommands(cmd []string, rules ...zero.Rule) *zero.Matcher
 	} else {
 		p.c.SuperCmd = append(p.c.SuperCmd, cmd)
 	}
-	return matcher
 }
 
 // 检查并添加必要的Rule
