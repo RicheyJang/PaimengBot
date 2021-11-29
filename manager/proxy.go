@@ -90,13 +90,9 @@ func (p *PluginProxy) OnNotice(rules ...zero.Rule) *zero.Matcher {
 
 // AddScheduleFunc 添加定时任务，并自动启动
 func (p *PluginProxy) AddScheduleFunc(spec string, fn func()) (id cron.EntryID, err error) {
-	if p.c.schedule == nil {
-		p.c.schedule = cron.New(cron.WithLogger(utils.NewCronLogger()), // 设置日志
-			cron.WithChain(cron.SkipIfStillRunning(utils.NewCronLogger()))) // 若前一任务仍在执行，则跳过当前任务
-	}
+	p.c.InitialCron()
 	id, err = p.c.schedule.AddFunc(spec, fn)
 	if err == nil { // 尝试开启定时任务
-		p.c.StartCron()
 		log.Infof("%v成功添加定时任务 spec: %v", p.key, spec)
 	} else {
 		log.Errorf("%v添加定时任务失败, err: %v", p.key, err)
@@ -114,6 +110,35 @@ func (p *PluginProxy) AddScheduleEveryFunc(duration string, fn func()) (id cron.
 func (p *PluginProxy) AddScheduleDailyFunc(hour, minute int, fn func()) (id cron.EntryID, err error) {
 	spec := fmt.Sprintf("%d %d * * *", minute, hour)
 	return p.AddScheduleFunc(spec, fn)
+}
+
+// AddScheduleOnceFunc 便携添加定时任务，在等待period（period<1年）时长后执行仅一次
+func (p *PluginProxy) AddScheduleOnceFunc(period time.Duration, fn func()) (id cron.EntryID, err error) {
+	// 立即执行
+	if period <= 0 {
+		go fn()
+		return 0, nil
+	}
+	// 一分钟以内
+	if period <= time.Minute {
+		go func() {
+			time.Sleep(period)
+			fn()
+		}()
+		return 0, nil
+	}
+	// 大于1年
+	if period >= time.Hour*24*365 {
+		return 0, fmt.Errorf("too long duration: %v", period)
+	}
+	// 一分钟以上，使用Cron
+	p.c.InitialCron()
+	id = p.c.schedule.Schedule(cron.Every(period), cron.FuncJob(func() {
+		p.c.schedule.Remove(id)
+		log.Debugf("Auto Remove <%v> Job : %v", p.key, id)
+		fn()
+	}))
+	return id, err
 }
 
 // DeleteSchedule 删除定时任务

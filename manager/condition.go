@@ -1,6 +1,9 @@
 package manager
 
-import "github.com/robfig/cron/v3"
+import (
+	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/robfig/cron/v3"
+)
 
 // PluginCondition 插件状况结构，
 // Hook类型插件应该只与此结构交互
@@ -22,13 +25,22 @@ func (c PluginCondition) Status() bool {
 // Enabled 启用插件
 func (c *PluginCondition) Enabled() {
 	c.disabled = false
-	c.StartCron()
+	c.InitialCron()
 }
 
 // Disabled 停用插件
 func (c *PluginCondition) Disabled() {
 	c.disabled = true
 	c.StopCron()
+}
+
+// InitialCron 初始化定时器
+func (c *PluginCondition) InitialCron() {
+	if c.schedule == nil {
+		c.schedule = cron.New(cron.WithLogger(utils.NewCronLogger()), // 设置日志
+			cron.WithChain(cron.SkipIfStillRunning(utils.NewCronLogger()))) // 若前一任务仍在执行，则跳过当前任务
+	}
+	c.StartCron()
 }
 
 // StartCron 开始所有定时任务
