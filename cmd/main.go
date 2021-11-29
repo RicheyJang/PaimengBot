@@ -12,6 +12,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/basic/auth"
 	_ "github.com/RicheyJang/PaimengBot/basic/ban"
 	_ "github.com/RicheyJang/PaimengBot/basic/event"
+	_ "github.com/RicheyJang/PaimengBot/basic/help"
 	_ "github.com/RicheyJang/PaimengBot/basic/inspection"
 	_ "github.com/RicheyJang/PaimengBot/basic/invite"
 	_ "github.com/RicheyJang/PaimengBot/basic/limiter"

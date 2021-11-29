@@ -1,0 +1,92 @@
+package help
+
+import (
+	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils/images"
+	log "github.com/sirupsen/logrus"
+	"github.com/wdvxdr1123/ZeroBot/message"
+)
+
+func formSingleHelpMsg(cmd string, isSuper bool) message.MessageSegment {
+	plugins := manager.GetAllPluginConditions()
+	// 寻找插件
+	var selected *manager.PluginCondition
+	for _, plugin := range plugins { // 优先找插件名
+		if plugin.Name == cmd {
+			selected = plugin
+			break
+		}
+	}
+	if selected == nil { // 尝试通过命令
+		for _, plugin := range plugins {
+			if isCmdContains(plugin, cmd, isSuper) {
+				selected = plugin
+				break
+			}
+		}
+	}
+	if selected == nil {
+		return message.Text("没有找到这个功能哦")
+	}
+	// 生成图片 名称|普通用法|超级用户用法
+	usages := selected.Name + "\n" + selected.Usage
+	if isSuper && len(selected.SuperUsage) > 0 {
+		usages += "\n" + selected.SuperUsage
+	}
+	fontSize, lineSpace := 20.0, 1.3
+	w, h := images.MeasureStringDefault(usages, fontSize, lineSpace)
+	w, h = w+20, h+50+10
+	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
+	// 名称
+	err := img.PasteStringDefault(selected.Name, fontSize, lineSpace, 10, 10, w)
+	if err != nil {
+		log.Warnf("formSingleHelpMsg img err: %v", err)
+		return message.Text(usages)
+	}
+	// 普通用法
+	_, nameH := images.MeasureStringDefault(selected.Name, fontSize, lineSpace)
+	img.PasteLine(10, 10+nameH+10, w-10, 10+nameH+10, 2, "gray")
+	err = img.PasteStringDefault(selected.Usage, fontSize, lineSpace, 10, 10+nameH+20, w)
+	if err != nil {
+		log.Warnf("formSingleHelpMsg img err: %v", err)
+		return message.Text(usages)
+	}
+	// 超级用户用法
+	if isSuper && len(selected.SuperUsage) > 0 {
+		_, usageH := images.MeasureStringDefault(selected.Usage, fontSize, lineSpace)
+		img.PasteLine(10, 10+nameH+20+usageH+10, w-10, 10+nameH+20+usageH+10, 2, "green")
+		_ = img.PasteStringDefault("S", fontSize-5, 1, w-20, 10+nameH+20+usageH, fontSize)
+		err = img.PasteStringDefault(selected.SuperUsage, fontSize, lineSpace, 10, 10+nameH+20+usageH+20, w)
+		if err != nil {
+			log.Warnf("formSingleHelpMsg img err: %v", err)
+			return message.Text(usages)
+		}
+	}
+	// 生成回包
+	msg, err := img.GenMessageAuto()
+	if err != nil {
+		log.Warnf("formSingleHelpMsg img err: %v", err)
+		return message.Text(usages)
+	}
+	return msg
+}
+
+func isCmdContains(plugin *manager.PluginCondition, cmd string, isSuper bool) bool {
+	if isSuper {
+		for _, pCmds := range plugin.SuperCmd {
+			for _, pCmd := range pCmds {
+				if cmd == pCmd {
+					return true
+				}
+			}
+		}
+	}
+	for _, pCmds := range plugin.NormalCmd {
+		for _, pCmd := range pCmds {
+			if cmd == pCmd {
+				return true
+			}
+		}
+	}
+	return false
+}
