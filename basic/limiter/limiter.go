@@ -42,6 +42,15 @@ func (pl *PluginLimiter) ResetCD(cd time.Duration) {
 	pl.cdMux.Lock()
 	pl.cd = cd
 	pl.cdMux.Unlock()
+	// 重置所有已有Limiter的CD
+	pl.limiters.Range(func(key, value interface{}) bool {
+		l, ok := value.(*subLimiter)
+		if !ok {
+			return true
+		}
+		l.limiter.SetLimit(rate.Every(cd))
+		return true
+	})
 }
 
 // Allow 判断指定用户(key)能否拿到令牌
