@@ -38,6 +38,7 @@ func init() {
 	proxy.OnCommands([]string{"更新管理员权限"}).SetBlock(true).FirstPriority().Handle(flushAllPriority)
 	proxy.OnCommands([]string{"设置管理员权限"}).SetBlock(true).FirstPriority().Handle(setOnePriority)
 	proxy.AddConfig("defaultLevel", 5)
+	proxy.AddConfig("superLevel", 1) // 超级用户的默认权限等级
 	_, _ = proxy.AddScheduleDailyFunc(1, 5, initialAllPriority)
 	manager.AddPreHook(authHook) // 在调用插件前检查管理员权限
 }
@@ -152,7 +153,15 @@ func SetGroupUserPriority(groupID, userID int64, level int) error {
 }
 
 // GetGroupUserPriority 获取指定群指定用户的权限等级，数字越小，代表权限越高
-func GetGroupUserPriority(groupID, userID int64) int {
+func GetGroupUserPriority(groupID, userID int64) (level int) {
+	defer func() {
+		if utils.IsSuperUser(userID) { // 超级用户单独处理
+			sl := int(proxy.GetConfigInt64("superLevel"))
+			if sl > 0 && sl < level { // 若默认超级用户拥有更高权限
+				level = sl
+			}
+		}
+	}()
 	var userP dao.UserPriority
 	res := proxy.GetDB().Where(&dao.UserPriority{ID: userID, GroupID: groupID}).Order("priority desc").Limit(1).Find(&userP)
 	if res.RowsAffected == 0 || res.Error != nil {

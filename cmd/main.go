@@ -10,6 +10,7 @@ import (
 
 	// 基本插件，建议不要删除，可能会造成依赖问题
 	_ "github.com/RicheyJang/PaimengBot/basic/auth"
+	_ "github.com/RicheyJang/PaimengBot/basic/ban"
 	_ "github.com/RicheyJang/PaimengBot/basic/event"
 	_ "github.com/RicheyJang/PaimengBot/basic/inspection"
 	_ "github.com/RicheyJang/PaimengBot/basic/invite"
