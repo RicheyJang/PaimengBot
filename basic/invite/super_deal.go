@@ -24,9 +24,10 @@ var info = manager.PluginInfo{
 用法：
 	查看所有好友[请求]?
 	查看所有群组[请求]?
-	同意/拒绝好友请求 [XXX]+
-	同意/拒绝群组请求 [XXX]+
-	退群 [XXX]+
+	同意/拒绝好友请求 [XXX]
+	同意/拒绝群组请求 [XXX]
+	退群 [XXX]
+	删除好友 [XXX]
 `,
 	IsSuperOnly: true,
 }
@@ -40,7 +41,8 @@ func init() {
 	proxy.OnCommands([]string{"查看所有群组", "查看所有群"}).SetBlock(true).FirstPriority().Handle(handleAllGroups)
 	proxy.OnRegex("(同意|拒绝)好友(请求)?(.+)").SetBlock(true).FirstPriority().Handle(setFriendRequest)
 	proxy.OnRegex("(同意|拒绝)(群|群组)(请求|邀请)?(.+)").SetBlock(true).FirstPriority().Handle(setGroupRequest)
-	proxy.OnCommands([]string{"退群"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(quitGroup)
+	proxy.OnCommands([]string{"退群"}, zero.OnlyPrivate).SetBlock(true).FirstPriority().Handle(quitGroup)
+	proxy.OnCommands([]string{"删除好友"}, zero.OnlyPrivate).SetBlock(true).FirstPriority().Handle(deleteFriend)
 }
 
 func setFriendRequest(ctx *zero.Ctx) {
@@ -66,14 +68,9 @@ func setFriendRequest(ctx *zero.Ctx) {
 		approve = true
 	}
 	flag := userS.Flag
-	if approve { // 同意 -> 将flag清空
-		if err = proxy.GetDB().Model(&userS).Update("flag", "").Error; err != nil {
-			log.Errorf("更新数据库表项(UserSetting)失败，err: %v", err)
-		}
-	} else { // 拒绝 -> 删除请求
-		if err = proxy.GetDB().Delete(&userS, id).Error; err != nil {
-			log.Errorf("删除数据库表项(UserSetting)失败，err: %v", err)
-		}
+	// 将flag清空
+	if err = proxy.GetDB().Model(&userS).Update("flag", "").Error; err != nil {
+		log.Errorf("更新数据库表项(UserSetting)失败，err: %v", err)
 	}
 	// 设置请求
 	ctx.SetFriendAddRequest(flag, approve, "")
@@ -130,6 +127,23 @@ func quitGroup(ctx *zero.Ctx) {
 	}
 	ctx.SetGroupLeave(id, false)
 	ctx.Send(fmt.Sprintf("已退出群聊%v", id))
+}
+
+func deleteFriend(ctx *zero.Ctx) {
+	arg := utils.GetArgs(ctx)
+	id, err := strconv.ParseInt(strings.TrimSpace(arg), 10, 64)
+	if err != nil || id == 0 {
+		ctx.Send("格式错误了哦")
+		return
+	}
+	if utils.IsSuperUser(id) {
+		ctx.Send("？")
+		return
+	}
+	ctx.CallAction("delete_friend", zero.Params{
+		"friend_id": id,
+	})
+	ctx.Send(fmt.Sprintf("已删除好友%v", id))
 }
 
 func handleAllFriends(ctx *zero.Ctx) {
