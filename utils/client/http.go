@@ -1,10 +1,15 @@
 package client
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/tidwall/gjson"
 )
 
 type HttpClient struct {
@@ -56,6 +61,23 @@ func (c HttpClient) Post(url, contentType string, body io.Reader) (*http.Respons
 	}
 	req.Header.Set("Content-Type", contentType)
 	return c.Do(req)
+}
+
+func (c HttpClient) PostJson(url string, data interface{}) (gjson.Result, error) {
+	dataB, err := json.Marshal(data)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	body := bytes.NewReader(dataB)
+	rsp, err := c.Post(url, "application/json", body)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	rspBody, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	return gjson.Parse(string(rspBody)), nil
 }
 
 func (c HttpClient) Get(url string) (*http.Response, error) {

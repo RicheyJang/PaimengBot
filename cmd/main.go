@@ -20,6 +20,7 @@ import (
 
 	// 普通插件
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"
+	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 )
 
 func main() {
