@@ -54,9 +54,9 @@ type PluginInfo struct {
 	Usage       string // Need 插件用法描述
 	SuperUsage  string // Option 插件超级用户用法描述
 	Classify    string // Option 插件分类，为空时代表默认分类
-	IsHidden    bool   // Option 是否为隐藏插件
-	IsSuperOnly bool   // Option 是否为超级用户专属插件
-	AdminLevel  int    // Option 群管理员使用最低级别： 0 表示非群管理员专用插件 >0 表示数字越低，权限要求越高
+	IsHidden    bool   // Option 是否为被动插件：在帮助中被标识为被动功能；
+	IsSuperOnly bool   // Option 是否为超级用户专属插件：消息性事件会自动加上SuperOnly检查；在帮助中只有超级用户私聊可见；
+	AdminLevel  int    // Option 群管理员使用最低级别： 0 表示非群管理员专用插件 >0 表示数字越低，权限要求越高；在帮助中进行标识；
 }
 
 // RegisterPlugin 注册一个插件至默认插件管理器，并返回插件代理
