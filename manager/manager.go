@@ -167,6 +167,14 @@ func (manager *PluginManager) GetAllPluginConditions() []*PluginCondition {
 	return res
 }
 
+// GetPluginConditionByKey 按Key获取插件的详细信息
+func (manager *PluginManager) GetPluginConditionByKey(key string) *PluginCondition {
+	if p, ok := manager.plugins[key]; ok {
+		return &p.c
+	}
+	return nil
+}
+
 // AddPreHook 添加前置hook
 func (manager *PluginManager) AddPreHook(hook ...PluginHook) {
 	manager.preHooks = append(manager.preHooks, hook...)

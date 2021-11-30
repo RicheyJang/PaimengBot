@@ -69,6 +69,11 @@ func GetAllPluginConditions() []*PluginCondition {
 	return defaultManager.GetAllPluginConditions()
 }
 
+// GetPluginConditionByKey 按Key获取插件的详细信息
+func GetPluginConditionByKey(key string) *PluginCondition {
+	return defaultManager.GetPluginConditionByKey(key)
+}
+
 // AddPreHook 添加前置hook
 func AddPreHook(hook ...PluginHook) {
 	defaultManager.AddPreHook(hook...)
