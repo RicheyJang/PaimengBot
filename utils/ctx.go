@@ -14,12 +14,24 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
+// GetArgs 获取参数
 func GetArgs(ctx *zero.Ctx) string {
+	if ctx == nil {
+		return ""
+	}
 	res, ok := ctx.State["args"]
 	if !ok {
 		return ""
 	}
 	return cast.ToString(res)
+}
+
+// IsMessagePrimary 是否为私聊消息
+func IsMessagePrimary(ctx *zero.Ctx) bool {
+	if ctx == nil || ctx.Event == nil {
+		return false
+	}
+	return ctx.Event.PostType == "message" && ctx.Event.MessageType == "private"
 }
 
 // GetQQAvatar 快捷获取QQ头像

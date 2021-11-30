@@ -35,3 +35,23 @@ func GoAndWait(handlers ...func() error) (err error) {
 	wg.Wait()
 	return err
 }
+
+// MergeStringSlices 合并多个字符串切片并去重
+func MergeStringSlices(slices ...[]string) (res []string) {
+	mp := FormSetByStrings(slices...)
+	for s, _ := range mp {
+		res = append(res, s)
+	}
+	return
+}
+
+// FormSetByStrings 将字符串切片形成Set
+func FormSetByStrings(slices ...[]string) map[string]struct{} {
+	mp := make(map[string]struct{})
+	for _, slice := range slices {
+		for _, s := range slice {
+			mp[s] = struct{}{}
+		}
+	}
+	return mp
+}

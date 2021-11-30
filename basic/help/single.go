@@ -7,19 +7,19 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-func formSingleHelpMsg(cmd string, isSuper bool) message.MessageSegment {
+func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
 	// 寻找插件
 	var selected *manager.PluginCondition
 	for _, plugin := range plugins { // 优先找插件名
-		if plugin.Name == cmd {
+		if plugin.Name == cmd && checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
 			selected = plugin
 			break
 		}
 	}
 	if selected == nil { // 尝试通过命令
 		for _, plugin := range plugins {
-			if isCmdContains(plugin, cmd, isSuper) {
+			if isCmdContains(plugin, cmd, isSuper) && checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
 				selected = plugin
 				break
 			}
@@ -28,8 +28,16 @@ func formSingleHelpMsg(cmd string, isSuper bool) message.MessageSegment {
 	if selected == nil {
 		return message.Text("没有找到这个功能哦")
 	}
+	// 插件状态检查
+	if _, ok := blackKeys[selected.Key]; ok {
+		return message.Text("功能被禁用中")
+	}
 	// 生成图片 名称|普通用法|超级用户用法
-	usages := selected.Name + "\n" + selected.Usage
+	classify := selected.Classify
+	if len(classify) > 0 {
+		classify = "（类别：" + classify + "）"
+	}
+	usages := selected.Name + classify + "\n" + selected.Usage
 	if isSuper && len(selected.SuperUsage) > 0 {
 		usages += "\n" + selected.SuperUsage
 	}
@@ -38,13 +46,13 @@ func formSingleHelpMsg(cmd string, isSuper bool) message.MessageSegment {
 	w, h = w+20, h+50+10
 	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
 	// 名称
-	err := img.PasteStringDefault(selected.Name, fontSize, lineSpace, 10, 10, w)
+	err := img.PasteStringDefault(selected.Name+classify, fontSize, lineSpace, 10, 10, w)
 	if err != nil {
 		log.Warnf("formSingleHelpMsg img err: %v", err)
 		return message.Text(usages)
 	}
 	// 普通用法
-	_, nameH := images.MeasureStringDefault(selected.Name, fontSize, lineSpace)
+	_, nameH := images.MeasureStringDefault(selected.Name+classify, fontSize, lineSpace)
 	img.PasteLine(10, 10+nameH+10, w-10, 10+nameH+10, 2, "gray")
 	err = img.PasteStringDefault(selected.Usage, fontSize, lineSpace, 10, 10+nameH+20, w)
 	if err != nil {

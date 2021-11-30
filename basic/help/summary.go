@@ -13,13 +13,14 @@ type blockInfo struct {
 }
 
 type blockItem struct {
-	name  string
-	color string
+	name     string
+	color    string
+	disabled bool
 }
 
 type helpSummaryMap map[string]*blockInfo
 
-func formSummaryHelpMsg(isSuper bool, priority int) message.MessageSegment {
+func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
 	defaultClassify := "一般功能"
 	hiddenClassify := "被动"
@@ -27,24 +28,24 @@ func formSummaryHelpMsg(isSuper bool, priority int) message.MessageSegment {
 	var helps helpSummaryMap = make(map[string]*blockInfo)
 	for _, plugin := range plugins {
 		// 过滤
-		if plugin.IsSuperOnly && !isSuper {
-			continue // 非超级用户
-		}
-		if plugin.AdminLevel != 0 && (priority == 0 || plugin.AdminLevel < priority) {
-			continue // 权限不足
+		if checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
+			continue
 		}
 		// 生成项目
 		var item blockItem
 		item.name = plugin.Name
 		item.color = "black"
+		if _, ok := blackKeys[plugin.Key]; ok {
+			item.disabled = true // 插件对该用户或群被禁用
+		}
 		if plugin.IsHidden && len(plugin.Classify) != 0 && plugin.Classify != hiddenClassify {
 			item.name += "（被动）" // 隐藏且已有其它分类
 		}
-		if plugin.AdminLevel != 0 {
-			item.name = fmt.Sprintf("[%d]", plugin.AdminLevel) + item.name
+		if plugin.AdminLevel != 0 { // 具有权限要求
+			item.name = fmt.Sprintf("[%d] ", plugin.AdminLevel) + item.name
 		}
-		if (len(plugin.SuperCmd) > 0 || plugin.IsSuperOnly) && isSuper {
-			item.color = "green" // 含超级用户指令
+		if (len(plugin.SuperCmd) > 0 || plugin.IsSuperOnly) && (isSuper && isPrimary) {
+			item.color = "green" // 含超级用户指令且私聊
 		}
 		// 分类
 		classify := plugin.Classify
