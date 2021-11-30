@@ -60,6 +60,9 @@ func (img *ImageCtx) SetColorAuto(colorStr string) {
 		g, _ := strconv.ParseInt(sub[2], 10, 32)
 		b, _ := strconv.ParseInt(sub[3], 10, 32)
 		var a int64 = 255
+		if len(sub[4]) > 0 {
+			sub[4] = sub[4][1:]
+		}
 		if strings.Contains(sub[4], ".") {
 			sub[4] += "0"
 			fa, _ := strconv.ParseFloat(sub[4], 32)
