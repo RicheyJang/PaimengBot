@@ -36,10 +36,13 @@ func GoAndWait(handlers ...func() error) (err error) {
 	return err
 }
 
-// MergeStringSlices 合并多个字符串切片并去重
+// MergeStringSlices 合并多个字符串切片并去重、去除空字符串
 func MergeStringSlices(slices ...[]string) (res []string) {
 	mp := FormSetByStrings(slices...)
 	for s, _ := range mp {
+		if len(s) == 0 {
+			continue
+		}
 		res = append(res, s)
 	}
 	return

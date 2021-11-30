@@ -57,7 +57,7 @@ func dealBanArgs(ctx *zero.Ctx) (userID int64, plugin *manager.PluginCondition, 
 }
 
 func dealBanUser(status bool, ctx *zero.Ctx) {
-	if ctx.Event.MessageType == "private" {
+	if utils.IsMessagePrimary(ctx) {
 		if !utils.IsSuperUser(ctx.Event.UserID) {
 			ctx.Send("请在群聊中封禁/解封功能哦，或者联系管理员")
 			return

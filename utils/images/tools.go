@@ -76,13 +76,13 @@ func ClipImgToCircle(img image.Image) image.Image {
 	return dc.Image()
 }
 
-// GenQQListMsgWithAva 生成带QQ头像的用户或群（以isFriend参数区分）列表
-func GenQQListMsgWithAva(data map[int64]string, w float64, isFriend bool) (msg message.MessageSegment, err error) {
+// GenQQListMsgWithAva 生成带QQ头像的用户或群（以isUser参数区分）列表
+func GenQQListMsgWithAva(data map[int64]string, w float64, isUser bool) (msg message.MessageSegment, err error) {
 	var avaReader io.Reader
 	avaSize, fontSize, height := 100, 24.0, 10
 	img := NewImageCtxWithBGRGBA255(int(w)+avaSize+30, len(data)*(avaSize+20)+30, 255, 255, 255, 255)
 	for id, str := range data {
-		if isFriend {
+		if isUser {
 			avaReader, err = utils.GetQQAvatar(id, avaSize)
 		} else {
 			avaReader, err = utils.GetQQGroupAvatar(id, avaSize)

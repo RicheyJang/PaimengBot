@@ -21,7 +21,8 @@ var info = manager.PluginInfo{
 	*只有本群最高权限群管理员在群聊中才可触发*
 	开启\关闭[功能] [时长]?：将开启\关闭本群的指定功能，时长为可选项，形式参照示例
 	封禁[用户ID] [功能]? [时长]?：封禁指定用户使用指定功能（当指定功能时）或全部功能，时长为可选项，形式参照示例
-	解封[用户ID] [功能]?：封禁指定用户使用指定功能，时长为可选项，形式参照示例
+	解封[用户ID] [功能]?：解封指定用户使用指定功能，时长为可选项，形式参照示例
+	黑名单：获取所有被封禁用户的被封禁功能列表
 示例：
 	封禁123456：封禁用户ID为123456的所有功能
 	封禁123456 25m：封禁用户ID为123456的所有功能25分钟
@@ -29,8 +30,10 @@ var info = manager.PluginInfo{
 `,
 	SuperUsage: `
 用法：
-	在私聊中，使用开启\关闭[功能] [时长]?命令，将针对所有用户和群开启\关闭该功能（全局Ban）
-	此外还可通过 开启\关闭[群ID] [功能] [时长]? 来开启\关闭指定群的指定功能
+	在私聊中：
+		使用开启\关闭[功能] [时长]?命令，将针对所有用户和群开启\关闭该功能（全局Ban）
+		还可通过 开启\关闭[群ID] [功能] [时长]? 来开启\关闭指定群的指定功能
+		黑名单：获取所有被封禁用户、群的被封禁功能列表
 	在群聊中，等同于最高权限群管理员执行命令
 `,
 	AdminLevel: 1,
@@ -45,6 +48,7 @@ func init() {
 	proxy.OnCommands([]string{"关闭"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(closePlugin)
 	proxy.OnCommands([]string{"封禁", "ban", "Ban"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(banUser)
 	proxy.OnCommands([]string{"解封", "unban", "Unban"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(unbanUser)
+	proxy.OnCommands([]string{"黑名单"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(showBlack)
 	manager.AddPreHook(checkPluginStatus)
 }
 
