@@ -2,8 +2,6 @@ package invite
 
 import (
 	"fmt"
-	"image"
-	"io"
 	"regexp"
 	"strconv"
 	"strings"
@@ -146,7 +144,7 @@ func handleAllFriends(ctx *zero.Ctx) {
 	}
 	// 生成图片
 	w, _ := images.MeasureStringDefault(least, 24, 1.3)
-	msg, err := formQQImgResponse(data, w, true)
+	msg, err := images.GenQQListMsgWithAva(data, w, true)
 	if err == nil {
 		ctx.SendChain(msg)
 		return
@@ -171,7 +169,7 @@ func handleAllGroups(ctx *zero.Ctx) {
 	}
 	// 生成图片
 	w, _ := images.MeasureStringDefault(least, 24, 1.3)
-	msg, err := formQQImgResponse(data, w, false)
+	msg, err := images.GenQQListMsgWithAva(data, w, false)
 	if err == nil {
 		ctx.SendChain(msg)
 		return
@@ -250,40 +248,6 @@ func formAllGroupRequest(has map[int64]string, ctx *zero.Ctx) (map[int64]string,
 		least += str + "\n"
 	}
 	return data, least
-}
-
-func formQQImgResponse(data map[int64]string, w float64, isFriend bool) (msg message.MessageSegment, err error) {
-	var avaReader io.Reader
-	avaSize, fontSize, height := 100, 24.0, 10
-	img := images.NewImageCtxWithBGRGBA255(int(w)+avaSize+30, len(data)*(avaSize+20)+30, 255, 255, 255, 255)
-	for id, str := range data {
-		if isFriend {
-			avaReader, err = utils.GetQQAvatar(id, avaSize)
-		} else {
-			avaReader, err = utils.GetQQGroupAvatar(id, avaSize)
-		}
-		if err != nil {
-			return msg, err
-		}
-		ava, _, err := image.Decode(avaReader)
-		ava = images.ClipImgToCircle(ava)
-		if err != nil {
-			log.Warnf("Decode avatar err: %v", err)
-			return msg, err
-		}
-		img.DrawImage(ava, 10, height)
-		err = img.PasteStringDefault(str, fontSize, 1.3, float64(10+avaSize+10), float64(height+25), w)
-		if err != nil {
-			return msg, err
-		}
-		height += avaSize + 20
-	}
-	imgMsg, err := img.GenMessageAuto()
-	if err != nil {
-		log.Warnf("生成图片失败, err: %v", err)
-		return msg, err
-	}
-	return imgMsg, nil
 }
 
 func formResponse(info string) message.MessageSegment {

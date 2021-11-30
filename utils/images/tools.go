@@ -3,8 +3,13 @@ package images
 import (
 	"image"
 	"image/color"
+	"io"
 	"io/ioutil"
 	"math"
+
+	"github.com/RicheyJang/PaimengBot/utils"
+	log "github.com/sirupsen/logrus"
+	"github.com/wdvxdr1123/ZeroBot/message"
 
 	"github.com/fogleman/gg"
 
@@ -69,4 +74,39 @@ func ClipImgToCircle(img image.Image) image.Image {
 	// 加载图片
 	dc.DrawImageAnchored(img, w/2, h/2, 0.5, 0.5)
 	return dc.Image()
+}
+
+// GenQQListMsgWithAva 生成带QQ头像的用户或群（以isFriend参数区分）列表
+func GenQQListMsgWithAva(data map[int64]string, w float64, isFriend bool) (msg message.MessageSegment, err error) {
+	var avaReader io.Reader
+	avaSize, fontSize, height := 100, 24.0, 10
+	img := NewImageCtxWithBGRGBA255(int(w)+avaSize+30, len(data)*(avaSize+20)+30, 255, 255, 255, 255)
+	for id, str := range data {
+		if isFriend {
+			avaReader, err = utils.GetQQAvatar(id, avaSize)
+		} else {
+			avaReader, err = utils.GetQQGroupAvatar(id, avaSize)
+		}
+		if err != nil {
+			return msg, err
+		}
+		ava, _, err := image.Decode(avaReader)
+		ava = ClipImgToCircle(ava)
+		if err != nil {
+			log.Warnf("Decode avatar err: %v", err)
+			return msg, err
+		}
+		img.DrawImage(ava, 10, height)
+		err = img.PasteStringDefault(str, fontSize, 1.3, float64(10+avaSize+10), float64(height+25), w)
+		if err != nil {
+			return msg, err
+		}
+		height += avaSize + 20
+	}
+	imgMsg, err := img.GenMessageAuto()
+	if err != nil {
+		log.Warnf("生成图片失败, err: %v", err)
+		return msg, err
+	}
+	return imgMsg, nil
 }
