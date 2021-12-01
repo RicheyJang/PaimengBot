@@ -7,6 +7,8 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/tidwall/gjson"
@@ -14,7 +16,9 @@ import (
 
 type HttpClient struct {
 	HttpOptions
-	client *http.Client
+	client  *http.Client
+	header  map[string]string
+	cookies []*http.Cookie
 }
 
 type HttpOptions struct {
@@ -36,7 +40,29 @@ func NewHttpClient(option *HttpOptions) *HttpClient {
 	return &HttpClient{
 		HttpOptions: *option,
 		client:      &http.Client{Timeout: option.Timeout},
+		header:      make(map[string]string),
 	}
+}
+
+func ParseReader(reader io.Reader) gjson.Result {
+	rspBody, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return gjson.Result{}
+	}
+	return gjson.Parse(string(rspBody))
+}
+
+func (c *HttpClient) AddCookie(cookie ...*http.Cookie) {
+	c.cookies = append(c.cookies, cookie...)
+}
+
+func (c *HttpClient) SetHeader(key string, val string) {
+	c.header[key] = val
+}
+
+func (c *HttpClient) SetUserAgent() {
+	c.SetHeader("User-Agent",
+		"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.131 Safari/537.36")
 }
 
 func (c HttpClient) Do(req *http.Request) (*http.Response, error) {
@@ -44,6 +70,15 @@ func (c HttpClient) Do(req *http.Request) (*http.Response, error) {
 	err := errors.New("TryTime is zero, send no http request")
 	if req == nil {
 		return nil, errors.New("req is nil")
+	}
+	for key, val := range c.header { // 设置 header
+		req.Header.Add(key, val)
+	}
+	for _, cookie := range c.cookies { // 添加 cookie
+		if cookie == nil {
+			continue
+		}
+		req.AddCookie(cookie)
 	}
 	for i := 0; i < c.TryTime; i++ { // 进行指定次数的重试
 		res, err = c.client.Do(req)
@@ -61,6 +96,18 @@ func (c HttpClient) Post(url, contentType string, body io.Reader) (*http.Respons
 	}
 	req.Header.Set("Content-Type", contentType)
 	return c.Do(req)
+}
+
+func (c HttpClient) PostForm(url string, data url.Values) (resp *http.Response, err error) {
+	return c.Post(url, "application/x-www-form-urlencoded", strings.NewReader(data.Encode()))
+}
+
+func (c HttpClient) PostFormByMap(URL string, data map[string]string) (resp *http.Response, err error) {
+	body := make(url.Values)
+	for k, v := range data {
+		body.Add(k, v)
+	}
+	return c.PostForm(URL, body)
 }
 
 func (c HttpClient) PostJson(url string, data interface{}) (gjson.Result, error) {

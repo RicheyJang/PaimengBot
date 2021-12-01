@@ -155,17 +155,17 @@ func (p *PluginProxy) DeleteSchedule(id cron.EntryID) {
 
 // AddConfig 添加配置
 func (p *PluginProxy) AddConfig(key string, defaultValue interface{}) {
-	p.u.addConfig(fmt.Sprintf("plugins.%s", p.key), key, defaultValue)
+	p.u.addConfig(fmt.Sprintf("%s", p.key), key, defaultValue)
 }
 
 // GetConfig 获取配置
 func (p *PluginProxy) GetConfig(key string) interface{} {
-	return p.u.getConfig(fmt.Sprintf("plugins.%s", p.key), key)
+	return p.u.getConfig(fmt.Sprintf("%s", p.key), key)
 }
 
 // GetPluginConfig 获取其它插件的指定配置
 func (p *PluginProxy) GetPluginConfig(plugin string, key string) interface{} {
-	return p.u.getConfig(fmt.Sprintf("plugins.%s", plugin), key)
+	return p.u.getConfig(fmt.Sprintf("%s", plugin), key)
 }
 
 // GetConfigString 获取String配置

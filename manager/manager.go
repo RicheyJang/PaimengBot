@@ -51,6 +51,10 @@ func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
 	thisPkgName := utils.GetPkgNameByFunc(NewPluginManager)
 	key := utils.CallerPackageName(thisPkgName) // 暂时使用包名作为key值
 	// 注册插件
+	if len(info.Name) == 0 { // 无名插件
+		log.Errorf("插件注册失败：<%s>没有设置Name", key)
+		return nil
+	}
 	if _, ok := manager.plugins[key]; ok { // 已存在同名插件
 		log.Errorf("插件注册失败：已存在同名插件%s", key)
 		return nil
