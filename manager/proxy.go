@@ -93,7 +93,7 @@ func (p *PluginProxy) AddScheduleFunc(spec string, fn func()) (id cron.EntryID, 
 	p.c.InitialCron()
 	id, err = p.c.schedule.AddFunc(spec, fn)
 	if err == nil { // 尝试开启定时任务
-		log.Infof("%v成功添加定时任务 spec: %v", p.key, spec)
+		log.Infof("<%v>成功添加定时任务 spec: %v,id: %v", p.key, spec, id)
 	} else {
 		log.Errorf("%v添加定时任务失败, err: %v", p.key, err)
 	}
@@ -125,6 +125,7 @@ func (p *PluginProxy) AddScheduleOnceFunc(period time.Duration, fn func()) (id c
 			time.Sleep(period)
 			fn()
 		}()
+		log.Infof("<%v>成功添加定时任务 after: %v,no id", p.key, period)
 		return 0, nil
 	}
 	// 大于1年
@@ -138,6 +139,7 @@ func (p *PluginProxy) AddScheduleOnceFunc(period time.Duration, fn func()) (id c
 		log.Debugf("Auto Remove <%v> Job : %v", p.key, id)
 		fn()
 	}))
+	log.Infof("<%v>成功添加定时任务 after: %v,id: %v", p.key, period, id)
 	return id, err
 }
 
