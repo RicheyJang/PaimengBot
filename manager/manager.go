@@ -22,9 +22,10 @@ type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
 
 // PluginManager 插件管理器结构
 type PluginManager struct {
-	engine  *zero.Engine // zeroBot引擎
-	configs *viper.Viper // viper配置实例
-	db      *gorm.DB     // DB
+	engine   *zero.Engine // zeroBot引擎
+	configs  *viper.Viper // viper配置实例
+	db       *gorm.DB     // DB
+	dbConfig DBConfig     // 数据库配置
 
 	plugins   map[string]*PluginProxy // plugin.key -> pluginContext
 	preHooks  []PluginHook            // 插件Pre Hook
@@ -92,8 +93,8 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 	return nil
 }
 
-func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
-	// 初始化数据库
+func (manager *PluginManager) SetupDatabase(config DBConfig) error {
+	// 初始化数据库配置
 	gormC := &gorm.Config{ // 数据库配置
 		Logger: utils.NewGormLogger(),
 		NamingStrategy: schema.NamingStrategy{
@@ -101,8 +102,11 @@ func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 			SingularTable: true, // 使用单数表名，启用该选项后，`User` 表将是`user`
 		},
 	}
-	switch strings.ToLower(tp) {
-	case "mysql":
+	config.Type = strings.ToLower(config.Type)
+	manager.dbConfig = config
+	// 连接数据库
+	switch config.Type {
+	case MySQL:
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			config.User, config.Passwd, config.Host, config.Port, config.Name)
 		db, err := gorm.Open(mysql.New(mysql.Config{
@@ -116,7 +120,7 @@ func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 		}
 		manager.db = db
 		log.Infof("初始化MySQL数据库成功：%v", dsn)
-	case "postgresql":
+	case PostgreSQL:
 		dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%d sslmode=disable TimeZone=Asia/Shanghai",
 			config.Host, config.User, config.Passwd, config.Name, config.Port)
 		db, err := gorm.Open(postgres.Open(dsn), gormC)
@@ -126,7 +130,7 @@ func (manager *PluginManager) SetupDatabase(tp string, config DBConfig) error {
 		}
 		manager.db = db
 		log.Infof("初始化Postgresql数据库成功：%v", dsn)
-	case "sqlite":
+	case SQLite:
 		dsn := config.Name
 		// 创建文件夹
 		prePath := "."

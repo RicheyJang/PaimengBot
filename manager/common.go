@@ -19,11 +19,11 @@ func init() {
 	dbC := new(DBConfig)
 	err := dbV.Unmarshal(dbC)
 	if err != nil {
-		log.Fatal("Unmarshal DB Config err: ", err)
+		log.Fatal("读取数据库配置出错 err: ", err)
 	}
-	err = SetupDatabase(dbV.GetString("type"), *dbC)
+	err = SetupDatabase(*dbC)
 	if err != nil {
-		log.Fatal("SetupDatabase err: ", err)
+		log.Fatal("初始化数据库连接失败 err: ", err)
 	}
 }
 
@@ -39,11 +39,18 @@ type DBConfig struct {
 	User   string // 用户名
 	Passwd string // 密码
 	Name   string // 数据库名
+	Type   string // 数据库类型
 }
 
+const (
+	MySQL      = "mysql"
+	PostgreSQL = "postgresql"
+	SQLite     = "sqlite"
+)
+
 // SetupDatabase 初始化数据库
-func SetupDatabase(tp string, config DBConfig) error {
-	return defaultManager.SetupDatabase(tp, config)
+func SetupDatabase(config DBConfig) error {
+	return defaultManager.SetupDatabase(config)
 }
 
 // ---- 插件相关 ----
