@@ -121,9 +121,20 @@ func SendToSuper(message ...message.MessageSegment) {
 	})
 }
 
+// IsGroupAnonymous 判断是否为群匿名消息
+func IsGroupAnonymous(ctx *zero.Ctx) bool {
+	if ctx == nil || ctx.Event == nil {
+		return false
+	}
+	if ctx.Event.PostType != "message" || ctx.Event.MessageType != "group" {
+		return false
+	}
+	return ctx.Event.SubType == "anonymous"
+}
+
 // ---- Rules ----
 
-// CheckDetailType 检查事件DetailType(MessageType/NoticeType/RequestType)
+// CheckDetailType Rule:检查事件DetailType(MessageType/NoticeType/RequestType)
 func CheckDetailType(tp string) zero.Rule {
 	return func(ctx *zero.Ctx) bool {
 		if ctx.Event != nil {
@@ -131,4 +142,9 @@ func CheckDetailType(tp string) zero.Rule {
 		}
 		return false
 	}
+}
+
+// SkipGroupAnonymous Rule:不处理群匿名消息
+func SkipGroupAnonymous(ctx *zero.Ctx) bool {
+	return !IsGroupAnonymous(ctx)
 }

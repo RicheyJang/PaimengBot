@@ -188,6 +188,11 @@ func (p *PluginProxy) GetConfigBool(key string) bool {
 	return cast.ToBool(p.GetConfig(key))
 }
 
+// GetConfigStrings 获取[]string配置
+func (p *PluginProxy) GetConfigStrings(key string) []string {
+	return cast.ToStringSlice(p.GetConfig(key))
+}
+
 // ---- 数据库 ----
 
 // GetDB 获取数据库

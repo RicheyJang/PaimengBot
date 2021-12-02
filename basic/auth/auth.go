@@ -52,6 +52,9 @@ func authHook(condition *manager.PluginCondition, ctx *zero.Ctx) error {
 		return nil
 	}
 	level := GetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID)
+	if utils.IsGroupAnonymous(ctx) {
+		level = math.MaxInt
+	}
 	if level > condition.AdminLevel {
 		if level == math.MaxInt {
 			ctx.Send(fmt.Sprintf("你的权限不足喔，需要权限%v", condition.AdminLevel))

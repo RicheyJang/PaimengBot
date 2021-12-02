@@ -1,12 +1,11 @@
 package help
 
 import (
+	"math"
 	"strings"
 
-	"github.com/RicheyJang/PaimengBot/basic/dao"
-
 	"github.com/RicheyJang/PaimengBot/basic/auth"
-
+	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 
@@ -36,6 +35,10 @@ func helpHandle(ctx *zero.Ctx) {
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	level := auth.GetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID)
 	blacks := getBlackKeys(ctx.Event.UserID, ctx.Event.GroupID)
+	if utils.IsGroupAnonymous(ctx) { // 匿名用户单独处理
+		isSuper = false
+		level = math.MaxInt
+	}
 	if len(arg) == 0 {
 		ctx.SendChain(formSummaryHelpMsg(isSuper, utils.IsMessagePrimary(ctx), level, blacks))
 	} else {

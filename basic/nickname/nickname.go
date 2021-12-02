@@ -22,14 +22,15 @@ var info = manager.PluginInfo{
 	以后叫我XXX：将你的昵称设置为XXX
 `,
 }
-var blackName = []string{"爸", "妈", "爹", "主人"}
 
 func init() {
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
 		return
 	}
-	proxy.OnRegex("(以后)?叫我.+", zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(setNickName)
+	proxy.OnRegex("(以后)?叫我.+", zero.OnlyToMe, utils.SkipGroupAnonymous).
+		SetBlock(true).SecondPriority().Handle(setNickName)
+	proxy.AddConfig("blackName", []string{"爸", "妈", "爹", "主人"})
 }
 
 func setNickName(ctx *zero.Ctx) {
@@ -41,7 +42,7 @@ func setNickName(ctx *zero.Ctx) {
 	}
 	nick := sub[2]
 	if !utils.IsSuperUser(ctx.Event.UserID) { // 非超级用户，需要判断昵称黑名单
-		blackName = append(blackName, utils.GetBotConfig().NickName...)
+		blackName := append(proxy.GetConfigStrings("blackName"), utils.GetBotConfig().NickName...)
 		for _, black := range blackName {
 			if strings.Contains(nick, black) {
 				ctx.Send("才不叫你这个呢！")
