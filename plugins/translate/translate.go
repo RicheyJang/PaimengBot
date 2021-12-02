@@ -4,6 +4,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/RicheyJang/PaimengBot/utils/consts"
+
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	log "github.com/sirupsen/logrus"
@@ -37,7 +39,7 @@ func init() {
 	proxy.OnCommands([]string{"日语"}).SetBlock(true).ThirdPriority().Handle(genTranslateHandler("auto", "jp"))
 	proxy.OnRegex("(.*)翻译成?(\\S+)\\s+(.*)", zero.OnlyToMe).SetBlock(true).SetPriority(4).Handle(regexHandler)
 	_, _ = proxy.AddScheduleDailyFunc(0, 1, initialBaiduDailyCount)
-	proxy.AddConfig("cd", "3s")
+	proxy.AddConfig(consts.PluginConfigCDKey, "3s")
 	proxy.AddConfig("max", 150) // 单次翻译语句最大长度
 	proxy.AddConfig("baidu.appid", "")
 	proxy.AddConfig("baidu.key", "")
