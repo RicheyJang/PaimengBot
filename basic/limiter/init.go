@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -19,8 +20,6 @@ var info = manager.PluginInfo{
 	IsHidden: true,
 }
 var plMap sync.Map
-
-const PluginConfigCDKey = "cd" // 其它插件配置CD限流时长时，所用的配置项Key
 
 func init() {
 	proxy = manager.RegisterPlugin(info)
@@ -81,7 +80,7 @@ func limiterHook(condition *manager.PluginCondition, ctx *zero.Ctx) error {
 		}
 	}
 	// 插件限流检查
-	plCDV := proxy.GetPluginConfig(condition.Key, PluginConfigCDKey)
+	plCDV := proxy.GetPluginConfig(condition.Key, consts.PluginConfigCDKey)
 	if plCDV == nil { // 未设置CD
 		return nil
 	}
