@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/json"
 	"errors"
 	"regexp"
 	"runtime"
@@ -36,6 +37,12 @@ func GoAndWait(handlers ...func() error) (err error) {
 	}
 	wg.Wait()
 	return err
+}
+
+// JsonString 将任意内容转换为Json字符串
+func JsonString(v interface{}) string {
+	res, _ := json.Marshal(v)
+	return string(res)
 }
 
 // MergeStringSlices 合并多个字符串切片并去重、去除空字符串
