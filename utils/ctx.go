@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils/client"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -48,6 +50,28 @@ func GetRegexpMatched(ctx *zero.Ctx) []string {
 		return nil
 	}
 	return cast.ToStringSlice(res)
+}
+
+// GetImageURL 通过消息获取其中的图片URL
+func GetImageURL(msg message.MessageSegment) string {
+	if msg.Type != "image" {
+		return ""
+	}
+	return msg.Data["url"]
+}
+
+// GetImageURLs 获取消息全部图片URL
+func GetImageURLs(ctx *zero.Ctx) (urls []string) {
+	if ctx == nil || ctx.Event == nil {
+		return
+	}
+	for _, msg := range ctx.Event.Message {
+		url := GetImageURL(msg)
+		if len(url) > 0 {
+			urls = append(urls, url)
+		}
+	}
+	return
 }
 
 // IsMessage 是否为消息事件
@@ -98,6 +122,27 @@ func GetQQGroupAvatar(id int64, size int) (io.Reader, error) {
 		return nil, err
 	}
 	return res, err
+}
+
+var tmpAddressBuff = make(map[string]bool)
+
+// IsOneBotLocal 判断OneBot(消息收发端)是否在本地
+func IsOneBotLocal() (res bool) {
+	addr := viper.GetString("server.address")
+	defer func() {
+		tmpAddressBuff[addr] = res
+	}()
+	if res, ok := tmpAddressBuff[addr]; ok { // 读取缓存
+		return res
+	}
+	sub := strings.Split(addr, "//")
+	if len(sub) < 2 {
+		return false
+	}
+	if strings.HasPrefix(sub[1], "127") || strings.HasPrefix(sub[1], "local") {
+		return true
+	}
+	return false
 }
 
 // GetBotCtx 获取一个全局ctx

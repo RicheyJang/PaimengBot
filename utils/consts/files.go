@@ -5,6 +5,9 @@ const DefaultTTFPath = "./ttf/zh-cn.ttf"
 const DefaultTTFDir = "./ttf"
 const DefaultLogDir = "./log"
 const DefaultConfigDir = "."
+const DefaultImageDir = "./data/img"
+
+const GroupImageDir = DefaultImageDir + "/group"
 
 const TempRootDir = "./data/tmp"
 const TempImageDir = TempRootDir + "/img"

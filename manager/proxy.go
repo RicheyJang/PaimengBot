@@ -168,6 +168,16 @@ func (p *PluginProxy) GetPluginConfig(plugin string, key string) interface{} {
 	return p.u.getConfig(fmt.Sprintf("%s", plugin), key)
 }
 
+// AddAPIConfig 添加API配置（仅限String类型）
+func (p *PluginProxy) AddAPIConfig(key string, defaultValue string) {
+	p.u.addConfig("api", key, defaultValue)
+}
+
+// GetAPIConfig 获取API配置
+func (p *PluginProxy) GetAPIConfig(key string) string {
+	return cast.ToString(p.GetPluginConfig("api", key))
+}
+
 // GetConfigString 获取String配置
 func (p *PluginProxy) GetConfigString(key string) string {
 	return cast.ToString(p.GetConfig(key))

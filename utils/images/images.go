@@ -8,7 +8,6 @@ import (
 	"image"
 	"image/png"
 	"io/ioutil"
-	"strings"
 	"sync"
 
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -172,31 +171,10 @@ func (img *ImageCtx) GenMessageBase64() (message.MessageSegment, error) {
 	return message.Image("base64://" + resultBuff.String()), nil
 }
 
-var tmpAddressBuff = make(map[string]bool)
-
-// 判断OneBot(消息收发端)是否在本地
-func isOneBotLocal() (res bool) {
-	addr := viper.GetString("server.address")
-	defer func() {
-		tmpAddressBuff[addr] = res
-	}()
-	if res, ok := tmpAddressBuff[addr]; ok { // 读取缓存
-		return res
-	}
-	sub := strings.Split(addr, "//")
-	if len(sub) < 2 {
-		return false
-	}
-	if strings.HasPrefix(sub[1], "127") || strings.HasPrefix(sub[1], "local") {
-		return true
-	}
-	return false
-}
-
 // GenMessageAuto 自动生成ZeroBot图片消息
 func (img *ImageCtx) GenMessageAuto() (message.MessageSegment, error) {
 	// 消息收发端不在本地
-	if !isOneBotLocal() {
+	if !utils.IsOneBotLocal() {
 		return img.GenMessageBase64()
 	}
 	// 消息收发端位于本地
