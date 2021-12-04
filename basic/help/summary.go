@@ -6,8 +6,6 @@ import (
 	"math"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
 	"github.com/RicheyJang/PaimengBot/manager"
@@ -65,7 +63,6 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 	nowH := 10 + h + 20
 	i := 0
 	for _, block := range helps {
-		log.Infof("%vth block: %v", i, block)
 		i += 1
 		block.fill(i)
 		w = math.Max(block.w, w)

@@ -14,7 +14,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	easy "github.com/t-tomalak/logrus-easy-formatter"
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
@@ -69,10 +68,7 @@ func setupLogger() error {
 		log.SetLevel(l)
 	}
 	// 日志格式
-	log.SetFormatter(&easy.Formatter{
-		TimestampFormat: "2006-01-02 15:04:05",
-		LogFormat:       "[bot][%time%][%lvl%]: %msg% \n",
-	})
+	log.SetFormatter(&utils.SimpleFormatter{})
 	// 日志滚动切割
 	logf, err := rotatelogs.New(
 		utils.PathJoin(consts.DefaultLogDir, "bot-%Y-%m-%d.log"),
@@ -119,10 +115,7 @@ func flushMainConfig(configPath string, configFileName string) error {
 			log.Error("FlushMainConfig error in SafeWriteConfig")
 			return err
 		}
-		log.SetFormatter(&easy.Formatter{
-			TimestampFormat: "2006-01-02 15:04:05",
-			LogFormat:       "[%time%]: %msg% \n",
-		})
+		log.SetFormatter(&utils.SimpleFormatter{})
 		log.Fatalf("初始化配置文件%v完成，请对该配置文件进行配置后，重启本程序", configFileName)
 	}
 	viper.WatchConfig()

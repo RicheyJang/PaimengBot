@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -237,7 +238,7 @@ func (manager *PluginManager) preHandlerWithHook(ctx *zero.Ctx) bool {
 		err := hook(&proxy.c, ctx)
 		if err != nil {
 			log.Infof("<%s> handle has been canceled by pre hook reason: %v", proxy.key, err)
-			panic(err) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
+			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
 		}
 	}
 	return true
@@ -261,7 +262,7 @@ func (manager *PluginManager) postHandlerWithHook(ctx *zero.Ctx) {
 		err := hook(&proxy.c, ctx)
 		if err != nil {
 			log.Infof("other matchers has been blocked by post hook reason: %v", err)
-			panic(err) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
+			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
 		}
 	}
 }

@@ -46,7 +46,7 @@ func getPluginLimiter(plugin, initCD string) *PluginLimiter {
 		}
 		pl := NewPluginLimiter(cd, int(burst))
 		pl.Key = plugin
-		log.Debugf("创建<%v>的PluginLimiter", plugin)
+		log.Infof("创建<%v>的PluginLimiter, CD=%v", plugin, cd)
 		// 存储
 		plMap.Store(plugin, pl)
 		return pl
