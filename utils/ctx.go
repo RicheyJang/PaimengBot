@@ -26,6 +26,30 @@ func GetArgs(ctx *zero.Ctx) string {
 	return cast.ToString(res)
 }
 
+// GetCommand 获取命令
+func GetCommand(ctx *zero.Ctx) string {
+	if ctx == nil {
+		return ""
+	}
+	res, ok := ctx.State["command"]
+	if !ok {
+		return ""
+	}
+	return cast.ToString(res)
+}
+
+// GetRegexpMatched 获取正则匹配字符串切片
+func GetRegexpMatched(ctx *zero.Ctx) []string {
+	if ctx == nil {
+		return nil
+	}
+	res, ok := ctx.State["regex_matched"]
+	if !ok {
+		return nil
+	}
+	return cast.ToStringSlice(res)
+}
+
 // IsMessage 是否为消息事件
 func IsMessage(ctx *zero.Ctx) bool {
 	if ctx == nil || ctx.Event == nil {

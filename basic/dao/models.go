@@ -20,6 +20,7 @@ type GroupSetting struct {
 	WhitePlugins string `gorm:"size:512"`
 	Flag         string // 非空时代表该群尚未加入，是邀请入群请求flag
 	CouldAdd     bool   `gorm:"default:false"` // 能否入此群标志位
+	Welcome      string
 }
 
 type UserPriority struct {
