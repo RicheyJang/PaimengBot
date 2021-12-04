@@ -45,14 +45,17 @@ func init() {
 
 // Hook 在调用插件前检查管理员权限
 func authHook(condition *manager.PluginCondition, ctx *zero.Ctx) error {
-	if condition.AdminLevel == 0 {
+	if condition.AdminLevel == 0 { // 插件未设置权限
 		return nil
 	}
 	if ctx.Event == nil || ctx.Event.UserID == 0 {
 		return nil
 	}
+	if !utils.IsMessage(ctx) { // 非消息事件
+		return nil
+	}
 	level := GetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID)
-	if utils.IsGroupAnonymous(ctx) {
+	if utils.IsGroupAnonymous(ctx) { // 匿名消息，权限设为最低
 		level = math.MaxInt
 	}
 	if level > condition.AdminLevel {

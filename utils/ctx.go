@@ -26,6 +26,14 @@ func GetArgs(ctx *zero.Ctx) string {
 	return cast.ToString(res)
 }
 
+// IsMessage 是否为消息事件
+func IsMessage(ctx *zero.Ctx) bool {
+	if ctx == nil || ctx.Event == nil {
+		return false
+	}
+	return ctx.Event.PostType == "message"
+}
+
 // IsMessagePrimary 是否为私聊消息
 func IsMessagePrimary(ctx *zero.Ctx) bool {
 	if ctx == nil || ctx.Event == nil {
