@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"sort"
 	"strconv"
 
 	"github.com/RicheyJang/PaimengBot/utils/images"
@@ -124,6 +125,8 @@ var bgColors = []string{
 }
 
 func (block *blockInfo) fill(num int) {
+	// 排序
+	sort.Slice(block.items, func(i, j int) bool { return block.items[i].name < block.items[j].name })
 	fontSize, lineSpace := 24.0, 1.3
 	// 计算长宽
 	block.w, block.h = images.MeasureStringDefault(block.classify, fontSize, lineSpace)
