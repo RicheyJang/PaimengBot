@@ -24,6 +24,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/translate"
 	_ "github.com/RicheyJang/PaimengBot/plugins/welcome"
+	_ "github.com/RicheyJang/PaimengBot/plugins/withdraw"
 )
 
 func main() {

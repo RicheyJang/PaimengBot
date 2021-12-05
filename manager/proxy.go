@@ -32,31 +32,44 @@ func (p *PluginProxy) On(tp string, rules ...zero.Rule) *zero.Matcher {
 	if tp == "message" {
 		rules = p.checkRules(rules...)
 	}
-	matcher := p.u.engine.On(tp, rules...)
-	return matcher
+	return p.u.engine.On(tp, rules...)
 }
 
 // OnRegex 添加新的正则匹配器
 func (p *PluginProxy) OnRegex(reg string, rules ...zero.Rule) *zero.Matcher {
-	rules = p.checkRules(rules...)
-	matcher := p.u.engine.OnRegex(reg, rules...)
+	matcher := p.OnMessage(append([]zero.Rule{zero.RegexRule(reg)}, rules...)...)
 	p.addCommands([]string{reg}, rules...)
 	return matcher
 }
 
 // OnCommands 添加新的命令匹配器
 func (p *PluginProxy) OnCommands(cmd []string, rules ...zero.Rule) *zero.Matcher {
-	rules = p.checkRules(rules...)
-	matcher := p.u.engine.OnCommandGroup(cmd, rules...)
+	matcher := p.OnMessage(append([]zero.Rule{zero.CommandRule(cmd...)}, rules...)...)
 	p.addCommands(cmd, rules...)
 	return matcher
 }
 
+// OnMessage 添加消息事件处理器
+func (p *PluginProxy) OnMessage(rules ...zero.Rule) *zero.Matcher {
+	return p.On("message", rules...)
+}
+
+// OnRequest 添加Request事件处理器
+func (p *PluginProxy) OnRequest(rules ...zero.Rule) *zero.Matcher {
+	return p.On("request", rules...)
+}
+
+// OnNotice 添加Notice事件处理器
+func (p *PluginProxy) OnNotice(rules ...zero.Rule) *zero.Matcher {
+	return p.On("notice", rules...)
+}
+
+// 添加命令记录
 func (p *PluginProxy) addCommands(cmd []string, rules ...zero.Rule) {
 	// 检查是否包含Rule：SuperUserPermission
-	hasSuper := false
+	hasSuper := p.c.IsSuperOnly
 	for _, rule := range rules {
-		if utils.IsSameFunc(rule, zero.SuperUserPermission) {
+		if hasSuper || utils.IsSameFunc(rule, zero.SuperUserPermission) {
 			hasSuper = true
 			break
 		}
@@ -76,14 +89,6 @@ func (p *PluginProxy) checkRules(rules ...zero.Rule) []zero.Rule {
 		return append(rules, zero.SuperUserPermission)
 	}
 	return rules
-}
-
-func (p *PluginProxy) OnRequest(rules ...zero.Rule) *zero.Matcher {
-	return p.On("request", rules...)
-}
-
-func (p *PluginProxy) OnNotice(rules ...zero.Rule) *zero.Matcher {
-	return p.On("notice", rules...)
 }
 
 // ---- 定时任务 ----
