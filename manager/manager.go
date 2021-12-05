@@ -232,15 +232,16 @@ func (manager *PluginManager) preHandlerWithHook(ctx *zero.Ctx) bool {
 		log.Debug("preHookLogMatcher proxy == nil")
 		return true
 	}
-	log.Infof("The message starts to be handled by the <%s> plugin", proxy.key)
+	log.Infof("[Start] 事件即将被 <%s> 插件处理", proxy.key)
 	// 调用所有前置hook
 	for _, hook := range manager.preHooks {
 		err := hook(&proxy.c, ctx)
 		if err != nil {
-			log.Infof("<%s> handle has been canceled by pre hook reason: %v", proxy.key, err)
+			log.Infof("[End] <%s> 插件处理被 pre hook 取消，原因: %v", proxy.key, err)
 			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
 		}
 	}
+	log.Infof("[Begin] 前置Hook检查完毕，正式开始被 <%s> 插件处理", proxy.key)
 	return true
 }
 
@@ -256,12 +257,12 @@ func (manager *PluginManager) postHandlerWithHook(ctx *zero.Ctx) {
 		log.Debug("postHookLogMatcher proxy == nil")
 		return
 	}
-	log.Infof("The message is handled finish by the <%s> plugin\n", proxy.key)
+	log.Infof("[End] 事件被 <%s> 插件处理完毕\n", proxy.key)
 	// 调用所有后置hook
 	for _, hook := range manager.postHooks {
 		err := hook(&proxy.c, ctx)
 		if err != nil {
-			log.Infof("other matchers has been blocked by post hook reason: %v", err)
+			log.Infof("[Tip] other matchers has been blocked by post hook reason: %v", err)
 			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
 		}
 	}

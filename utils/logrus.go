@@ -30,7 +30,7 @@ func (f SimpleFormatter) Format(entry *log.Entry) ([]byte, error) {
 	// 标识
 	output.WriteString(stringOfSymbol)
 	// 时间
-	output.WriteString(entry.Time.Format("[2006-01-02 15:04:05]"))
+	output.WriteString(entry.Time.Format("[2006-01-02 15:04:05.000ms]"))
 	// 等级
 	output.WriteRune('[')
 	output.WriteString(entry.Level.String())
