@@ -10,6 +10,7 @@ import (
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
+	"github.com/syndtr/goleveldb/leveldb"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"gorm.io/gorm"
 )
@@ -213,6 +214,11 @@ func (p *PluginProxy) GetConfigStrings(key string) []string {
 // GetDB 获取数据库
 func (p *PluginProxy) GetDB() *gorm.DB {
 	return p.u.GetDB()
+}
+
+// GetLevelDB 获取LevelDB：一个K-V数据库
+func (p *PluginProxy) GetLevelDB() *leveldb.DB {
+	return p.u.GetLevelDB()
 }
 
 // ---- 插件锁 ----

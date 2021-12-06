@@ -11,6 +11,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/syndtr/goleveldb/leveldb"
+	levelopt "github.com/syndtr/goleveldb/leveldb/opt"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -27,6 +29,7 @@ type PluginManager struct {
 	configs  *viper.Viper // viper配置实例
 	db       *gorm.DB     // DB
 	dbConfig DBConfig     // 数据库配置
+	leveldb  *leveldb.DB  // LevelDB实例
 
 	plugins   map[string]*PluginProxy // plugin.key -> pluginContext
 	preHooks  []PluginHook            // 插件Pre Hook
@@ -99,8 +102,8 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 }
 
 func (manager *PluginManager) SetupDatabase(config DBConfig) error {
-	// 初始化数据库配置
-	gormC := &gorm.Config{ // 数据库配置
+	// 1. 初始化关系型数据库
+	gormC := &gorm.Config{ // 1.1 数据库配置
 		Logger: utils.NewGormLogger(),
 		NamingStrategy: schema.NamingStrategy{
 			TablePrefix:   "t_", // 表名前缀，`User`表为`t_users`
@@ -109,7 +112,7 @@ func (manager *PluginManager) SetupDatabase(config DBConfig) error {
 	}
 	config.Type = strings.ToLower(config.Type)
 	manager.dbConfig = config
-	// 连接数据库
+	// 1.2 连接数据库
 	switch config.Type {
 	case MySQL:
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
@@ -161,6 +164,16 @@ func (manager *PluginManager) SetupDatabase(config DBConfig) error {
 	default:
 		return errors.New("暂不支持此类型数据库")
 	}
+	// 2. 初始化K-V数据库
+	levelDB, err := leveldb.OpenFile(consts.DefaultLevelDBDir, &levelopt.Options{
+		WriteBuffer: 128 * levelopt.KiB,
+	})
+	if err != nil {
+		log.Errorf("初始化GoLevelDB失败，err: %v", err)
+		return err
+	}
+	manager.leveldb = levelDB
+	log.Infof("初始化K-V数据库成功：goleveldb")
 	return nil
 }
 
@@ -197,6 +210,11 @@ func (manager *PluginManager) AddPostHook(hook ...PluginHook) {
 // GetDB 获取数据库
 func (manager *PluginManager) GetDB() *gorm.DB {
 	return manager.db
+}
+
+// GetLevelDB 获取LevelDB: 一个K-V数据库
+func (manager *PluginManager) GetLevelDB() *leveldb.DB {
+	return manager.leveldb
 }
 
 // ---- 非公开方法 ----
