@@ -15,6 +15,7 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/tidwall/gjson v1.11.0
+	github.com/wcharczuk/go-chart/v2 v2.1.0
 	github.com/wdvxdr1123/ZeroBot v1.4.1
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	gorm.io/driver/mysql v1.2.0
@@ -56,7 +57,7 @@ require (
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
-	golang.org/x/image v0.0.0-20190802002840-cff245a6509b // indirect
+	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
 	golang.org/x/sys v0.0.0-20211013075003-97ac67df715c // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect

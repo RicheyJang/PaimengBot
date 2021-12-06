@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"image"
 	"image/png"
-	"io/ioutil"
 	"sync"
 
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -23,26 +22,10 @@ import (
 var defaultFont *truetype.Font
 
 func init() {
-	font, err := ParseFont(consts.DefaultTTFPath) // 加载默认字体文件
-	if err != nil {                               // 加载失败，从默认字体目录中尝试遍历
-		rd, _ := ioutil.ReadDir(consts.DefaultTTFDir)
-		for _, file := range rd {
-			if file.IsDir() {
-				continue
-			}
-			font, err = ParseFont(utils.PathJoin(consts.DefaultTTFDir, file.Name()))
-			if err == nil {
-				log.Infof("成功加载字体文件：%v", file.Name())
-				break
-			}
-		}
+	defaultFont = GetDefaultFont()
+	if defaultFont != nil {
+		log.Infof("成功加载默认字体")
 	}
-	if err != nil || font == nil { // 全部失败
-		log.Errorf("加载默认字体文件(%v)失败 err: %v", consts.DefaultTTFDir, err)
-		return
-	}
-	defaultFont = font
-	log.Infof("成功加载默认字体")
 }
 
 // ImageCtx 图片上下文
@@ -119,7 +102,7 @@ func (img *ImageCtx) SetFont(font *truetype.Font, size float64) error {
 
 // UseDefaultFont 使用默认字体并设置字体大小
 func (img *ImageCtx) UseDefaultFont(size float64) error {
-	return img.SetFont(defaultFont, size)
+	return img.SetFont(GetDefaultFont(), size)
 }
 
 var tempCountMutex sync.Mutex

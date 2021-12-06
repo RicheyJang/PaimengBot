@@ -90,6 +90,25 @@ func IsMessagePrimary(ctx *zero.Ctx) bool {
 	return ctx.Event.PostType == "message" && ctx.Event.MessageType == "private"
 }
 
+// IsMessageGroup 是否为群聊消息
+func IsMessageGroup(ctx *zero.Ctx) bool {
+	if ctx == nil || ctx.Event == nil {
+		return false
+	}
+	return ctx.Event.PostType == "message" && ctx.Event.MessageType == "group"
+}
+
+// IsGroupAnonymous 判断是否为群匿名消息
+func IsGroupAnonymous(ctx *zero.Ctx) bool {
+	if ctx == nil || ctx.Event == nil {
+		return false
+	}
+	if ctx.Event.PostType != "message" || ctx.Event.MessageType != "group" {
+		return false
+	}
+	return ctx.Event.SubType == "anonymous"
+}
+
 // GetQQAvatar 快捷获取QQ头像
 func GetQQAvatar(qq int64, size int) (io.Reader, error) {
 	c := client.NewHttpClient(&client.HttpOptions{
@@ -196,17 +215,6 @@ func SendToSuper(message ...message.MessageSegment) {
 		}
 		return true
 	})
-}
-
-// IsGroupAnonymous 判断是否为群匿名消息
-func IsGroupAnonymous(ctx *zero.Ctx) bool {
-	if ctx == nil || ctx.Event == nil {
-		return false
-	}
-	if ctx.Event.PostType != "message" || ctx.Event.MessageType != "group" {
-		return false
-	}
-	return ctx.Event.SubType == "anonymous"
 }
 
 // ---- Rules ----

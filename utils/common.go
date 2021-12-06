@@ -68,6 +68,16 @@ func FormSetByStrings(slices ...[]string) map[string]struct{} {
 	return mp
 }
 
+// StringSliceContain 字符串切片中是否含有指定字符串
+func StringSliceContain(slices []string, substr string) bool {
+	for _, str := range slices {
+		if str == substr {
+			return true
+		}
+	}
+	return false
+}
+
 var letterReg = regexp.MustCompile(`^[A-Za-z]+$`)
 
 // IsLetter 字符串是否为纯字母

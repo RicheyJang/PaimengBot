@@ -22,6 +22,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/contact"
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
+	_ "github.com/RicheyJang/PaimengBot/plugins/statistic"
 	_ "github.com/RicheyJang/PaimengBot/plugins/translate"
 	_ "github.com/RicheyJang/PaimengBot/plugins/welcome"
 	_ "github.com/RicheyJang/PaimengBot/plugins/withdraw"

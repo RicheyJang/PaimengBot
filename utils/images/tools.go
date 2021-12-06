@@ -8,12 +8,12 @@ import (
 	"math"
 
 	"github.com/RicheyJang/PaimengBot/utils"
-	log "github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/message"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	"github.com/fogleman/gg"
-
 	"github.com/golang/freetype/truetype"
+	log "github.com/sirupsen/logrus"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 // AdjustOpacity 将输入图像m的透明度变为原来的倍数的图像返回。若原来为完成全不透明，则percentage = 0.5将变为半透明
@@ -48,6 +48,32 @@ func ParseFont(path string) (*truetype.Font, error) {
 		return nil, err
 	}
 	return f, nil
+}
+
+// GetDefaultFont 获取默认字体，若默认字体不存在，会自动寻找，但仍可能为nil
+func GetDefaultFont() *truetype.Font {
+	if defaultFont == nil {
+		font, err := ParseFont(consts.DefaultTTFPath) // 加载默认字体文件
+		if err != nil {                               // 加载失败，从默认字体目录中尝试遍历
+			rd, _ := ioutil.ReadDir(consts.DefaultTTFDir)
+			for _, file := range rd {
+				if file.IsDir() {
+					continue
+				}
+				font, err = ParseFont(utils.PathJoin(consts.DefaultTTFDir, file.Name()))
+				if err == nil {
+					log.Infof("成功加载默认字体文件：%v", file.Name())
+					break
+				}
+			}
+		}
+		if err != nil || font == nil { // 全部失败
+			log.Warnf("加载默认字体文件(%v)失败 err: %v", consts.DefaultTTFDir, err)
+			return nil
+		}
+		defaultFont = font
+	}
+	return defaultFont
 }
 
 // MeasureStringDefault 测量str在默认情况（默认字体、分行）下的长宽
