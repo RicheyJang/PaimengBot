@@ -7,13 +7,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"gorm.io/gorm/clause"
 )
 
 var proxy *manager.PluginProxy
@@ -122,56 +120,4 @@ func initialAllPriority() {
 		}
 	}
 	log.Infof("更新全部群管理员权限完成，共%v个，失败%v个", len(groups), errCount)
-}
-
-// InitialGroupPriority 初始化指定群的所有管理员权限等级（若不存在）
-func InitialGroupPriority(ctx *zero.Ctx, groupID int64) error {
-	if ctx == nil || groupID == 0 {
-		return fmt.Errorf("wrong param ctx=%v,groupID=%v", ctx, groupID)
-	}
-	level := proxy.GetConfigInt64("defaultLevel")
-	members := ctx.GetGroupMemberList(groupID).Array()
-	for _, member := range members {
-		if member.Get("role").String() != "owner" && member.Get("role").String() != "admin" {
-			continue
-		}
-		userP := dao.UserPriority{
-			ID:       member.Get("user_id").Int(),
-			GroupID:  groupID,
-			Priority: int(level),
-		}
-		proxy.GetDB().Clauses(clause.OnConflict{DoNothing: true}).Create(&userP)
-	}
-	return nil
-}
-
-// SetGroupUserPriority 将指定群指定用户的权限等级设为level
-func SetGroupUserPriority(groupID, userID int64, level int) error {
-	userP := dao.UserPriority{
-		ID:       userID,
-		GroupID:  groupID,
-		Priority: level,
-	}
-	return proxy.GetDB().Clauses(clause.OnConflict{
-		Columns:   []clause.Column{{Name: "id"}, {Name: "group_id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"priority"}),
-	}).Create(&userP).Error
-}
-
-// GetGroupUserPriority 获取指定群指定用户的权限等级，数字越小，代表权限越高
-func GetGroupUserPriority(groupID, userID int64) (level int) {
-	defer func() {
-		if utils.IsSuperUser(userID) { // 超级用户单独处理
-			sl := int(proxy.GetConfigInt64("superLevel"))
-			if sl > 0 && sl < level { // 若默认超级用户拥有更高权限
-				level = sl
-			}
-		}
-	}()
-	var userP dao.UserPriority
-	res := proxy.GetDB().Where(&dao.UserPriority{ID: userID, GroupID: groupID}).Order("priority desc").Limit(1).Find(&userP)
-	if res.RowsAffected == 0 || res.Error != nil {
-		return math.MaxInt
-	}
-	return userP.Priority
 }

@@ -61,13 +61,3 @@ func setNickName(ctx *zero.Ctx) {
 		ctx.Send(fmt.Sprintf("好哒，以后就叫你%v咯", nick))
 	}
 }
-
-// GetNickname 获取用户昵称
-func GetNickname(userID int64, defaultName string) string {
-	var user dao.UserSetting
-	res := proxy.GetDB().Select("nickname").Take(&user, userID)
-	if res.RowsAffected > 0 {
-		return user.Nickname
-	}
-	return defaultName
-}
