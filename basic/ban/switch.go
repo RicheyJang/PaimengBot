@@ -58,8 +58,8 @@ func dealSwitchArgs(ctx *zero.Ctx, dealGroup bool) (
 }
 
 func switchPlugin(status bool, ctx *zero.Ctx) {
-	if utils.IsMessagePrimary(ctx) {
-		if !utils.IsSuperUser(ctx.Event.UserID) {
+	if !utils.IsMessageGroup(ctx) {
+		if !utils.IsSuperUser(ctx.Event.UserID) || !utils.IsMessagePrimary(ctx) {
 			ctx.Send("请在群聊中开关功能哦，或者联系管理员")
 			return
 		}

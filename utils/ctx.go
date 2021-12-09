@@ -112,12 +112,17 @@ func IsMessageGroup(ctx *zero.Ctx) bool {
 	return ctx.Event.PostType == "message" && ctx.Event.MessageType == "group"
 }
 
-// IsGroupAnonymous 判断是否为群匿名消息
-func IsGroupAnonymous(ctx *zero.Ctx) bool {
+// IsMessageGuild 是否为频道消息
+func IsMessageGuild(ctx *zero.Ctx) bool {
 	if ctx == nil || ctx.Event == nil {
 		return false
 	}
-	if ctx.Event.PostType != "message" || ctx.Event.MessageType != "group" {
+	return ctx.Event.PostType == "message" && ctx.Event.MessageType == "guild"
+}
+
+// IsGroupAnonymous 判断是否为群匿名消息
+func IsGroupAnonymous(ctx *zero.Ctx) bool {
+	if !IsMessageGroup(ctx) {
 		return false
 	}
 	return ctx.Event.SubType == "anonymous"

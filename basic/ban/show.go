@@ -46,8 +46,8 @@ func getGroupsBlack() map[int64][]string {
 }
 
 func showBlack(ctx *zero.Ctx) {
-	if utils.IsMessagePrimary(ctx) {
-		if !utils.IsSuperUser(ctx.Event.UserID) {
+	if !utils.IsMessageGroup(ctx) {
+		if !utils.IsSuperUser(ctx.Event.UserID) || !utils.IsMessagePrimary(ctx) {
 			ctx.Send("请在群聊中问我哦")
 			return
 		}

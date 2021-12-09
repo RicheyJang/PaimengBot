@@ -39,7 +39,7 @@ func contactSuper(ctx *zero.Ctx) {
 			str = fmt.Sprintf("收到来自未知用户(%v)的消息：\n", ctx.Event.UserID)
 		}
 		ctx.Send("好哒")
-	} else { // 群聊消息
+	} else if utils.IsMessageGroup(ctx) { // 群聊消息
 		group := ctx.GetGroupInfo(ctx.Event.GroupID, false)
 		if ctx.Event.SubType == "anonymous" && ctx.Event.Anonymous != nil { // 匿名
 			ano := gjson.Parse(utils.JsonString(ctx.Event.Anonymous))
@@ -53,6 +53,8 @@ func contactSuper(ctx *zero.Ctx) {
 				group.Name, ctx.Event.GroupID, ctx.Event.UserID)
 		}
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("好哒"))
+	} else {
+		str = "收到未知来源消息：\n"
 	}
 	str += "------------\n"
 	utils.SendToSuper(append(message.Message{message.Text(str)}, org...)...)
