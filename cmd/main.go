@@ -25,6 +25,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/statistic"
 	_ "github.com/RicheyJang/PaimengBot/plugins/translate"
 	_ "github.com/RicheyJang/PaimengBot/plugins/welcome"
+	_ "github.com/RicheyJang/PaimengBot/plugins/whatanime"
 	_ "github.com/RicheyJang/PaimengBot/plugins/withdraw"
 )
 

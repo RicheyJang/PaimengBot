@@ -52,6 +52,20 @@ func GetRegexpMatched(ctx *zero.Ctx) []string {
 	return cast.ToStringSlice(res)
 }
 
+// WaitNextMessage 等待相同用户的下一条消息，若返回nil，代表超时（5分钟）
+func WaitNextMessage(ctx *zero.Ctx) *zero.Event {
+	t := time.NewTimer(5 * time.Minute)
+	defer t.Stop()
+	r, cancel := ctx.FutureEvent("message", ctx.CheckSession()).Repeat()
+	defer cancel()
+	select {
+	case e := <-r:
+		return e
+	case <-t.C: // 超时取消
+		return nil
+	}
+}
+
 // GetImageURL 通过消息获取其中的图片URL
 func GetImageURL(msg message.MessageSegment) string {
 	if msg.Type != "image" {
@@ -61,11 +75,11 @@ func GetImageURL(msg message.MessageSegment) string {
 }
 
 // GetImageURLs 获取消息全部图片URL
-func GetImageURLs(ctx *zero.Ctx) (urls []string) {
-	if ctx == nil || ctx.Event == nil {
+func GetImageURLs(e *zero.Event) (urls []string) {
+	if e == nil {
 		return
 	}
-	for _, msg := range ctx.Event.Message {
+	for _, msg := range e.Message {
 		url := GetImageURL(msg)
 		if len(url) > 0 {
 			urls = append(urls, url)

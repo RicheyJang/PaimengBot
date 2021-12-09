@@ -143,3 +143,16 @@ func (c HttpClient) GetReader(url string) (io.Reader, error) {
 	}
 	return res.Body, nil
 }
+
+// GetGJson 通过Get请求获取回包Body（gjson.Result）
+func (c HttpClient) GetGJson(url string) (gjson.Result, error) {
+	res, err := c.GetReader(url)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	rspBody, err := ioutil.ReadAll(res)
+	if err != nil {
+		return gjson.Result{}, err
+	}
+	return gjson.Parse(string(rspBody)), nil
+}
