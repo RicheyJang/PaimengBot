@@ -43,23 +43,21 @@ func init() {
 
 func setGroupWelcome(ctx *zero.Ctx) {
 	var welmsg message.Message
-	cmd := utils.GetCommand(ctx)
 	// 消除首段消息前的Bot昵称
-	first := ctx.Event.Message[0]
-	first.Data["text"] = strings.TrimLeft(first.Data["text"], " ") // Trim!
-	text := first.Data["text"]
+	first := ctx.Event.Message[0].Data["text"]
+	first = strings.TrimLeft(first, " \t") // Trim!
 	for _, nickname := range utils.GetBotConfig().NickName {
-		if strings.HasPrefix(text, nickname) {
-			first.Data["text"] = text[len(nickname):]
+		if strings.HasPrefix(first, nickname) {
+			first = first[len(nickname):]
 			break
 		}
 	}
-	// 消除首段消息前的Bot昵称
-	first.Data["text"] = strings.Replace(first.Data["text"], cmd, "", 1)
-	first.Data["text"] = strings.Trim(first.Data["text"], " ") // Trim!
+	// 消除首段消息前的命令
+	first = strings.Replace(first, utils.GetCommand(ctx), "", 1)
+	first = strings.Trim(first, " \t") // Trim!
 	// 拼接消息
-	if len(first.Data["text"]) > 0 {
-		welmsg = append(welmsg, message.Text(first.Data["text"]))
+	if len(first) > 0 {
+		welmsg = append(welmsg, message.Text(first))
 	}
 	if len(ctx.Event.Message) > 1 {
 		for i, msg := range ctx.Event.Message[1:] {
