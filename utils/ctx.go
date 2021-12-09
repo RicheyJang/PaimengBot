@@ -252,3 +252,8 @@ func CheckDetailType(tp string) zero.Rule {
 func SkipGroupAnonymous(ctx *zero.Ctx) bool {
 	return !IsGroupAnonymous(ctx)
 }
+
+// SkipGuildMessage Rule:不处理频道消息事件
+func SkipGuildMessage(ctx *zero.Ctx) bool {
+	return !IsMessageGuild(ctx)
+}

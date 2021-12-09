@@ -44,6 +44,7 @@ func NewPluginManager() *PluginManager {
 		plugins: make(map[string]*PluginProxy),
 	}
 	// 添加前置Pre Hook
+	m.engine.UsePreHandler(utils.SkipGuildMessage) // TODO 暂时忽略所有频道消息，原因：ZeroBot无法正常发送频道消息
 	m.engine.UsePreHandler(m.preHandlerWithHook)
 	// 添加后置Post Hook
 	m.engine.UsePostHandler(m.postHandlerWithHook)
