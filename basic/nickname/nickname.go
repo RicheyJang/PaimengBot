@@ -8,6 +8,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/rules"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -28,7 +29,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnRegex("(以后)?叫我.+", zero.OnlyToMe, utils.SkipGroupAnonymous).
+	proxy.OnRegex("(以后)?叫我.+", zero.OnlyToMe, rules.SkipGroupAnonymous).
 		SetBlock(true).SecondPriority().Handle(setNickName)
 	proxy.AddConfig("blackName", []string{"爸", "妈", "爹", "主人"})
 }

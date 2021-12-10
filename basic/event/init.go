@@ -6,6 +6,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/rules"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -26,7 +27,7 @@ func init() {
 		return
 	}
 	proxy.OnRequest().FirstPriority().Handle(handleInvite) // 捕获好友、群邀请发送给超级用户
-	proxy.OnNotice(utils.CheckDetailType("group_increase"), func(ctx *zero.Ctx) bool {
+	proxy.OnNotice(rules.CheckDetailType("group_increase"), func(ctx *zero.Ctx) bool {
 		return ctx.Event.SelfID == ctx.Event.UserID
 	}).SetBlock(true).FirstPriority().Handle(preventForcedInviteGroup) // 防止被动拉入群聊
 	proxy.AddConfig("notAutoLeave", false)

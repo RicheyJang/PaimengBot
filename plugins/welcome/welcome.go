@@ -14,6 +14,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
+	"github.com/RicheyJang/PaimengBot/utils/rules"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -36,7 +37,7 @@ func init() {
 	}
 	proxy.OnCommands([]string{"设置群欢迎消息", "自定义群欢迎消息"}, zero.OnlyGroup).
 		SetBlock(true).SetPriority(3).Handle(setGroupWelcome)
-	proxy.OnNotice(utils.CheckDetailType("group_increase"), func(ctx *zero.Ctx) bool {
+	proxy.OnNotice(rules.CheckDetailType("group_increase"), func(ctx *zero.Ctx) bool {
 		return ctx.Event.SelfID != ctx.Event.UserID
 	}).SetBlock(false).SecondPriority().Handle(handleIncrease)
 }

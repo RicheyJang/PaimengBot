@@ -70,6 +70,7 @@ func MakeDirWithMode(path string, perm os.FileMode) (string, error) {
 	return path, err
 }
 
+// RemovePath 删除指定路径文件或目录
 func RemovePath(path string) error {
 	if PathExists(path) {
 		return os.RemoveAll(path)
@@ -77,6 +78,7 @@ func RemovePath(path string) error {
 	return nil
 }
 
+// PathJoin 文件路径合并（并标准化）
 func PathJoin(paths ...string) string {
 	return filepath.ToSlash(filepath.Join(paths...))
 }
