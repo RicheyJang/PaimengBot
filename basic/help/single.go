@@ -12,14 +12,14 @@ func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackK
 	// 寻找插件
 	var selected *manager.PluginCondition
 	for _, plugin := range plugins { // 优先找插件名
-		if plugin.Name == cmd && checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
+		if plugin.Name == cmd && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
 			selected = plugin
 			break
 		}
 	}
 	if selected == nil { // 尝试通过命令
 		for _, plugin := range plugins {
-			if isCmdContains(plugin, cmd, isSuper) && checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
+			if isCmdContains(plugin, cmd, isSuper) && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
 				selected = plugin
 				break
 			}

@@ -22,12 +22,15 @@ var info = manager.PluginInfo{
 `,
 }
 
+const showBanPluginKey = "showban"
+
 func init() {
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
 		return
 	}
 	proxy.OnCommands([]string{"帮助", "help", "功能"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(helpHandle)
+	proxy.AddConfig(showBanPluginKey, true) // 被禁用的功能是否在帮助中有所展示，不过，哪怕设定为true，也会有明显标识该功能被禁用
 }
 
 func helpHandle(ctx *zero.Ctx) {
@@ -46,7 +49,7 @@ func helpHandle(ctx *zero.Ctx) {
 	}
 }
 
-func checkPluginCouldShow(plugin *manager.PluginCondition, isSuper, isPrimary bool, priority int) bool {
+func checkPluginCouldShow(plugin *manager.PluginCondition, isSuper, isPrimary bool, priority int, blacks map[string]struct{}) bool {
 	if plugin == nil {
 		return false
 	}
@@ -55,6 +58,11 @@ func checkPluginCouldShow(plugin *manager.PluginCondition, isSuper, isPrimary bo
 	}
 	if plugin.AdminLevel > 0 && (priority == 0 || priority > plugin.AdminLevel) { // 管理员权限
 		return false
+	}
+	if blacks != nil && !proxy.GetConfigBool(showBanPluginKey) {
+		if _, ok := blacks[plugin.Key]; ok {
+			return false
+		}
 	}
 	return true
 }

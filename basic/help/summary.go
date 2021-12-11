@@ -22,10 +22,10 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 	var helps helpSummaryMap = make(map[string]*blockInfo)
 	for _, plugin := range plugins {
 		// 过滤
-		if !checkPluginCouldShow(plugin, isSuper, isPrimary, priority) {
+		if !checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
 			continue
 		}
-		// 生成项目
+		// 生成项目(一个插件)
 		var item blockItem
 		item.name = plugin.Name
 		item.color = "black"
