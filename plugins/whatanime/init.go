@@ -51,6 +51,7 @@ func searchAnimeHandler(ctx *zero.Ctx) {
 	ctx.SendChain(msg...)
 }
 
-func SearchAnime(url string, isAdult bool) (message.Message, error) {
-	return searchAnimeByTraceMoe(url, isAdult)
+// SearchAnime 搜番，参数：url为图片链接，返回整理后需要发出的消息体
+func SearchAnime(url string, showAdult bool) (message.Message, error) {
+	return searchAnimeByTraceMoe(url, showAdult)
 }
