@@ -22,11 +22,11 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"识番", "搜番", "这是什么番", "搜动漫", "这是什么动漫"}).SetBlock(true).SecondPriority().Handle(searchAnime)
+	proxy.OnCommands([]string{"识番", "搜番", "这是什么番", "搜动漫", "这是什么动漫"}).SetBlock(true).SecondPriority().Handle(searchAnimeHandler)
 	proxy.AddAPIConfig(consts.APIOfTraceMoeKey, "api.trace.moe")
 }
 
-func searchAnime(ctx *zero.Ctx) {
+func searchAnimeHandler(ctx *zero.Ctx) {
 	urls := utils.GetImageURLs(ctx.Event)
 	if len(urls) == 0 { // 没有发图，等待他的下一条消息
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("图呢？"))
@@ -43,10 +43,14 @@ func searchAnime(ctx *zero.Ctx) {
 	}
 	defer proxy.UnlockUser(0)
 	// 只查询第一张图
-	msg, err := searchAnimeByTraceMoe(urls[0], utils.IsMessagePrimary(ctx))
+	msg, err := SearchAnime(urls[0], utils.IsMessagePrimary(ctx))
 	if err != nil {
-		log.Warnf("searchAnimeByTraceMoe err: user=%v,url=%v,err=%v", ctx.Event.UserID, urls[0], err)
+		log.Warnf("SearchAnime err: user=%v,url=%v,err=%v", ctx.Event.UserID, urls[0], err)
 	}
 	msg = append(message.Message{message.At(ctx.Event.UserID)}, msg...)
 	ctx.SendChain(msg...)
+}
+
+func SearchAnime(url string, isAdult bool) (message.Message, error) {
+	return searchAnimeByTraceMoe(url, isAdult)
 }
