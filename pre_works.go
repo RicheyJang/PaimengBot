@@ -103,16 +103,17 @@ func flushMainConfig(configPath string, configFileName string) error {
 	fullPath := utils.PathJoin(configPath, configFileName)
 	//fileType := filepath.Ext(fullPath)
 	//viper.SetConfigType(fileType)
-	if utils.FileExists(fullPath) { // 配置文件已存在：读出配置
-		err := viper.ReadInConfig()
+	if utils.FileExists(fullPath) { // 配置文件已存在：合并自配置文件后重新写入
+		err := viper.MergeInConfig()
 		if err != nil {
-			log.Error("FlushMainConfig error in ReadInConfig")
+			log.Error("FlushMainConfig error in MergeInConfig err: ", err)
 			return err
 		}
+		_ = viper.WriteConfigAs(fullPath)
 	} else { // 配置文件不存在：写入配置
 		err := viper.SafeWriteConfigAs(fullPath)
 		if err != nil {
-			log.Error("FlushMainConfig error in SafeWriteConfig")
+			log.Error("FlushMainConfig error in SafeWriteConfig err: ", err)
 			return err
 		}
 		log.SetFormatter(&utils.SimpleFormatter{})

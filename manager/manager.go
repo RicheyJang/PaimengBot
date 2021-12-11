@@ -86,16 +86,17 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 	fullPath := filepath.Join(configPath, configFileName)
 	//fileType := filepath.Ext(fullPath)
 	//manager.configs.SetConfigType(fileType)
-	if utils.FileExists(fullPath) { // 配置文件已存在：读出配置
-		err := manager.configs.ReadInConfig()
+	if utils.FileExists(fullPath) { // 配置文件已存在：合并自配置文件后重新写入
+		err := manager.configs.MergeInConfig()
 		if err != nil {
-			log.Error("FlushConfig error in ReadInConfig")
+			log.Error("FlushConfig error in ReadInConfig err: ", err)
 			return err
 		}
+		_ = manager.configs.WriteConfigAs(fullPath)
 	} else { // 配置文件不存在：写入配置
 		err := manager.configs.SafeWriteConfigAs(fullPath)
 		if err != nil {
-			log.Error("FlushConfig error in SafeWriteConfig")
+			log.Error("FlushConfig error in SafeWriteConfig err: ", err)
 			return err
 		}
 	}
