@@ -97,7 +97,7 @@ func format163SingleNum(pre []string, title string, total gjson.Result, today gj
 	}
 	// 正常
 	str := fmt.Sprintf("%s：%d", title, total.Int())
-	if today.Exists() {
+	if today.Type != gjson.Null && today.Int() != -1 {
 		str += fmt.Sprintf(" (今日%+d)", today.Int())
 	}
 	return append(pre, str)
