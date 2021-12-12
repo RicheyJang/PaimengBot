@@ -17,7 +17,7 @@ import (
 func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
 	defaultClassify := "一般功能"
-	hiddenClassify := "被动"
+	passiveClassify := "被动"
 	// 获取所有插件信息
 	var helps helpSummaryMap = make(map[string]*blockInfo)
 	for _, plugin := range plugins {
@@ -32,8 +32,8 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 		if _, ok := blackKeys[plugin.Key]; ok {
 			item.disabled = true // 插件对该用户或群被禁用
 		}
-		if plugin.IsHidden && len(plugin.Classify) != 0 && plugin.Classify != hiddenClassify {
-			item.name += "（被动）" // 隐藏且已有其它分类
+		if plugin.IsPassive && len(plugin.Classify) != 0 && plugin.Classify != passiveClassify {
+			item.name += "（被动）" // 被动且已有其它分类
 		}
 		if plugin.AdminLevel != 0 { // 具有权限要求
 			item.name = fmt.Sprintf("[%d] ", plugin.AdminLevel) + item.name
@@ -46,8 +46,8 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 		if len(classify) == 0 { // 无分类
 			classify = defaultClassify
 		}
-		if plugin.IsHidden && len(plugin.Classify) == 0 {
-			classify = hiddenClassify // 默认隐藏插件的分类为"被动"
+		if plugin.IsPassive && len(plugin.Classify) == 0 {
+			classify = passiveClassify // 默认被动插件的分类为"被动"
 		}
 		if block, ok := helps[classify]; ok {
 			block.items = append(block.items, item)
@@ -83,14 +83,14 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 	}
 	// 其它功能
 	for c, block := range helps {
-		if c == defaultClassify || c == hiddenClassify {
+		if c == defaultClassify || c == passiveClassify {
 			continue
 		}
 		img.DrawImage(block.img, 15, int(nowH))
 		nowH += block.h + 40
 	}
 	// 被动功能
-	if block, ok := helps[hiddenClassify]; ok {
+	if block, ok := helps[passiveClassify]; ok {
 		img.DrawImage(block.img, 15, int(nowH))
 	}
 	msg, err := img.GenMessageAuto()

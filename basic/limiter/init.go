@@ -15,9 +15,10 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name:     "插件CD限流",
-	Usage:    "防止频繁调用、刷屏；可以通过配置便携地设置CD",
-	IsHidden: true,
+	Name:        "插件CD限流",
+	Usage:       "防止频繁调用、刷屏；可以通过配置便携地设置CD",
+	IsPassive:   true,
+	IsSuperOnly: true,
 }
 var plMap sync.Map
 

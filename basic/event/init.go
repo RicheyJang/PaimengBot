@@ -16,9 +16,10 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name:     "处理除消息外其它基本事件",
-	Usage:    "防止被动拉入群聊；捕获好友、群邀请发送给超级用户",
-	IsHidden: true,
+	Name:        "处理除消息外其它基本事件",
+	Usage:       "防止被动拉入群聊；捕获好友、群邀请发送给超级用户",
+	IsPassive:   true,
+	IsSuperOnly: true,
 }
 
 func init() {
