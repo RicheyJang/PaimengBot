@@ -18,6 +18,7 @@ var info = manager.PluginInfo{
 	Usage: `看看今天都可以打什么材料吧！
 用法：
 	今日素材：丢给你今天要打(上班)的材料清单`,
+	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
 
