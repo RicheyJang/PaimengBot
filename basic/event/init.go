@@ -3,6 +3,7 @@ package event
 import (
 	"fmt"
 
+	"github.com/RicheyJang/PaimengBot/basic/auth"
 	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -31,6 +32,7 @@ func init() {
 	proxy.OnNotice(rules.CheckDetailType("group_increase"), func(ctx *zero.Ctx) bool {
 		return ctx.Event.SelfID == ctx.Event.UserID
 	}).SetBlock(true).FirstPriority().Handle(preventForcedInviteGroup) // 防止被动拉入群聊
+	proxy.OnNotice(rules.CheckDetailType("group_admin")).FirstPriority().Handle(handleGroupAdmin)
 	proxy.AddConfig("notAutoLeave", false)
 }
 
@@ -61,6 +63,29 @@ func preventForcedInviteGroup(ctx *zero.Ctx) {
 	}
 	utils.SendToSuper(message.Text(fmt.Sprintf("%v被%v拉入了群%v",
 		utils.GetBotNickname(), ctx.Event.OperatorID, ctx.Event.GroupID)))
+}
+
+// 群管理员变动时
+func handleGroupAdmin(ctx *zero.Ctx) {
+	if ctx.Event.GroupID == 0 {
+		return
+	}
+	// 重新初始化群权限
+	err := auth.InitialGroupPriority(ctx, ctx.Event.GroupID)
+	if err != nil {
+		log.Warnf("初始化群%v权限失败, err: %v", ctx.Event.GroupID, err)
+	} else {
+		log.Infof("初始化群%v权限成功", ctx.Event.GroupID)
+	}
+	// 取消管理员时，收回该管理员权限
+	if ctx.Event.SubType == "unset" && ctx.Event.UserID != 0 {
+		err = auth.SetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID, 0)
+		if err != nil {
+			log.Warnf("撤除群%v管理员%v权限失败, err: %v", ctx.Event.GroupID, ctx.Event.UserID, err)
+		} else {
+			log.Warnf("撤除群%v管理员%v权限成功", ctx.Event.GroupID, ctx.Event.UserID)
+		}
+	}
 }
 
 // 收到邀请入群、加好友请求时

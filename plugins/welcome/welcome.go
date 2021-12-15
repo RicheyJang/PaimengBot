@@ -26,6 +26,7 @@ var info = manager.PluginInfo{
 	Name: "群欢迎消息",
 	Usage: `用法：
 	设置群欢迎消息 [消息...]：当有新人加群时，自动发送所设置的欢迎消息+@新人`,
+	Classify:   "群功能",
 	AdminLevel: 3,
 }
 var proxy *manager.PluginProxy

@@ -14,6 +14,7 @@ var info = manager.PluginInfo{
 	Name: "看图识番",
 	Usage: `用法：
 	识番/搜番 [图片]: 搜索该图出现的番剧以及时间点`,
+	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy
 

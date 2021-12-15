@@ -22,8 +22,10 @@ var info = manager.PluginInfo{
 	更新管理员权限：会将所有群中未被设置权限的管理员设为默认权限
 	设置管理员权限 [群号] [用户ID] [Level]：将指定群的指定用户权限设为Level
 备注：
-	每日1点5分，会更新所有群管理员权限
+	每日1点5分，会更新所有群管理员权限; 
+	群管理员变动时会自动刷新该群权限，并清除被撤下的管理员的所有权限;（event包）
 	权限level(>=1)数字越小，权限越高
+	权限level设为0代表清除该用户权限，该用户无管理员权限
 `,
 	IsSuperOnly: true,
 }
@@ -36,6 +38,7 @@ func init() {
 	proxy.OnCommands([]string{"更新管理员权限"}).SetBlock(true).FirstPriority().Handle(flushAllPriority)
 	proxy.OnCommands([]string{"设置管理员权限"}).SetBlock(true).FirstPriority().Handle(setOnePriority)
 	proxy.AddConfig("defaultLevel", 5)
+	proxy.AddConfig("ownerLevel", 1) // 群主的默认权限等级
 	proxy.AddConfig("superLevel", 1) // 超级用户的默认权限等级
 	_, _ = proxy.AddScheduleDailyFunc(1, 5, initialAllPriority)
 	manager.AddPreHook(authHook) // 在调用插件前检查管理员权限
@@ -53,7 +56,7 @@ func authHook(condition *manager.PluginCondition, ctx *zero.Ctx) error {
 		return nil
 	}
 	level := GetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID)
-	if utils.IsGroupAnonymous(ctx) { // 匿名消息，权限设为最低
+	if level <= 0 || utils.IsGroupAnonymous(ctx) { // 无权限或匿名消息，权限设为最低
 		level = math.MaxInt
 	}
 	if level > condition.AdminLevel {
@@ -90,7 +93,7 @@ func setOnePriority(ctx *zero.Ctx) {
 		return
 	}
 	level, err := strconv.ParseInt(args[2], 10, 32)
-	if err != nil || level <= 0 {
+	if err != nil || level < 0 {
 		ctx.Send("权限等级格式不对哦")
 		return
 	}

@@ -40,6 +40,7 @@ func InitialGroupPriority(ctx *zero.Ctx, groupID int64) error {
 		return fmt.Errorf("wrong param ctx=%v,groupID=%v", ctx, groupID)
 	}
 	level := proxy.GetConfigInt64("defaultLevel")
+	owner := proxy.GetConfigInt64("ownerLevel")
 	members := ctx.GetGroupMemberList(groupID).Array()
 	for _, member := range members {
 		if member.Get("role").String() != "owner" && member.Get("role").String() != "admin" {
@@ -49,6 +50,9 @@ func InitialGroupPriority(ctx *zero.Ctx, groupID int64) error {
 			ID:       member.Get("user_id").Int(),
 			GroupID:  groupID,
 			Priority: int(level),
+		}
+		if member.Get("role").String() == "owner" {
+			userP.Priority = int(owner)
 		}
 		proxy.GetDB().Clauses(clause.OnConflict{DoNothing: true}).Create(&userP)
 	}
