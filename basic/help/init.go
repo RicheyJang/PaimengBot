@@ -30,7 +30,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"帮助", "help", "功能"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(helpHandle)
-	proxy.AddConfig(showBanPluginKey, true) // 被禁用的功能是否在帮助中有所展示，不过，哪怕设定为true，也会有明显标识该功能被禁用
+	proxy.AddConfig(showBanPluginKey, true) // 普通用户(SuperUser无效)被禁用的功能是否在帮助中有所展示，不过，哪怕设定为true，也会有明显标识该功能被禁用
 }
 
 func helpHandle(ctx *zero.Ctx) {
@@ -53,13 +53,13 @@ func checkPluginCouldShow(plugin *manager.PluginCondition, isSuper, isPrimary bo
 	if plugin == nil {
 		return false
 	}
-	if plugin.IsSuperOnly && (!isSuper || !isPrimary) { // 超级用户专属
+	if plugin.IsSuperOnly && !(isSuper && isPrimary) { // 超级用户专属
 		return false
 	}
 	if plugin.AdminLevel > 0 && (priority == 0 || priority > plugin.AdminLevel) { // 管理员权限
 		return false
 	}
-	if blacks != nil && !proxy.GetConfigBool(showBanPluginKey) {
+	if blacks != nil && !(isSuper && isPrimary) && !proxy.GetConfigBool(showBanPluginKey) {
 		if _, ok := blacks[plugin.Key]; ok {
 			return false
 		}
