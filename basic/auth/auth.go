@@ -7,8 +7,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/images"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -21,12 +23,14 @@ var info = manager.PluginInfo{
 用法：
 	更新管理员权限：会将所有群中未被设置权限的管理员设为默认权限
 	设置管理员权限 [群号] [用户ID] [Level]：将指定群的指定用户权限设为Level
+	查看管理员权限 [群号]：查看指定群的所有管理员权限
 备注：
 	每日1点5分，会更新所有群管理员权限; 
 	群管理员变动时会自动刷新该群权限，并清除被撤下的管理员的所有权限;（event包）
 	权限level(>=1)数字越小，权限越高
 	权限level设为0代表清除该用户权限，该用户无管理员权限
 `,
+	Classify:    "群功能",
 	IsSuperOnly: true,
 }
 
@@ -37,6 +41,7 @@ func init() {
 	}
 	proxy.OnCommands([]string{"更新管理员权限"}).SetBlock(true).FirstPriority().Handle(flushAllPriority)
 	proxy.OnCommands([]string{"设置管理员权限"}).SetBlock(true).FirstPriority().Handle(setOnePriority)
+	proxy.OnCommands([]string{"查看管理员权限"}).SetBlock(true).FirstPriority().Handle(showPriority)
 	proxy.AddConfig("defaultLevel", 5)
 	proxy.AddConfig("ownerLevel", 1) // 群主的默认权限等级
 	proxy.AddConfig("superLevel", 1) // 超级用户的默认权限等级
@@ -104,6 +109,52 @@ func setOnePriority(ctx *zero.Ctx) {
 	} else {
 		ctx.Send(fmt.Sprintf("成功把%v在群%v的权限设置成%v啦", userID, groupID, level))
 	}
+}
+
+func showPriority(ctx *zero.Ctx) {
+	arg := strings.TrimSpace(utils.GetArgs(ctx))
+	groupID, err := strconv.ParseInt(arg, 10, 64)
+	if err != nil {
+		groupID = ctx.Event.GroupID
+		if groupID == 0 {
+			ctx.Send("群号格式不对哦")
+			return
+		}
+	}
+	var lines []string
+	data := make(map[int64]string)
+	var users []dao.UserPriority
+	super := int(proxy.GetConfigInt64("superLevel"))
+	// 查询
+	proxy.GetDB().Where(&dao.UserPriority{GroupID: groupID}).Order("priority asc").Find(&users)
+	for _, user := range users {
+		if user.Priority <= 0 {
+			continue
+		}
+		line := fmt.Sprintf("%d权限: %d", user.ID, user.Priority)
+		if utils.IsSuperUser(user.ID) { // 超级用户单独处理
+			if super > 0 && super < user.Priority { // 若默认超级用户拥有更高权限
+				user.Priority = super
+			}
+			line = fmt.Sprintf("%d权限: %d(Super)", user.ID, user.Priority)
+		}
+		data[user.ID] = line
+		lines = append(lines, line)
+	}
+	least := strings.Join(lines, "\n")
+	if len(lines) == 0 {
+		ctx.Send("暂时没有管理员哦")
+		return
+	}
+	// 生成图片
+	w, _ := images.MeasureStringDefault(least, 24, 1.3)
+	msg, err := images.GenQQListMsgWithAva(data, w, true)
+	if err == nil {
+		ctx.SendChain(msg)
+		return
+	}
+	// 形成兜底回包消息
+	ctx.Send(least)
 }
 
 // 每天定时初始化所有未被设置权限的管理员为默认权限

@@ -84,7 +84,7 @@ func GetGroupUserPriority(groupID, userID int64) (level int) {
 	}()
 	var userP dao.UserPriority
 	res := proxy.GetDB().Where(&dao.UserPriority{ID: userID, GroupID: groupID}).Order("priority desc").Limit(1).Find(&userP)
-	if res.RowsAffected == 0 || res.Error != nil {
+	if res.RowsAffected == 0 || res.Error != nil || userP.Priority <= 0 {
 		return math.MaxInt
 	}
 	return userP.Priority
