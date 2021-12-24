@@ -109,6 +109,11 @@ func drawCards(userID int64, num int, name string) message.Message {
 	}
 	// 返回消息
 	tip := fmt.Sprintf("距离上次4★：%d\n距离上次5★：%d", user.Last4, user.Last5)
+	if pool.Type == PoolCharacter {
+		tip = fmt.Sprintf("距离上次4★：%d\n距离上次5★：%d", user.CLast4, user.CLast5)
+	} else if pool.Type == PoolWeapon {
+		tip = fmt.Sprintf("距离上次4★：%d\n距离上次5★：%d", user.WLast4, user.WLast5)
+	}
 	msg, err := img.GenMessageAuto()
 	if err != nil {
 		log.Warnf("item image GenMessageAuto err: %v", err)

@@ -68,8 +68,19 @@ func LoadPools(tp int) (pools []DrawPool) {
 
 // UserInfo 用户信息（模拟抽卡）
 type UserInfo struct {
+	// 常驻池
 	Last4 uint32
 	Last5 uint32
+	// 角色池
+	CLast4   uint32
+	CLast5   uint32
+	C4LastUp uint32 // 角色池，抽出的4星中，距离上次抽中UP有几只
+	C5LastUp uint32 // 角色池，抽出的5星中，距离上次抽中UP有几只
+	// 武器池
+	WLast4   uint32
+	WLast5   uint32
+	W4LastUp uint32 // 武器池，抽出的4星中，距离上次抽中UP有几只
+	W5LastUp uint32 // 武器池，抽出的5星中，距离上次抽中UP有几只
 }
 
 func GetUserInfo(id int64) (u UserInfo) {

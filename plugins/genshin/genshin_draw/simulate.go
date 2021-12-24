@@ -52,7 +52,7 @@ func init() {
 	for i = 1; i <= 8; i++ {
 		percentOfNC4[i] = percentOfNC4[0]
 	}
-	for i = 1; i <= 90; i++ {
+	for i = 1; i <= 80; i++ {
 		if i < 63 {
 			percentOfW5[i] = percentOfW5[0]
 		} else if i > 63 {
@@ -79,12 +79,16 @@ func simulateOnce(pool *DrawPool, user *UserInfo) innerItem {
 
 func simulateOnceNormal(pool *DrawPool, user *UserInfo) (item innerItem) {
 	item.star = randomStar(getFloatRate(percentOfNC4, user.Last4), getFloatRate(percentOfNC5, user.Last5))
+	user.Last4 += 1
+	user.Last5 += 1
 	switch item.star {
 	case 3:
 		item.name = randomChoice(pool.Normal3)
 	case 4:
+		user.Last4 = 0
 		item.name = randomChoice(pool.Normal4)
 	case 5:
+		user.Last5 = 0
 		if randomZeroOne(0.5) {
 			item.name = randomChoice(pool.Normal5Weapon)
 		} else {
@@ -95,30 +99,67 @@ func simulateOnceNormal(pool *DrawPool, user *UserInfo) (item innerItem) {
 }
 
 func simulateOnceCharacter(pool *DrawPool, user *UserInfo) (item innerItem) {
-	return innerItem{
-		star: 5,
-		name: "刻晴",
+	item.star = randomStar(getFloatRate(percentOfNC4, user.CLast4), getFloatRate(percentOfNC5, user.CLast5))
+	user.CLast4 += 1
+	user.CLast5 += 1
+	switch item.star {
+	case 3:
+		item.name = randomChoice(pool.Normal3)
+	case 4:
+		user.CLast4 = 0
+		if user.C4LastUp > 0 || randomZeroOne(0.5) { // UP
+			item.name = randomChoice(pool.Limit4)
+			user.C4LastUp = 0
+		} else {
+			item.name = randomChoice(pool.Normal4)
+			user.C4LastUp += 1
+		}
+	case 5:
+		user.CLast5 = 0
+		if user.C5LastUp > 0 || randomZeroOne(0.5) { // UP
+			item.name = randomChoice(pool.Limit5)
+			user.C5LastUp = 0
+		} else {
+			item.name = randomChoice(pool.Normal5Character)
+			user.C5LastUp += 1
+		}
 	}
+	return
 }
 
 func simulateOnceWeapon(pool *DrawPool, user *UserInfo) (item innerItem) {
-	return innerItem{
-		star: 5,
-		name: "刻晴",
+	item.star = randomStar(getFloatRate(percentOfW4, user.WLast4), getFloatRate(percentOfW5, user.WLast5))
+	user.WLast4 += 1
+	user.WLast5 += 1
+	switch item.star {
+	case 3:
+		item.name = randomChoice(pool.Normal3)
+	case 4:
+		user.WLast4 = 0
+		if user.W4LastUp > 0 || randomZeroOne(0.75) { // UP
+			item.name = randomChoice(pool.Limit4)
+			user.W4LastUp = 0
+		} else {
+			item.name = randomChoice(pool.Normal4)
+			user.W4LastUp += 1
+		}
+	case 5:
+		user.WLast5 = 0
+		if user.W5LastUp > 0 || randomZeroOne(0.75) { // UP
+			// TODO 武器定轨
+			item.name = randomChoice(pool.Limit5)
+			user.W5LastUp = 0
+		} else {
+			item.name = randomChoice(pool.Normal5Weapon)
+			user.W5LastUp += 1
+		}
 	}
+	return
 }
 
 // 抽卡统一事后处理
 func (user *UserInfo) postProcess(pool *DrawPool, item innerItem) {
-	user.Last4 = user.Last4 + 1
-	user.Last5 = user.Last5 + 1
-	if item.star == 4 { // 抽到4星，重置
-		user.Last4 = 0
-	}
-	if item.star == 5 { // 抽到5星，重置
-		user.Last5 = 0
-	}
-	// TODO postProcess
+	// 暂时没啥统一的
 }
 
 func getFloatRate(mp map[uint32]float64, last uint32) float64 {
@@ -158,10 +199,10 @@ func randomChoice(src []string) string {
 	return src[rand.Intn(len(src))]
 }
 
-func randomZeroOne(rate float64) bool {
+func randomZeroOne(rateTrue float64) bool {
 	r := rand.Float64()
-	if r < rate {
-		return false
+	if r < rateTrue {
+		return true
 	}
-	return true
+	return false
 }
