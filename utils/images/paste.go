@@ -1,6 +1,7 @@
 package images
 
 import (
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ func (img *ImageCtx) PasteStringDefault(str string, fontSize, lineSpace float64,
 	return nil
 }
 
+// PasteLine 画线
 func (img *ImageCtx) PasteLine(x1, y1, x2, y2, lineWidth float64, colorStr string) {
 	img.Push()
 	defer img.Pop()
@@ -27,6 +29,24 @@ func (img *ImageCtx) PasteLine(x1, y1, x2, y2, lineWidth float64, colorStr strin
 	img.DrawLine(x1, y1, x2, y2)
 	img.SetLineWidth(lineWidth)
 	img.Stroke()
+}
+
+type Point struct {
+	X, Y float64
+}
+
+// DrawStar 绘制星星 n: 角数; (x, y): 圆心坐标; r: 圆半径
+func (img *ImageCtx) DrawStar(n int, x, y, r float64) {
+	points := make([]Point, n)
+	for i := 0; i < n; i++ {
+		a := float64(i)*2*math.Pi/float64(n) - math.Pi/2
+		points[i] = Point{x + r*math.Cos(a), y + r*math.Sin(a)}
+	}
+	for i := 0; i < n+1; i++ {
+		index := (i * 2) % n
+		p := points[index]
+		img.LineTo(p.X, p.Y)
+	}
 }
 
 var colorMap map[string]string = map[string]string{
@@ -73,4 +93,5 @@ func (img *ImageCtx) SetColorAuto(colorStr string) {
 		img.SetRGBA255(int(r), int(g), int(b), int(a))
 		return
 	}
+	img.SetHexColor("#ffffff") // 兜底 纯白
 }

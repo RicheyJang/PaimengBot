@@ -129,7 +129,7 @@ func IsGroupAnonymous(ctx *zero.Ctx) bool {
 }
 
 // GetQQAvatar 快捷获取QQ头像
-func GetQQAvatar(qq int64, size int) (io.Reader, error) {
+func GetQQAvatar(qq int64, size int) (io.ReadCloser, error) {
 	c := client.NewHttpClient(&client.HttpOptions{
 		Timeout: 3 * time.Second,
 		TryTime: 2,
@@ -148,7 +148,7 @@ func GetQQAvatar(qq int64, size int) (io.Reader, error) {
 }
 
 // GetQQGroupAvatar 快捷获取QQ群头像
-func GetQQGroupAvatar(id int64, size int) (io.Reader, error) {
+func GetQQGroupAvatar(id int64, size int) (io.ReadCloser, error) {
 	c := client.NewHttpClient(&client.HttpOptions{
 		Timeout: 3 * time.Second,
 		TryTime: 2,

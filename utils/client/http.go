@@ -136,7 +136,7 @@ func (c HttpClient) Get(url string) (*http.Response, error) {
 }
 
 // GetReader 通过Get请求获取回包Body（io.Reader）
-func (c HttpClient) GetReader(url string) (io.Reader, error) {
+func (c HttpClient) GetReader(url string) (io.ReadCloser, error) {
 	res, err := c.Get(url)
 	if err != nil {
 		return nil, err

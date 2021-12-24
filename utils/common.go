@@ -78,6 +78,21 @@ func StringSliceContain(slices []string, substr string) bool {
 	return false
 }
 
+// DeleteStringInSlice 删除字符串切片中的str元素，并去重
+func DeleteStringInSlice(slice []string, str ...string) []string {
+	slice = MergeStringSlices(slice)
+	str = MergeStringSlices(str)
+	for _, s := range str {
+		for i, now := range slice {
+			if now == s {
+				slice = append(slice[:i], slice[i+1:]...)
+				break
+			}
+		}
+	}
+	return slice
+}
+
 var letterReg = regexp.MustCompile(`^[A-Za-z]+$`)
 
 // IsLetter 字符串是否为纯字母

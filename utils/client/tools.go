@@ -17,6 +17,7 @@ func DownloadToFile(filename, url string, tryTime int) error {
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 	_, err = io.Copy(f, reader)
 	return err
 }

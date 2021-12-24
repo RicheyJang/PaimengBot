@@ -73,16 +73,22 @@ func NewImageCtxWithBGRGBA255(w, h int, r, g, b, a int) *ImageCtx {
 	return res
 }
 
-// NewImageCtx 创建全透明背景的图片上下文
+// NewImageCtxWithBGColor 创建纯色背景的图片上下文
+func NewImageCtxWithBGColor(w, h int, c string) *ImageCtx {
+	res := NewImageCtx(w, h)
+	// 记录原始状态
+	res.Push()
+	// 设置背景
+	res.SetColorAuto(c)
+	res.Clear()
+	// 恢复原始状态
+	res.Pop()
+	return res
+}
+
+// NewImageCtx 创建空图片上下文
 func NewImageCtx(w, h int) *ImageCtx {
 	dc := gg.NewContext(w, h)
-	// 记录原始状态
-	dc.Push()
-	// 全透明
-	dc.SetRGBA(1, 1, 1, 0)
-	dc.Clear()
-	// 恢复原始状态
-	dc.Pop()
 	return &ImageCtx{
 		Context: dc,
 	}

@@ -61,9 +61,9 @@ func flushTodayResource(ctx *zero.Ctx) {
 
 // 获取今日素材图片文件名
 func getTodayResourceFilename() (string, error) {
-	dir, err := utils.MakeDir(consts.GenshinImageDir)
+	dir, err := utils.MakeDir(utils.PathJoin(consts.GenshinImageDir, "resource"))
 	if err != nil {
-		log.Warnf("MakeDir %v err: %v", consts.GenshinImageDir, err)
+		log.Warnf("getTodayResourceFilename MakeDir %v err: %v", dir, err)
 		return "", err
 	}
 	filename := utils.PathJoin(dir, fmt.Sprintf("%s-%d.png", imageFilePrefix, time.Now().YearDay()))

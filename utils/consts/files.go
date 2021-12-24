@@ -9,7 +9,8 @@ const DefaultLevelDBDir = "./data/leveldb"
 const DefaultImageDir = "./data/img"
 
 const GroupImageDir = DefaultImageDir + "/group"
-const GenshinImageDir = DefaultImageDir + "/genshin"
+const GenshinDataDir = "./data/genshin"
+const GenshinImageDir = GenshinDataDir + "/img"
 const IdiomsImageDir = DefaultImageDir + "/idioms"
 
 const TempRootDir = "./data/tmp"
