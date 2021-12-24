@@ -12,8 +12,7 @@ import (
 )
 
 const GenshinDrawPoolDir = consts.GenshinDataDir + "/pool"
-const GenshinCharacterDir = consts.GenshinImageDir + "/character"
-const GenshinWeaponDir = consts.GenshinImageDir + "/weapon"
+const GenshinPoolPicDir = GenshinDrawPoolDir + "/pic"
 
 var info = manager.PluginInfo{
 	Name: "模拟原神抽卡",
@@ -41,7 +40,7 @@ func init() {
 	proxy.OnRegex(`原神(.*)[1一][发连]`).SetBlock(true).SetPriority(5).Handle(drawOneCard)
 	_, _ = proxy.AddScheduleDailyFunc(2, 10, func() { _ = updateAll() })
 	proxy.AddConfig("skip.normal4", []string{"丽莎", "安柏", "凯亚"})
-	if !utils.DirExists(GenshinDrawPoolDir) || !utils.DirExists(GenshinCharacterDir) {
+	if !utils.DirExists(GenshinDrawPoolDir) || !utils.DirExists(GenshinPoolPicDir) {
 		go updateAll()
 	}
 	rand.Seed(time.Now().Unix())
@@ -61,21 +60,4 @@ var poolTypeMap = map[int]string{
 
 func getPrefixByType(tp int) (prefix string) {
 	return poolTypeMap[tp]
-}
-
-type DrawPool struct {
-	Name         string `json:"name"` // [卡池名]
-	Type         int    `json:"type"` // 卡池类型，参见上述
-	EndTimestamp int64  `json:"end_timestamp"`
-
-	Title  string `json:"title"`   // 卡池介绍中的标题
-	PicURL string `json:"pic_url"` // 卡池图片URL
-
-	Limit5 []string `json:"limit5,omitempty"` // UP 5星
-	Limit4 []string `json:"limit4,omitempty"` // UP 4星
-
-	Normal5Character []string `json:"normal5_character,omitempty"`
-	Normal5Weapon    []string `json:"normal5_weapon,omitempty"`
-	Normal4          []string `json:"normal4"`
-	Normal3          []string `json:"normal3"`
 }

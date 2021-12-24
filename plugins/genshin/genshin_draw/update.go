@@ -1,10 +1,7 @@
 package genshin_draw
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -40,7 +37,7 @@ const genshinCharacterSrcURL = "https://wiki.biligame.com/ys/%E8%A7%92%E8%89%B2"
 const genshinPoolSrcURL = "https://wiki.biligame.com/ys/%E7%A5%88%E6%84%BF"
 
 func updateCharacterPicture() error {
-	if _, err := utils.MakeDir(GenshinCharacterDir); err != nil {
+	if _, err := utils.MakeDir(GenshinPoolPicDir); err != nil {
 		return err
 	}
 	// 请求
@@ -58,7 +55,7 @@ func updateCharacterPicture() error {
 	doc.Find(".resp-tabs-container>.resp-tab-content:first-child").Find(".itemhover.home-box-tag").Each(func(i int, s *goquery.Selection) {
 		sub := s.Find(".home-box-tag-1 a").First()
 		str, _ := sub.Attr("title") // 人物名字
-		path := utils.PathJoin(GenshinCharacterDir, fmt.Sprintf("%v.png", str))
+		path := utils.PathJoin(GenshinPoolPicDir, fmt.Sprintf("%v.png", str))
 		url, _ := sub.Find("img").Attr("src") // 大头照.png
 		err = client.DownloadToFile(path, url, 2)
 		if err != nil {
@@ -69,7 +66,7 @@ func updateCharacterPicture() error {
 }
 
 func updateWeaponPicture() error {
-	if _, err := utils.MakeDir(GenshinWeaponDir); err != nil {
+	if _, err := utils.MakeDir(GenshinPoolPicDir); err != nil {
 		return err
 	}
 	// 请求
@@ -86,7 +83,7 @@ func updateWeaponPicture() error {
 	}
 	doc.Find("#CardSelectTr tr").Find("td:first-child a").Each(func(i int, s *goquery.Selection) {
 		str, _ := s.Attr("title") // 人物名字
-		path := utils.PathJoin(GenshinWeaponDir, fmt.Sprintf("%v.png", str))
+		path := utils.PathJoin(GenshinPoolPicDir, fmt.Sprintf("%v.png", str))
 		url, _ := s.Find("img").Attr("src") // 大头照.png
 		err = client.DownloadToFile(path, url, 2)
 		if err != nil {
@@ -199,44 +196,4 @@ func parseSinglePoolByTable(s *goquery.Selection, normalPool *DrawPool) (pool Dr
 		pool.Normal5Weapon = utils.DeleteStringInSlice(normalPool.Normal5Weapon, pool.Limit5...)
 	}
 	return
-}
-
-// SavePools 保存池子信息入文件
-func SavePools(tp int, pools []DrawPool) (err error) {
-	prefix := getPrefixByType(tp)
-	if len(prefix) == 0 {
-		return fmt.Errorf("no such pool type")
-	}
-	for i, _ := range pools {
-		pools[i].Name = prefix
-		if len(pools) > 1 { // 多个同类池子，名称使用：角色1、角色2、...
-			pools[i].Name += strconv.FormatInt(int64(i+1), 10)
-		}
-	}
-	// 保存
-	path := utils.PathJoin(GenshinDrawPoolDir, fmt.Sprintf("%v.json", prefix))
-	res, err := json.MarshalIndent(pools, "", "\t")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path, res, 0o644)
-}
-
-// LoadPoolsByPrefix 按前缀字符串获取该类型池子信息
-func LoadPoolsByPrefix(prefix string) (pools []DrawPool) {
-	if len(prefix) == 0 {
-		return
-	}
-	path := utils.PathJoin(GenshinDrawPoolDir, fmt.Sprintf("%v.json", prefix))
-	res, err := os.ReadFile(path)
-	if err != nil {
-		return
-	}
-	_ = json.Unmarshal(res, &pools)
-	return
-}
-
-// LoadPools 获取该类型池子信息
-func LoadPools(tp int) (pools []DrawPool) {
-	return LoadPoolsByPrefix(getPrefixByType(tp))
 }

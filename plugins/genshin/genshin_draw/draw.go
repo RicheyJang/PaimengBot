@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"regexp"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RicheyJang/PaimengBot/utils"
-	"github.com/fogleman/gg"
-
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
+	"github.com/fogleman/gg"
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -43,6 +41,7 @@ func drawTenCard(ctx *zero.Ctx) {
 	}
 }
 
+// 处理抽卡请求
 func drawCards(userID int64, num int, name string) message.Message {
 	if proxy.LockUser(userID) {
 		return message.Message{message.Text("有正在进行的抽卡哦，稍等一下嘛")}
@@ -71,18 +70,17 @@ func drawCards(userID int64, num int, name string) message.Message {
 	if pool == nil {
 		return message.Message{message.Text("没有这个祈愿欸")}
 	}
-	// 读取上次4、5星
-	last4Key := fmt.Sprintf("genshin_draw.%v.4", userID)
-	last5Key := fmt.Sprintf("genshin_draw.%v.5", userID)
-	last4 := getKVNum(last4Key)
-	last5 := getKVNum(last5Key)
-	items := simulateRepeatedly(pool, num, &last4, &last5)
+	// 读取用户信息
+	user := GetUserInfo(userID)
+	items := simulateRepeatedly(pool, num, &user)
 	if len(items) == 0 {
 		return message.Message{}
 	}
 	// 记录
-	_ = putKVNum(last4Key, last4)
-	_ = putKVNum(last5Key, last5)
+	err := PutUserInfo(userID, user)
+	if err != nil {
+		log.Errorf("PutUserInfo err: %v", err)
+	}
 	// 构造图片
 	if len(items) == 1 {
 		msg, err := items[0].getImage().GenMessageAuto()
@@ -110,6 +108,7 @@ func drawCards(userID int64, num int, name string) message.Message {
 		}
 	}
 	// 返回消息
+	tip := fmt.Sprintf("距离上次4★：%d\n距离上次5★：%d", user.Last4, user.Last5)
 	msg, err := img.GenMessageAuto()
 	if err != nil {
 		log.Warnf("item image GenMessageAuto err: %v", err)
@@ -117,31 +116,25 @@ func drawCards(userID int64, num int, name string) message.Message {
 		for _, item := range items {
 			res += item.String() + "\n"
 		}
-		return message.Message{message.Text(res)}
+		return message.Message{message.Text(res), message.Text(tip)}
 	}
-	return message.Message{msg}
+	return message.Message{msg, message.Text(tip)}
 }
 
-// 模拟抽卡函数
-
-func simulateRepeatedly(pool *DrawPool, num int, last4 *uint32, last5 *uint32) []innerItem {
+// 模拟抽卡：主逻辑
+func simulateRepeatedly(pool *DrawPool, num int, user *UserInfo) []innerItem {
 	if pool == nil {
 		return nil
 	}
 	items := make([]innerItem, num)
 	for i := range items {
-		items[i] = simulateOnce(pool, *last4, *last5)
-		*last4 = *last4 + 1
-		*last5 = *last5 + 1
-		if items[i].star == 4 { // 抽到4星，重置
-			*last4 = 0
-		}
-		if items[i].star == 5 { // 抽到5星，重置
-			*last5 = 0
-		}
+		items[i] = simulateOnce(pool, user)
+		user.postProcess(pool, items[i])
 	}
 	return items
 }
+
+// 物品消息生成函数
 
 func (item innerItem) getImage() (img *images.ImageCtx) {
 	if item.img != nil {
@@ -165,7 +158,7 @@ func (item innerItem) getImage() (img *images.ImageCtx) {
 		return img
 	}
 	// 贴图
-	path := utils.PathJoin(item.dir, fmt.Sprintf("%v.png", item.name))
+	path := utils.PathJoin(GenshinPoolPicDir, fmt.Sprintf("%v.png", item.name))
 	bg, err := gg.LoadImage(path)
 	if err != nil {
 		img.SetRGB(0, 0, 0) // 纯黑色
