@@ -114,8 +114,8 @@ func (img *ImageCtx) UseDefaultFont(size float64) error {
 var tempCountMutex sync.Mutex
 var tempCount int64 = 0
 
-// SaveTemp 以前缀prefix保存至临时图片文件夹
-func (img *ImageCtx) SaveTemp(prefix string) (string, error) {
+// GetNewTempSavePath 获取新的临时图片可保存路径名（绝对路径）
+func GetNewTempSavePath(prefix string) (string, error) {
 	// 获取临时序号
 	tempCountMutex.Lock()
 	tempCount = (tempCount + 1) % (viper.GetInt64("tmp.maxcount") + 1)
@@ -125,16 +125,25 @@ func (img *ImageCtx) SaveTemp(prefix string) (string, error) {
 	// 尝试创建临时文件夹
 	fullDir, err := utils.MakeDir(consts.TempImageDir)
 	if err != nil {
-		log.Errorf("创建临时目录或获取绝对路径失败 err：%v", err)
 		return "", err
 	}
+	return utils.PathJoin(fullDir, fileName), nil
+}
+
+// SaveTemp 以前缀prefix保存至临时图片文件夹
+func (img *ImageCtx) SaveTemp(prefix string) (string, error) {
+	path, err := GetNewTempSavePath(prefix)
+	if err != nil {
+		log.Errorf("创建临时目录或获取绝对路径失败 err：%v", err)
+		return path, err
+	}
 	// 保存图片
-	err = img.SavePNG(utils.PathJoin(consts.TempImageDir, fileName))
+	err = img.SavePNG(path)
 	if err != nil {
 		log.Errorf("保存临时图片失败 err：%v", err)
 		return "", err
 	}
-	return utils.PathJoin(fullDir, fileName), nil
+	return path, nil
 }
 
 // SaveTempDefault 以默认前缀(tempimg)保存至临时图片文件夹

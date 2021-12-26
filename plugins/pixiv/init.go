@@ -2,12 +2,18 @@ package pixiv
 
 import (
 	"fmt"
+	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
+
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -32,6 +38,8 @@ type PictureInfo struct {
 	PID  int64
 	P    int   // 分P
 	UID  int64 // 作者UID
+
+	Src string // 无需填写，来源图库
 }
 type PictureGetter func(tags []string, num int, isR18 bool) []PictureInfo
 
@@ -42,7 +50,7 @@ var ( // 若有新的图库加入，修改以下两个Map即可，会自动适�
 	}
 	getterScale = map[string]int{ // 从各个图库取图的初始比例
 		"lolicon": 5,
-		"omega":   5,
+		"omega":   0,
 	}
 )
 
@@ -54,6 +62,8 @@ func init() {
 	proxy.OnCommands([]string{"美图", "涩图", "色图", "瑟图"}).SetBlock(true).SecondPriority().Handle(getPictures)
 	proxy.OnCommands([]string{"美图r", "涩图r", "色图r", "瑟图r"}).SetBlock(true).SecondPriority().Handle(getPictures)
 	proxy.OnRegex(`来?([\d一两二三四五六七八九十]*)[张页点份发](.*)的?[色涩美瑟]图([rR]?)`).SetBlock(true).SetPriority(4).Handle(getPicturesWithRegex)
+	proxy.AddAPIConfig(consts.APIOfHibiAPIKey, "api.obfs.dev")
+	proxy.AddConfig("proxy", "i.pixiv.re")
 	for k, v := range getterScale { // 各个图库取图比例配置
 		proxy.AddConfig(fmt.Sprintf("scale.%s", k), v)
 	}
@@ -69,6 +79,9 @@ func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
 	for k, getter := range getterMap {
 		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
 		pics := getter(tags, int(float64(num)*single)+1, isR18)
+		for _, pic := range pics { // 标注来源图库
+			pic.Src = k
+		}
 		res = append(res, pics...)
 	}
 	return
@@ -76,7 +89,26 @@ func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
 
 // 发送至多max张图片
 func sendPictureMsg(ctx *zero.Ctx, pics []PictureInfo, max int) {
-	// TODO implement me
+	if len(pics) == 0 {
+		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("没图了..."))
+		return
+	}
+	rand.Shuffle(len(pics), func(i, j int) { // 打乱顺序
+		pics[i], pics[j] = pics[j], pics[i]
+	})
+	sort.Slice(pics, func(i, j int) bool { // 优先已有URL的
+		return len(pics[i].URL) > len(pics[j].URL)
+	})
+	for i, num := 0, 0; i < len(pics) && num < max; i++ {
+		msg, err := genSinglePicMsg(&pics[i]) // 生成图片消息
+		if err == nil {                       // 成功
+			ctx.Send(msg)
+			log.Infof("成功发送Pixiv图片%v, 来源：%v", pics[i].PID, pics[i].Src)
+			num += 1
+		} else { // 失败
+			log.Infof("生成Pixiv消息失败%v, 来源：%v, err=%v", pics[i].PID, pics[i].Src, err)
+		}
+	}
 }
 
 // 消息处理函数 -----

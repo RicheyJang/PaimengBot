@@ -5,3 +5,4 @@ package consts
 const PluginConfigCDKey = "cd" // 配置插件CD限流时长时，所用的配置项Key
 
 const APIOfTraceMoeKey = "tracemoe"
+const APIOfHibiAPIKey = "hibiapi"
