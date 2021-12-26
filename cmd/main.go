@@ -21,6 +21,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/COVID"
 	_ "github.com/RicheyJang/PaimengBot/plugins/contact"
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"
+	_ "github.com/RicheyJang/PaimengBot/plugins/geng"
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin"
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"

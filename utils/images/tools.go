@@ -83,6 +83,24 @@ func MeasureStringDefault(str string, fontSize, lineSpace float64) (float64, flo
 	return img.MeasureMultilineString(str, lineSpace)
 }
 
+// GenStringMsg 以默认方式生成纯文字图片消息，若生成失败，则返回message.Text
+func GenStringMsg(str string) message.MessageSegment {
+	fontSize := 18.0
+	w, h := MeasureStringDefault(str, fontSize, 1.3)
+	img := NewImageCtxWithBGColor(int(w)+10, int(h)+20, "white")
+	err := img.PasteStringDefault(str, fontSize, 1.3, 5, 10, w)
+	if err != nil {
+		log.Warnf("Gen Image String Msg err: %v", err)
+		return message.Text(str)
+	}
+	msg, err := img.GenMessageAuto()
+	if err != nil {
+		log.Warnf("Gen Image String Msg err: %v", err)
+		return message.Text(str)
+	}
+	return msg
+}
+
 // ClipImgToCircle 裁切图像成圆形
 func ClipImgToCircle(img image.Image) image.Image {
 	w := img.Bounds().Size().X
