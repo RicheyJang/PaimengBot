@@ -2,6 +2,8 @@ package pixiv
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -22,14 +24,23 @@ var info = manager.PluginInfo{
 }
 var proxy *manager.PluginProxy
 
-type pictureGetter func(tags []string, num int, isR18 bool) []string
+type PictureInfo struct {
+	Title string // 标题
+	URL   string // 图片链接
+
+	Tags []string // 标签
+	PID  int64
+	P    int   // 分P
+	UID  int64 // 作者UID
+}
+type PictureGetter func(tags []string, num int, isR18 bool) []PictureInfo
 
 var ( // 若有新的图库加入，修改以下两个Map即可，会自动适配
-	getterMap = map[string]pictureGetter{ // 各个图库的取图函数映射
+	getterMap = map[string]PictureGetter{ // 各个图库的取图函数映射
 		"lolicon": getPicturesFromLolicon,
 		"omega":   getPicturesFromOmega,
 	}
-	getterScale = map[string]int{ // 从各个图库取图的比例
+	getterScale = map[string]int{ // 从各个图库取图的初始比例
 		"lolicon": 5,
 		"omega":   5,
 	}
@@ -41,15 +52,56 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"美图", "涩图", "色图", "瑟图"}).SetBlock(true).SecondPriority().Handle(getPictures)
+	proxy.OnCommands([]string{"美图r", "涩图r", "色图r", "瑟图r"}).SetBlock(true).SecondPriority().Handle(getPictures)
 	proxy.OnRegex(`来?([\d一两二三四五六七八九十]*)[张页点份发](.*)的?[色涩美瑟]图([rR]?)`).SetBlock(true).SetPriority(4).Handle(getPicturesWithRegex)
 	for k, v := range getterScale { // 各个图库取图比例配置
 		proxy.AddConfig(fmt.Sprintf("scale.%s", k), v)
 	}
 }
 
-func getPictures(ctx *zero.Ctx) {
-	//arg := strings.TrimSpace(utils.GetArgs(ctx))
+// 从各个图库随机获取图片，返回图片信息切片（为防止后续图片下载等失败，切片长度会>num）
+func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
+	num = (num + 5) * 2
+	sum := 0
+	for k, _ := range getterMap {
+		sum += int(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k)))
+	}
+	for k, getter := range getterMap {
+		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
+		pics := getter(tags, int(float64(num)*single)+1, isR18)
+		res = append(res, pics...)
+	}
+	return
+}
 
+// 发送至多max张图片
+func sendPictureMsg(ctx *zero.Ctx, pics []PictureInfo, max int) {
+	// TODO implement me
+}
+
+// 消息处理函数 -----
+
+func getPictures(ctx *zero.Ctx) {
+	// 命令
+	isR := false
+	cmd := utils.GetCommand(ctx)
+	if strings.HasSuffix(cmd, "r") || strings.HasSuffix(cmd, "R") {
+		if !utils.IsMessagePrimary(ctx) {
+			ctx.Send("滚滚滚")
+			return
+		}
+		isR = true
+	}
+	// 参数
+	arg := strings.TrimSpace(utils.GetArgs(ctx))
+	args := strings.Split(arg, " ")
+	num := getCmdNum(args[len(args)-1])
+	if num > 1 {
+		args = args[:len(args)-1]
+	}
+	// 发图
+	pics := getRandomPictures(args, num, isR)
+	sendPictureMsg(ctx, pics, num)
 }
 
 func getPicturesWithRegex(ctx *zero.Ctx) {
@@ -58,12 +110,30 @@ func getPicturesWithRegex(ctx *zero.Ctx) {
 		ctx.Send("？")
 		return
 	}
-
+	num := getCmdNum(subs[1])
+	tags := strings.Split(subs[2], " ")
+	isR := false
+	if len(subs[3]) > 0 {
+		if !utils.IsMessagePrimary(ctx) {
+			ctx.Send("滚滚滚")
+			return
+		}
+		isR = true
+	}
+	// 发图
+	pics := getRandomPictures(tags, num, isR)
+	sendPictureMsg(ctx, pics, num)
 }
 
-// 从各个图库随机获取图片，返回图片URL切片
-func getRandomPictures(tags []string, num int, isR18 bool) []string {
-	return []string{}
+func getCmdNum(num string) int {
+	if r, ok := chineseNumToInt[num]; ok {
+		return r
+	}
+	r, err := strconv.Atoi(num)
+	if err != nil || r <= 0 {
+		return 1
+	}
+	return r
 }
 
 var chineseNumToInt = map[string]int{
