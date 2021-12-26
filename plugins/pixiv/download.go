@@ -3,6 +3,7 @@ package pixiv
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -11,8 +12,79 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
+	log "github.com/sirupsen/logrus"
+	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
+
+type downloader struct {
+	has  bool
+	pics []PictureInfo
+	cap  int
+
+	tags  []string
+	num   int
+	isR18 bool
+}
+
+func newDownloader(tags []string, num int, isR18 bool) *downloader {
+	var realTags []string
+	for _, tag := range tags {
+		if len(tag) > 0 {
+			realTags = append(realTags, tag)
+		}
+	}
+	return &downloader{
+		has: false,
+		cap: (num + 5) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
+
+		tags:  realTags,
+		num:   num,
+		isR18: isR18,
+	}
+}
+
+func (d *downloader) get() {
+	d.has = true
+	// 从getter获取图片信息
+	sum := 0
+	for k, _ := range getterMap {
+		sum += int(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k)))
+	}
+	for k, getter := range getterMap {
+		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
+		pics := getter(d.tags, int(float64(d.cap)*single)+1, d.isR18)
+		for i := range pics { // 标注来源图库
+			pics[i].Src = k
+		}
+		d.pics = append(d.pics, pics...)
+	}
+	sort.Slice(d.pics, func(i, j int) bool { // 优先已有URL的
+		return len(d.pics[i].URL) > len(d.pics[j].URL)
+	})
+}
+
+func (d *downloader) send(ctx *zero.Ctx) {
+	if !d.has {
+		d.get()
+	}
+	// 预处理图片信息
+	if len(d.pics) == 0 {
+		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("没图了..."))
+		return
+	}
+	// 下载图片
+	for i, num := 0, 0; i < len(d.pics) && num < d.num; i++ {
+		msg, err := genSinglePicMsg(&d.pics[i]) // 生成图片消息
+		if err == nil {                         // 成功
+			ctx.Send(msg)
+			log.Infof("发送Pixiv图片成功 pid=%v, 来源：%v", d.pics[i].PID, d.pics[i].Src)
+			num += 1
+		} else { // 失败
+			log.Infof("生成Pixiv消息失败 url=%v, 来源=%v, err=%v", d.pics[i].URL, d.pics[i].Src, err)
+		}
+	}
+}
 
 // 生成单条Pixiv消息
 func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {

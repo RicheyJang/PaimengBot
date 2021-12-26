@@ -2,8 +2,6 @@ package pixiv
 
 import (
 	"fmt"
-	"math/rand"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -11,9 +9,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 
-	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -69,54 +65,6 @@ func init() {
 	}
 }
 
-// 从各个图库随机获取图片，返回图片信息切片（为防止后续图片下载等失败，切片长度会>num）
-func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
-	var realTags []string
-	for _, tag := range tags {
-		if len(tag) > 0 {
-			realTags = append(realTags, tag)
-		}
-	}
-	num = (num + 5) * 2
-	sum := 0
-	for k, _ := range getterMap {
-		sum += int(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k)))
-	}
-	for k, getter := range getterMap {
-		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
-		pics := getter(realTags, int(float64(num)*single)+1, isR18)
-		for i := range pics { // 标注来源图库
-			pics[i].Src = k
-		}
-		res = append(res, pics...)
-	}
-	return
-}
-
-// 发送至多max张图片
-func sendPictureMsg(ctx *zero.Ctx, pics []PictureInfo, max int) {
-	if len(pics) == 0 {
-		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("没图了..."))
-		return
-	}
-	rand.Shuffle(len(pics), func(i, j int) { // 打乱顺序
-		pics[i], pics[j] = pics[j], pics[i]
-	})
-	sort.Slice(pics, func(i, j int) bool { // 优先已有URL的
-		return len(pics[i].URL) > len(pics[j].URL)
-	})
-	for i, num := 0, 0; i < len(pics) && num < max; i++ {
-		msg, err := genSinglePicMsg(&pics[i]) // 生成图片消息
-		if err == nil {                       // 成功
-			ctx.Send(msg)
-			log.Infof("发送Pixiv图片成功 pid=%v, 来源：%v", pics[i].PID, pics[i].Src)
-			num += 1
-		} else { // 失败
-			log.Infof("生成Pixiv消息失败 url=%v, 来源=%v, err=%v", pics[i].URL, pics[i].Src, err)
-		}
-	}
-}
-
 // 消息处理函数 -----
 
 func getPictures(ctx *zero.Ctx) {
@@ -138,8 +86,7 @@ func getPictures(ctx *zero.Ctx) {
 		args = args[:len(args)-1]
 	}
 	// 发图
-	pics := getRandomPictures(args, num, isR)
-	sendPictureMsg(ctx, pics, num)
+	newDownloader(args, num, isR).send(ctx)
 }
 
 func getPicturesWithRegex(ctx *zero.Ctx) {
@@ -159,8 +106,7 @@ func getPicturesWithRegex(ctx *zero.Ctx) {
 		isR = true
 	}
 	// 发图
-	pics := getRandomPictures(tags, num, isR)
-	sendPictureMsg(ctx, pics, num)
+	newDownloader(tags, num, isR).send(ctx)
 }
 
 func getCmdNum(num string) int {
