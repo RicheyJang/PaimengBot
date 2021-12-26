@@ -26,6 +26,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
+	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
 	_ "github.com/RicheyJang/PaimengBot/plugins/short_url"
 	_ "github.com/RicheyJang/PaimengBot/plugins/statistic"
 	_ "github.com/RicheyJang/PaimengBot/plugins/translate"

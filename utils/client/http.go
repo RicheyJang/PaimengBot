@@ -127,6 +127,24 @@ func (c HttpClient) PostJson(url string, data interface{}) (gjson.Result, error)
 	return gjson.Parse(string(rspBody)), nil
 }
 
+func (c HttpClient) PostMarshal(url string, data interface{}, response interface{}) error {
+	dataB, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	body := bytes.NewReader(dataB)
+	rsp, err := c.Post(url, "application/json", body)
+	if err != nil {
+		return err
+	}
+	rspBody, err := ioutil.ReadAll(rsp.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(rspBody, response)
+	return err
+}
+
 func (c HttpClient) Get(url string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {

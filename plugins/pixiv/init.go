@@ -71,6 +71,12 @@ func init() {
 
 // 从各个图库随机获取图片，返回图片信息切片（为防止后续图片下载等失败，切片长度会>num）
 func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
+	var realTags []string
+	for _, tag := range tags {
+		if len(tag) > 0 {
+			realTags = append(realTags, tag)
+		}
+	}
 	num = (num + 5) * 2
 	sum := 0
 	for k, _ := range getterMap {
@@ -78,9 +84,9 @@ func getRandomPictures(tags []string, num int, isR18 bool) (res []PictureInfo) {
 	}
 	for k, getter := range getterMap {
 		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
-		pics := getter(tags, int(float64(num)*single)+1, isR18)
-		for _, pic := range pics { // 标注来源图库
-			pic.Src = k
+		pics := getter(realTags, int(float64(num)*single)+1, isR18)
+		for i := range pics { // 标注来源图库
+			pics[i].Src = k
 		}
 		res = append(res, pics...)
 	}
@@ -103,10 +109,10 @@ func sendPictureMsg(ctx *zero.Ctx, pics []PictureInfo, max int) {
 		msg, err := genSinglePicMsg(&pics[i]) // 生成图片消息
 		if err == nil {                       // 成功
 			ctx.Send(msg)
-			log.Infof("成功发送Pixiv图片%v, 来源：%v", pics[i].PID, pics[i].Src)
+			log.Infof("发送Pixiv图片成功 pid=%v, 来源：%v", pics[i].PID, pics[i].Src)
 			num += 1
 		} else { // 失败
-			log.Infof("生成Pixiv消息失败%v, 来源：%v, err=%v", pics[i].PID, pics[i].Src, err)
+			log.Infof("生成Pixiv消息失败 url=%v, 来源=%v, err=%v", pics[i].URL, pics[i].Src, err)
 		}
 	}
 }
