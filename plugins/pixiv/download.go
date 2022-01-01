@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
@@ -85,7 +86,7 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	// 下载图片
 	var i, num int
 	for i, num = 0, 0; i < len(d.pics) && num < d.num; i++ {
-		msg, err := genSinglePicMsg(&d.pics[i]) // 生成图片消息
+		msg, err := d.pics[i].GenSinglePicMsg() // 生成图片消息
 		if err == nil {                         // 成功
 			ctx.Send(msg)
 			log.Infof("发送Pixiv图片成功 pid=%v, 来源：%v", d.pics[i].PID, d.pics[i].Src)
@@ -99,8 +100,8 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	}
 }
 
-// 生成单条Pixiv消息
-func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
+// GenSinglePicMsg 生成单条Pixiv消息
+func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 	// 初始化
 	if pic == nil {
 		return nil, fmt.Errorf("pic is nil")
@@ -116,7 +117,7 @@ func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2})
+	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2, Timeout: getTimeout()})
 	err = c.DownloadToFile(path, pic.URL)
 	if err != nil {
 		return nil, err
@@ -149,6 +150,7 @@ func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
 	return message.Message{message.Text(pic.Title), picMsg, message.Text(tip)}, nil
 }
 
+// GetURLByPID 通过PID获取图片下载URL
 func (pic *PictureInfo) GetURLByPID() (err error) {
 	if pic.PID == 0 {
 		return fmt.Errorf("pid is 0")
@@ -193,6 +195,18 @@ func (pic *PictureInfo) GetURLByPID() (err error) {
 		pic.URL = rsp.Get("meta_pages." + strconv.Itoa(pic.P) + ".image_urls.original").String()
 	}
 	return nil
+}
+
+func getTimeout() time.Duration {
+	s := proxy.GetConfigString("timeout")
+	if len(s) == 0 { // 未设置
+		return 10 * time.Second
+	}
+	t, err := time.ParseDuration(s)
+	if err != nil || t < time.Second { // 设置错误
+		return 10 * time.Second
+	}
+	return t
 }
 
 var asciiReg = regexp.MustCompile(`^[A-Za-z0-9_+,=~!@#<>\[\]{}:/.?'"$%&*()\-\\]+$`)
