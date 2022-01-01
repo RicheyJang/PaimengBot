@@ -10,6 +10,9 @@ import (
 
 // 从Lolicon API随机获取图片，返回图片URL切片
 func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
+	if num <= 0 {
+		return []PictureInfo{}
+	}
 	// 请求
 	c := client.NewHttpClient(&client.HttpOptions{TryTime: 3, Timeout: 15 * time.Second})
 	req := APIRequest{
@@ -36,12 +39,13 @@ func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 	var pics []PictureInfo
 	for _, data := range rsp.Data {
 		pic := PictureInfo{
-			Title: data.Title,
-			URL:   data.Urls["original"],
-			Tags:  data.Tags,
-			PID:   data.Pid,
-			P:     data.P,
-			UID:   data.Uid,
+			Title:  data.Title,
+			URL:    data.Urls["original"],
+			Tags:   data.Tags,
+			PID:    data.Pid,
+			P:      data.P,
+			Author: data.Author,
+			UID:    data.Uid,
 		}
 		pics = append(pics, pic)
 	}

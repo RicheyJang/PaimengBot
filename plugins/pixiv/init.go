@@ -30,10 +30,11 @@ type PictureInfo struct {
 	Title string // 标题
 	URL   string // 图片链接
 
-	Tags []string // 标签
-	PID  int64
-	P    int   // 分P
-	UID  int64 // 作者UID
+	Tags   []string // 标签
+	PID    int64
+	P      int    // 分P
+	Author string // 作者
+	UID    int64  // 作者UID
 
 	Src string // 无需填写，来源图库
 }
@@ -58,6 +59,7 @@ func init() {
 	proxy.OnCommands([]string{"美图", "涩图", "色图", "瑟图"}).SetBlock(true).SecondPriority().Handle(getPictures)
 	proxy.OnCommands([]string{"美图r", "涩图r", "色图r", "瑟图r"}).SetBlock(true).SecondPriority().Handle(getPictures)
 	proxy.OnRegex(`来?([\d一两二三四五六七八九十]*)[张页点份发](.*)的?[色涩美瑟]图([rR]?)`).SetBlock(true).SetPriority(4).Handle(getPicturesWithRegex)
+	proxy.AddConfig("omega.setu", false) // 在请求非R18图片时，是否从Omega图库中拿取nsfw=1(setu)的图片
 	proxy.AddAPIConfig(consts.APIOfHibiAPIKey, "api.obfs.dev")
 	proxy.AddConfig("proxy", "i.pixiv.re")
 	for k, v := range getterScale { // 各个图库取图比例配置

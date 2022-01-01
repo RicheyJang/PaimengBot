@@ -2,6 +2,7 @@ package pixiv
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
 	"sort"
 	"strconv"
@@ -52,13 +53,21 @@ func (d *downloader) get() {
 		sum += int(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k)))
 	}
 	for k, getter := range getterMap {
-		single := float64(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))) / float64(sum)
+		scale := proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k))
+		if scale == 0 { // 设定比例为0，跳过
+			continue
+		}
+		single := float64(scale) / float64(sum)
 		pics := getter(d.tags, int(float64(d.cap)*single)+1, d.isR18)
 		for i := range pics { // 标注来源图库
 			pics[i].Src = k
 		}
 		d.pics = append(d.pics, pics...)
 	}
+	// 重排序
+	rand.Shuffle(len(d.pics), func(i int, j int) {
+		d.pics[i], d.pics[j] = d.pics[j], d.pics[i]
+	})
 	sort.Slice(d.pics, func(i, j int) bool { // 优先已有URL的
 		return len(d.pics[i].URL) > len(d.pics[j].URL)
 	})
@@ -74,7 +83,8 @@ func (d *downloader) send(ctx *zero.Ctx) {
 		return
 	}
 	// 下载图片
-	for i, num := 0, 0; i < len(d.pics) && num < d.num; i++ {
+	var i, num int
+	for i, num = 0, 0; i < len(d.pics) && num < d.num; i++ {
 		msg, err := genSinglePicMsg(&d.pics[i]) // 生成图片消息
 		if err == nil {                         // 成功
 			ctx.Send(msg)
@@ -83,6 +93,9 @@ func (d *downloader) send(ctx *zero.Ctx) {
 		} else { // 失败
 			log.Infof("生成Pixiv消息失败 url=%v, 来源=%v, err=%v", d.pics[i].URL, d.pics[i].Src, err)
 		}
+	}
+	if num == 0 {
+		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("失败了..."))
 	}
 }
 
@@ -93,9 +106,9 @@ func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
 		return nil, fmt.Errorf("pic is nil")
 	}
 	if len(pic.URL) == 0 {
-		err := pic.getURLByPID()
+		err := pic.GetURLByPID()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("GetURLByPID failed: %v", err)
 		}
 	}
 	// 下载图片
@@ -124,6 +137,9 @@ func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
 	if pic.P != 0 {
 		tip += fmt.Sprintf("(p%d)", pic.P)
 	}
+	if len(pic.Author) > 0 {
+		tip += fmt.Sprintf("\n作者: %v", pic.Author)
+	}
 	if pic.UID != 0 {
 		tip += fmt.Sprintf("\nUID: %v", pic.UID)
 	}
@@ -133,7 +149,7 @@ func genSinglePicMsg(pic *PictureInfo) (message.Message, error) {
 	return message.Message{message.Text(pic.Title), picMsg, message.Text(tip)}, nil
 }
 
-func (pic *PictureInfo) getURLByPID() (err error) {
+func (pic *PictureInfo) GetURLByPID() (err error) {
 	if pic.PID == 0 {
 		return fmt.Errorf("pid is 0")
 	}
