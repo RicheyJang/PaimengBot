@@ -144,6 +144,7 @@ func updatePoolData() error {
 	doc.Find(".mw-parser-output>table.wikitable").Last().Find("table.wikitable").Each(func(i int, s *goquery.Selection) {
 		pool := parseSinglePoolByTable(s, &normalPool) // 解析单个池子
 		if pool.EndTimestamp >= now {                  // 当前有效池子
+			log.Infof("get genshin pool: %v, end=%v", pool.Title, time.Unix(pool.EndTimestamp, 0))
 			pools[pool.Type] = append(pools[pool.Type], pool)
 		}
 	})
@@ -161,13 +162,19 @@ func parseSinglePoolByTable(s *goquery.Selection, normalPool *DrawPool) (pool Dr
 	timeStr := s.Find("tr:nth-of-type(2)").First().Find("td").Text()
 	indexWave := strings.IndexRune(timeStr, '~')
 	if indexWave < 0 {
+		log.Warnf("parseSinglePoolByTable failed: duration no '~'")
 		return
 	}
-	endTime, err := time.ParseInLocation("2006/01/02 15:04:05", strings.TrimSpace(timeStr[indexWave+1:]), time.Local)
+	endTime, err := parsePoolTime(timeStr[indexWave+1:])
 	if err != nil {
+		log.Warnf("parseSinglePoolByTable failed: parsePoolTime failed end=%v,err=%v", strings.TrimSpace(timeStr[indexWave+1:]), err)
 		return
 	}
 	pool.EndTimestamp = endTime.Unix()
+	startTime, err := parsePoolTime(timeStr[:indexWave])
+	if err == nil && startTime.After(time.Now()) { // 卡池还未开始
+		pool.EndTimestamp = 1
+	}
 	// 标题+类型+URL -> 首行
 	sub := s.Find("th.ys-qy-title img")
 	pool.Title, _ = sub.Attr("title")
@@ -194,6 +201,28 @@ func parseSinglePoolByTable(s *goquery.Selection, normalPool *DrawPool) (pool Dr
 		pool.Normal5Character = utils.DeleteStringInSlice(normalPool.Normal5Character, pool.Limit5...)
 	} else if pool.Type == PoolWeapon {
 		pool.Normal5Weapon = utils.DeleteStringInSlice(normalPool.Normal5Weapon, pool.Limit5...)
+	}
+	return
+}
+
+var poolTimeLayouts = []string{
+	"2006/01/02 15:04",
+	"2006/01/02 15:04:05",
+	"2006/01/02",
+	"2006-01-02 15:04:05",
+	"2006-01-02 15:04",
+	"2006-01-02",
+}
+
+func parsePoolTime(value string) (tm time.Time, err error) {
+	for _, layout := range poolTimeLayouts {
+		tm, err = time.ParseInLocation(layout, strings.TrimSpace(value), time.Local)
+		if err == nil {
+			return tm, nil
+		}
+	}
+	if err == nil {
+		return tm, fmt.Errorf("unexpected error")
 	}
 	return
 }

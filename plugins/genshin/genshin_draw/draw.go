@@ -54,7 +54,7 @@ func drawCards(userID int64, num int, name string) message.Message {
 	if len(name) == 0 {
 		name = "常驻"
 	}
-	reg := regexp.MustCompile(`(.*)\d*`)
+	reg := regexp.MustCompile(`(\D+)\d*`)
 	subs := reg.FindStringSubmatch(name)
 	if len(subs) < 2 {
 		return message.Message{message.Text("没有这个祈愿欸")}
