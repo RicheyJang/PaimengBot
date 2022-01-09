@@ -8,6 +8,7 @@ import (
 	"gorm.io/gorm/clause"
 )
 
+// SetDialogue 新增或修改一个问答
 func SetDialogue(groupID int64, question string, answer message.Message) error {
 	groupD := GroupChatDialogue{
 		GroupID:  groupID,
@@ -20,6 +21,7 @@ func SetDialogue(groupID int64, question string, answer message.Message) error {
 	}).Create(&groupD).Error
 }
 
+// DeleteDialogue 根据问题删除一个问答
 func DeleteDialogue(groupID int64, question string) error {
 	groupD := GroupChatDialogue{
 		GroupID:  groupID,
@@ -28,6 +30,7 @@ func DeleteDialogue(groupID int64, question string) error {
 	return proxy.GetDB().Delete(&groupD).Error
 }
 
+// GetDialogue 根据群号和问题获取answer消息
 func GetDialogue(groupID int64, question string) message.Message {
 	resD := GroupChatDialogue{}
 	rows := proxy.GetDB().Where(&GroupChatDialogue{
@@ -40,6 +43,7 @@ func GetDialogue(groupID int64, question string) message.Message {
 	return message.ParseMessage([]byte(resD.Answer))
 }
 
+// GetAllQuestion 获取指定个群可以触发的所有问答的问题
 func GetAllQuestion(groupID int64) []string {
 	var resD []GroupChatDialogue
 	proxy.GetDB().Where("group_id = ?", groupID).Or("group_id = ?", 0).Find(&resD)

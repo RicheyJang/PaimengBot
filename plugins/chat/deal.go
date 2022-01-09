@@ -9,8 +9,9 @@ import (
 
 type Dealer func(ctx *zero.Ctx, question string) message.Message
 
-var dealers = []Dealer{
+var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自动处理
 	DIYDialogue,
+	WhoAreYou,
 	IDoNotKnow,
 }
 
@@ -29,6 +30,7 @@ func dealChat(ctx *zero.Ctx) {
 	}
 }
 
+// DIYDialogue Dealer: 用户自定义对话
 func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
 	if utils.IsMessageGroup(ctx) {
 		msg := GetDialogue(ctx.Event.GroupID, question)
@@ -39,6 +41,15 @@ func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
 	return GetDialogue(0, question)
 }
 
+// WhoAreYou Dealer: 自我介绍
+func WhoAreYou(ctx *zero.Ctx, question string) message.Message {
+	if question == "你是谁" || question == "是谁" || question == "你是什么" || question == "是什么" {
+		return message.Message{message.Text(proxy.GetConfigString("default.self"))}
+	}
+	return nil
+}
+
+// IDoNotKnow Dealer: XX不知道
 func IDoNotKnow(ctx *zero.Ctx, question string) message.Message {
 	return message.Message{message.Text(fmt.Sprintf("%v不知道哦", utils.GetBotNickname()))}
 }

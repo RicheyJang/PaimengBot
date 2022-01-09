@@ -2,13 +2,14 @@ package chat
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/RicheyJang/PaimengBot/basic/auth"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
-	"strings"
 )
 
 var proxy *manager.PluginProxy
@@ -35,6 +36,7 @@ func init() {
 	proxy.OnCommands([]string{"删除对话", "删除问答"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(showDialogue)
 	proxy.OnMessage(zero.OnlyToMe).SetBlock(true).SetPriority(10).Handle(dealChat)
+	proxy.AddConfig("default.self", "我是派蒙，最好的伙伴！\n才不是应急食品呢")
 }
 
 func addDialogue(ctx *zero.Ctx) {
