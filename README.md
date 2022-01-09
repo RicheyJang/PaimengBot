@@ -64,6 +64,8 @@
 
 参照详细文档：[派蒙Bot文档](https://richeyjang.github.io/PaimengBot)
 
+如果安装或使用中遇到问题，或者有任何问题或建议想要讨论，欢迎加群[应急食品测试群(724694686)](https://qm.qq.com/cgi-bin/qm/qr?k=2u70XSTgORNbVzAnnsSYD2GLrelRuQC6&jump_from=webapi)
+
 ## 开发
 
 #### 编译
