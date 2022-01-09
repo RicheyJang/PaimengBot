@@ -1,8 +1,11 @@
 package PaimengBot
 
 import (
+	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -22,6 +25,7 @@ func init() {
 	pflag.StringSliceP("superuser", "u", []string{}, "all superusers' id")
 	pflag.StringP("nickname", "n", "派蒙", "the bot's nickname")
 	pflag.StringP("log", "l", "info", "the level of logging")
+	pflag.BoolP("daemon", "d", false, "run the bot as a service")
 	pflag.Parse()
 	// 从命令行读取
 	_ = viper.BindPFlag("superuser", pflag.Lookup("superuser"))
@@ -58,6 +62,8 @@ func DoPreWorks() {
 		log.Fatal("setupLogger err: ", err)
 		return
 	}
+	// 检查是否以服务模式启动
+	CheckDaemon()
 }
 
 // 设置日志
@@ -127,4 +133,38 @@ func flushMainConfig(configPath string, configFileName string) error {
 		log.Infof("reload main config from %v", e.Name)
 	})
 	return nil
+}
+
+// CheckDaemon 检查是否需要以服务方式运行(运行参数中包含-d)，若需要，启动服务并将本进程退出
+func CheckDaemon() {
+	args := os.Args[1:]
+
+	execArgs := make([]string, 0)
+	needDaemon := false
+	l := len(args)
+	for i := 0; i < l; i++ {
+		if strings.Index(args[i], "-d") == 0 || strings.Index(args[i], "--d") == 0 {
+			needDaemon = true
+			continue
+		}
+		execArgs = append(execArgs, args[i])
+	}
+
+	if !needDaemon { // 无需以服务运行
+		return
+	}
+
+	proc := exec.Command(os.Args[0], execArgs...)
+	err := proc.Start()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Info("PID: ", proc.Process.Pid)
+	pidErr := ioutil.WriteFile("./bot.pid", []byte(fmt.Sprintf("%d", proc.Process.Pid)), 0o644)
+	if pidErr != nil {
+		log.Errorf("save pid file error: %v", pidErr)
+	}
+
+	os.Exit(0)
 }
