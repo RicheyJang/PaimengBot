@@ -39,7 +39,7 @@ func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackK
 	}
 	usages := selected.Name + classify + "\n" + selected.Usage
 	if isSuper && len(selected.SuperUsage) > 0 {
-		usages += "\n" + selected.SuperUsage
+		usages += "\n超级用户额外用法：\n" + selected.SuperUsage
 	}
 	fontSize, lineSpace := 20.0, 1.3
 	w, h := images.MeasureStringDefault(usages, fontSize, lineSpace)
@@ -64,7 +64,8 @@ func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackK
 		_, usageH := images.MeasureStringDefault(selected.Usage, fontSize, lineSpace)
 		img.PasteLine(10, 10+nameH+20+usageH+10, w-10, 10+nameH+20+usageH+10, 2, "green")
 		_ = img.PasteStringDefault("S", fontSize-5, 1, w-20, 10+nameH+20+usageH, fontSize)
-		err = img.PasteStringDefault(selected.SuperUsage, fontSize, lineSpace, 10, 10+nameH+20+usageH+20, w)
+		superUsage := "超级用户额外用法：\n" + selected.SuperUsage
+		err = img.PasteStringDefault(superUsage, fontSize, lineSpace, 10, 10+nameH+20+usageH+20, w)
 		if err != nil {
 			log.Warnf("formSingleHelpMsg img err: %v", err)
 			return message.Text(usages)
