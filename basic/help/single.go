@@ -26,7 +26,7 @@ func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackK
 		}
 	}
 	if selected == nil {
-		return message.Text("没有找到这个功能哦")
+		return message.Text("没有找到这个功能哦，或在群聊中无法查看功能详情")
 	}
 	// 插件状态检查
 	if _, ok := blackKeys[selected.Key]; ok {
