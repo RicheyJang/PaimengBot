@@ -2,7 +2,6 @@ package invite
 
 import (
 	"fmt"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -24,10 +23,10 @@ var info = manager.PluginInfo{
 用法：
 	查看所有好友[请求]?
 	查看所有群组[请求]?
-	同意/拒绝好友请求 [XXX]
-	同意/拒绝群组请求 [XXX]
-	退群 [XXX]
-	删除好友 [XXX]
+	同意/拒绝好友请求 [对方QQ号]
+	同意/拒绝群请求 [群号]
+	退群 [群号]
+	删除好友 [对方QQ号]
 `,
 	IsSuperOnly: true,
 }
@@ -40,15 +39,14 @@ func init() {
 	proxy.OnCommands([]string{"查看所有好友"}).SetBlock(true).FirstPriority().Handle(handleAllFriends)
 	proxy.OnCommands([]string{"查看所有群组", "查看所有群"}).SetBlock(true).FirstPriority().Handle(handleAllGroups)
 	proxy.OnRegex("(同意|拒绝)好友(请求)?(.+)").SetBlock(true).FirstPriority().Handle(setFriendRequest)
-	proxy.OnRegex("(同意|拒绝)(群|群组)(请求|邀请)?(.+)").SetBlock(true).FirstPriority().Handle(setGroupRequest)
+	proxy.OnRegex("(同意|拒绝)群组?(请求|邀请)?(.+)").SetBlock(true).FirstPriority().Handle(setGroupRequest)
 	proxy.OnCommands([]string{"退群"}, zero.OnlyPrivate).SetBlock(true).FirstPriority().Handle(quitGroup)
 	proxy.OnCommands([]string{"删除好友"}, zero.OnlyPrivate).SetBlock(true).FirstPriority().Handle(deleteFriend)
 }
 
 func setFriendRequest(ctx *zero.Ctx) {
 	// 初始化
-	reg := regexp.MustCompile("(同意|拒绝)好友(请求)?(.+)")
-	sub := reg.FindStringSubmatch(ctx.MessageString())
+	sub := utils.GetRegexpMatched(ctx)
 	if len(sub) <= 3 {
 		ctx.Send("谁嘛？")
 		return
@@ -79,13 +77,12 @@ func setFriendRequest(ctx *zero.Ctx) {
 
 func setGroupRequest(ctx *zero.Ctx) {
 	// 初始化
-	reg := regexp.MustCompile("(同意|拒绝)(群|群组)(请求|邀请)?(.+)")
-	sub := reg.FindStringSubmatch(ctx.MessageString())
-	if len(sub) <= 4 {
+	sub := utils.GetRegexpMatched(ctx)
+	if len(sub) <= 3 {
 		ctx.Send("谁嘛？")
 		return
 	}
-	id, err := strconv.ParseInt(strings.TrimSpace(sub[4]), 10, 64)
+	id, err := strconv.ParseInt(strings.TrimSpace(sub[3]), 10, 64)
 	if err != nil {
 		ctx.Send("格式错误了哦")
 		return
