@@ -10,7 +10,9 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 	"github.com/RicheyJang/PaimengBot/utils/rules"
 
+	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
 	levelopt "github.com/syndtr/goleveldb/leveldb/opt"
@@ -100,8 +102,34 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 			return err
 		}
 	}
+	manager.FlushAllAdminLevelFromConfig()
 	manager.configs.WatchConfig()
+	manager.configs.OnConfigChange(func(in fsnotify.Event) {
+		manager.FlushAllAdminLevelFromConfig()
+	})
 	return nil
+}
+
+// FlushAllAdminLevelFromConfig 从插件配置文件中刷新所有插件管理员权限等级，配置文件 插件名.adminlevel 配置项优先级高于代码预设info.AdminLevel
+func (manager *PluginManager) FlushAllAdminLevelFromConfig() {
+	plugins := GetAllPluginConditions()
+	for _, plugin := range plugins {
+		if plugin == nil {
+			continue
+		}
+		// 获取配置文件中配置的管理员权限等级
+		levelI := manager.getConfig(plugin.Key, "adminlevel")
+		if levelI == nil {
+			continue
+		}
+		level := cast.ToInt(levelI)
+		plugin.AdminLevel = level // 重设管理员权限等级
+		if plugin.AdminLevel == 0 {
+			log.Infof("依据配置文件，清除%v插件的管理员权限等级，非群管理员也可使用", plugin.Key)
+		} else {
+			log.Infof("依据配置文件，重设%v插件的管理员权限等级为%v", plugin.Key, plugin.AdminLevel)
+		}
+	}
 }
 
 func (manager *PluginManager) SetupDatabase(config DBConfig) error {
