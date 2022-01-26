@@ -2,7 +2,9 @@ package chat
 
 import (
 	"fmt"
+
 	"github.com/RicheyJang/PaimengBot/utils"
+
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -10,19 +12,24 @@ import (
 type Dealer func(ctx *zero.Ctx, question string) message.Message
 
 var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自动处理
-	DIYDialogue,
 	WhoAreYou,
 	IDoNotKnow,
 }
 
 func dealChat(ctx *zero.Ctx) {
 	question := ctx.ExtractPlainText()
-	if len(question) == 0 {
-		ctx.Send("？")
+	// 优先尝试自定义问答
+	msg := DIYDialogue(ctx, question)
+	if len(msg) > 0 {
+		ctx.SendChain(append(message.Message{message.At(ctx.Event.UserID)}, msg...)...)
+		return
+	}
+	// 自定义问答无内容，则仅处理OnlyToMe且非空消息
+	if !ctx.Event.IsToMe || len(question) == 0 {
 		return
 	}
 	for _, deal := range dealers {
-		msg := deal(ctx, question)
+		msg = deal(ctx, question)
 		if len(msg) > 0 {
 			ctx.SendChain(append(message.Message{message.At(ctx.Event.UserID)}, msg...)...)
 			return
@@ -32,6 +39,9 @@ func dealChat(ctx *zero.Ctx) {
 
 // DIYDialogue Dealer: 用户自定义对话
 func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
+	if !ctx.Event.IsToMe && proxy.GetConfigBool("onlytome") {
+		return nil
+	}
 	if utils.IsMessageGroup(ctx) {
 		msg := GetDialogue(ctx.Event.GroupID, question)
 		if len(msg) > 0 {

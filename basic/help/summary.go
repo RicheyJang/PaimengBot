@@ -55,9 +55,9 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 			helps[classify] = &blockInfo{classify: classify, items: []blockItem{item}}
 		}
 	}
-	headTips := "所有功能列表  （划红线的为被禁用功能）\n若想查看某一项功能的详细内容, 请输入：帮助 功能名\n"
+	headTips := "所有功能列表  （划红线的为被禁用功能）\n若想查看某一项功能的详细用法, 请输入：帮助 功能名\n"
 	if isSuper && isPrimary {
-		headTips += "绿字标识的代表包含超级用户专属内容\n"
+		headTips += "绿字标识的代表包含超级用户专属内容\n某些插件名前方括号内的数字代表最低使用权限等级，参见：帮助 权限鉴权"
 	}
 	// 生成子图片
 	w, h := images.MeasureStringDefault(headTips, 24, 1.3)

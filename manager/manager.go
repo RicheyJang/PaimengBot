@@ -118,7 +118,7 @@ func (manager *PluginManager) FlushAllAdminLevelFromConfig() {
 			continue
 		}
 		// 获取配置文件中配置的管理员权限等级
-		levelI := manager.getConfig(plugin.Key, "adminlevel")
+		levelI := manager.getConfig(plugin.Key, consts.PluginConfigAdminLevelKey)
 		if levelI == nil {
 			continue
 		}

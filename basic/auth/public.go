@@ -13,6 +13,9 @@ import (
 
 // CheckPriority 检查权限
 func CheckPriority(ctx *zero.Ctx, priority int, tip bool) bool {
+	if priority == 0 {
+		return true
+	}
 	if ctx.Event == nil || ctx.Event.UserID == 0 {
 		return false
 	}
