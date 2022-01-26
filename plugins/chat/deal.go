@@ -49,6 +49,9 @@ func sendChatMessage(ctx *zero.Ctx, msg message.Message) {
 
 // DIYDialogue Dealer: 用户自定义对话
 func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
+	if len(question) == 0 {
+		return nil
+	}
 	if !ctx.Event.IsToMe && proxy.GetConfigBool("onlytome") { // 若配置了onlytome，则仅处理onlytome消息
 		return nil
 	}

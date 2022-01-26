@@ -17,7 +17,7 @@ var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
 	Name: "聊天",
 	Usage: `来闲聊吧！
-	如何进行自定义问答：（仅限群管理员在群中调用）
+	如何进行自定义问答：（默认仅限群管理员在群中调用，且开头需要加上机器人昵称 如派蒙）
 	新增问答
 	[问句内容]
 	[回答内容]：注意共三行哦，将会添加一条相应的问答
@@ -31,7 +31,7 @@ var info = manager.PluginInfo{
 config-plugin文件配置项：
 chat.default.self 自我介绍内容
 chat.diylevel 自定义问答功能所需的最低管理员权限等级，默认为5，设为0则非群管理员用户也可自定义
-chat.onlytome 在群中调用已自定义的问答时是(true)否(false)需要加上机器人名字前缀或者@机器人`,
+chat.onlytome 在群中调用已自定义的问句时是(true)否(false)需要加上机器人名字前缀或者@机器人`,
 }
 
 const DIYDialogueLevelKey = "diylevel"
@@ -42,6 +42,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"新增对话", "新增问答"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(addDialogue)
+	// proxy.OnRegex("^我?问(.*)你?答(.*)$", zero.OnlyToMe).SetBlock(true).SetPriority(6).Handle(addDialogue)
 	proxy.OnCommands([]string{"删除对话", "删除问答"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(showDialogue)
 	proxy.OnMessage().SetBlock(true).SetPriority(10).Handle(dealChat)
@@ -148,6 +149,9 @@ func analysisCtx(ctx *zero.Ctx) (question string, answer message.Message, err er
 	firstMsg = firstMsg[id:]
 	// 解析命令消息
 	subs := strings.SplitN(firstMsg, "\n", 3)
+	//if len(subs) < 3 {
+	//	subs = utils.GetRegexpMatched(ctx)
+	//}
 	if len(subs) < 3 {
 		return "", nil, fmt.Errorf("too few parameters")
 	}

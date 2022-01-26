@@ -36,7 +36,7 @@ func GetDialogue(groupID int64, question string) message.Message {
 	rows := proxy.GetDB().Where(&GroupChatDialogue{
 		GroupID:  groupID,
 		Question: question,
-	}).Find(&resD).RowsAffected
+	}, "group_id", "question").Find(&resD).RowsAffected
 	if rows == 0 {
 		return nil
 	}
