@@ -144,12 +144,13 @@ func (manager *PluginManager) SetupDatabase(config DBConfig) error {
 	case SQLite:
 		dsn := config.Name
 		// 创建文件夹
+		preIndex := strings.LastIndexByte(dsn, '/')
+		if strings.LastIndexByte(dsn, '\\') > preIndex {
+			preIndex = strings.LastIndexByte(dsn, '\\')
+		}
 		prePath := "."
-		for i, c := range dsn {
-			if c == '/' || c == '\\' {
-				prePath = dsn[:i]
-				break
-			}
+		if preIndex > 0 {
+			prePath = dsn[:preIndex]
 		}
 		_, err := utils.MakeDirWithMode(prePath, 0o755)
 		if err != nil {
