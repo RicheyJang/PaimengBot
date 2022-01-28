@@ -40,7 +40,7 @@ func dealChat(ctx *zero.Ctx) {
 }
 
 func sendChatMessage(ctx *zero.Ctx, msg message.Message) {
-	if utils.IsMessagePrimary(ctx) {
+	if utils.IsMessagePrimary(ctx) || !proxy.GetConfigBool("at") { // 私聊或无需@
 		ctx.Send(msg)
 	} else {
 		ctx.SendChain(append(message.Message{message.At(ctx.Event.UserID)}, msg...)...)
