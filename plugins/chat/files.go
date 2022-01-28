@@ -25,6 +25,9 @@ import (
 func GetDialogueByFilesRandom(groupID int64, question string) message.Message {
 	answers := group2Dialogues.Load(groupID, question)
 	if len(answers) > 0 { // 随机选择一个答案
+		if len(answers) == 1 {
+			return message.Message{message.Text(answers[0])}
+		}
 		return message.Message{message.Text(answers[rand.Intn(len(answers))])}
 	}
 	return nil
@@ -234,8 +237,6 @@ func parseDialoguesTXTFile(content []byte) (map[string][]string, error) {
 				return nil, fmt.Errorf("第%v行: 答句长度为0", index)
 			}
 			result[currentQ] = append(result[currentQ], ans)
-		} else {
-			return nil, fmt.Errorf("第%v行: 以不合规字符开头", index)
 		}
 	}
 	return result, nil
