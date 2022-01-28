@@ -36,7 +36,12 @@ var info = manager.PluginInfo{
 `,
 	SuperUsage: `
 全局统计
-全局今日统计`,
+全局今日统计
+统计某人的使用情况：
+统计 [QQ号]
+今日统计 [QQ号]
+配置项：
+statistic.ignore 不纳入统计范围的插件`,
 }
 
 func init() {
@@ -59,9 +64,13 @@ func init() {
 const statisticPrefix = "statis"
 
 // key为四段式：statisticPrefix.类型(总计g 或 当天d).ID(g群号 或 p用户ID 或 全局a).插件Key
+// 值为调用次数，uint32类型
 
 func statisticHook(condition *manager.PluginCondition, ctx *zero.Ctx) error {
 	if !utils.IsMessage(ctx) { // 只记录消息型调用
+		return nil
+	}
+	if !utils.GetNeedStatistic(ctx) { // 不需要统计
 		return nil
 	}
 	key := condition.Key
@@ -131,12 +140,21 @@ func selfStatistics(ctx *zero.Ctx) {
 		ctx.Send("请关闭匿名哦")
 		return
 	}
-	nick := nickname.GetNickname(ctx.Event.UserID, strconv.FormatInt(ctx.Event.UserID, 10))
+	userID := ctx.Event.UserID
+	nick := nickname.GetNickname(userID, strconv.FormatInt(userID, 10))
+	if utils.IsSuperUser(ctx.Event.UserID) { // 超级用户统计指定用户
+		args := strings.TrimSpace(utils.GetArgs(ctx))
+		id, err := strconv.ParseInt(args, 10, 64)
+		if len(args) > 0 && err == nil {
+			userID = id
+			nick = args
+		}
+	}
 	title := fmt.Sprintf("%v的功能使用量统计", nick)
-	prefix := fmt.Sprintf("%v.g.p%v.", statisticPrefix, ctx.Event.UserID)
+	prefix := fmt.Sprintf("%v.g.p%v.", statisticPrefix, userID)
 	if isDaily(ctx) {
-		title = fmt.Sprintf("%v的功能今日使用量统计", nick)
-		prefix = fmt.Sprintf("%v.d.p%v.", statisticPrefix, ctx.Event.UserID)
+		title = fmt.Sprintf("%v的今日功能使用量统计", nick)
+		prefix = fmt.Sprintf("%v.d.p%v.", statisticPrefix, userID)
 	}
 	ctx.Send(dealStatistic(title, prefix))
 }
@@ -188,7 +206,7 @@ func dealStatistic(title string, prefix string) message.MessageSegment {
 		return message.Text("统计失败了，稍后再试试")
 	}
 	if len(resMap) == 0 {
-		return message.Text(fmt.Sprintf("暂时没有使用记录哦，多陪陪%v嘛", utils.GetBotNickname()))
+		return message.Text(fmt.Sprintf("%s：\n暂时没有使用记录哦，多陪陪%v嘛", title, utils.GetBotNickname()))
 	}
 	// 绘图
 	return drawGraph(title, resMap)

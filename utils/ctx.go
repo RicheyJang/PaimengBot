@@ -55,6 +55,26 @@ func GetRegexpMatched(ctx *zero.Ctx) []string {
 	return cast.ToStringSlice(res)
 }
 
+// SetNotStatistic 设置此次调用不统计
+func SetNotStatistic(ctx *zero.Ctx) {
+	if ctx == nil {
+		return
+	}
+	ctx.State["do_not_statistic"] = true
+}
+
+// GetNeedStatistic 获取此次调用是否需要统计
+func GetNeedStatistic(ctx *zero.Ctx) bool {
+	if ctx == nil { // 默认统计
+		return true
+	}
+	res, ok := ctx.State["do_not_statistic"]
+	if !ok {
+		return true
+	}
+	return !cast.ToBool(res)
+}
+
 // WaitNextMessage 等待相同用户的下一条消息，若返回nil，代表超时（5分钟）
 func WaitNextMessage(ctx *zero.Ctx) *zero.Event {
 	t := time.NewTimer(5 * time.Minute)

@@ -26,6 +26,11 @@ func dealChat(ctx *zero.Ctx) {
 		sendChatMessage(ctx, msg)
 		return
 	}
+	defer func() { // 若并没有回复消息，则无需统计
+		if len(msg) == 0 {
+			utils.SetNotStatistic(ctx)
+		}
+	}()
 	// 自定义问答无内容，则仅处理OnlyToMe且非空消息
 	if !ctx.Event.IsToMe || len(question) == 0 {
 		return
