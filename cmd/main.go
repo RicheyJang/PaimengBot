@@ -29,6 +29,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
+	_ "github.com/RicheyJang/PaimengBot/plugins/random"
 	_ "github.com/RicheyJang/PaimengBot/plugins/short_url"
 	_ "github.com/RicheyJang/PaimengBot/plugins/statistic"
 	_ "github.com/RicheyJang/PaimengBot/plugins/translate"
