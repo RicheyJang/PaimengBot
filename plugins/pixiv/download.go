@@ -128,6 +128,12 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 		return nil, err
 	}
 	// 文字
+	tip := pic.GetDescribe()
+	return message.Message{message.Text(pic.Title), picMsg, message.Text(tip)}, nil
+}
+
+// GetDescribe 获取图片说明
+func (pic *PictureInfo) GetDescribe() string {
 	var tags []string
 	for _, tag := range pic.Tags {
 		if isCNOrEn(tag) {
@@ -147,7 +153,7 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 	if len(tags) > 0 {
 		tip += fmt.Sprintf("\n标签: %v", strings.Join(tags, ","))
 	}
-	return message.Message{message.Text(pic.Title), picMsg, message.Text(tip)}, nil
+	return tip
 }
 
 // GetURLByPID 通过PID获取图片下载URL
@@ -181,11 +187,7 @@ func (pic *PictureInfo) GetURLByPID() (err error) {
 		if err == nil && len(pic.URL) == 0 {
 			err = fmt.Errorf("unexpected error")
 		} else if len(pic.URL) > 0 {
-			p := proxy.GetConfigString("proxy")
-			if len(p) > 0 {
-				pic.URL = strings.ReplaceAll(pic.URL, "i.pximg.net", p)
-				pic.URL = strings.ReplaceAll(pic.URL, "i.pixiv.net", p)
-			}
+			pic.ReplaceURLToProxy()
 		}
 	}()
 	// 解析
@@ -195,6 +197,17 @@ func (pic *PictureInfo) GetURLByPID() (err error) {
 		pic.URL = rsp.Get("meta_pages." + strconv.Itoa(pic.P) + ".image_urls.original").String()
 	}
 	return nil
+}
+
+// ReplaceURLToProxy 将图片URL替换为反代地址
+func (pic *PictureInfo) ReplaceURLToProxy() {
+	if len(pic.URL) > 0 {
+		p := proxy.GetConfigString("proxy")
+		if len(p) > 0 {
+			pic.URL = strings.ReplaceAll(pic.URL, "i.pximg.net", p)
+			pic.URL = strings.ReplaceAll(pic.URL, "i.pixiv.net", p)
+		}
+	}
 }
 
 func getTimeout() time.Duration {

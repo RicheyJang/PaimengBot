@@ -59,7 +59,8 @@
 
 ### 好康的
 - [x] 涩图 (pixiv)
-- [ ] Pixiv排行榜
+- [x] Pixiv排行榜 (pixiv_rank)
+- [ ] 查看Pixiv插图所有分P
 - [ ] coser
 
 </details>
