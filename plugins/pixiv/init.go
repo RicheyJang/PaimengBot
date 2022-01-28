@@ -21,7 +21,13 @@ var info = manager.PluginInfo{
 	来两张胡桃的涩图：等同于上一条
 另外，高级用法询问管理员哦~[dog]`,
 	SuperUsage: `特别用法：(在私聊中)
-	色图r [Tag]* [数量num]?：你懂得`,
+	色图r [Tag]* [数量num]?：你懂得
+配置项：
+pixiv.timeout： 下载图片超时时长，至少为1s；越长下载成功率越高、等待时间越长
+pixiv.proxy： Pixiv反代网站，默认为i.pixiv.re，令外可选i.pixiv.cat
+pixiv.scale：从各个图库取图的比例，导入Omega图库后，将pixiv.scale.omega设为非0值才可使其生效
+pixiv.omega.setu：在请求非R18图片时，是(true)否(false)从Omega图库中拿取nsfw=1(setu)的图片
+另外，Omega图库是指从https://github.com/Ailitonia/omega-miya/raw/master/archive_data/db_pixiv.7z手动导入数据库`,
 	Classify: "好康的",
 }
 var proxy *manager.PluginProxy
