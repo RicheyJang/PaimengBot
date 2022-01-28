@@ -15,8 +15,11 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name:        "插件CD限流",
-	Usage:       "防止频繁调用、刷屏；可以通过配置便携地设置CD",
+	Name: "插件CD限流",
+	Usage: `防止频繁调用、刷屏；可以通过配置便携地设置CD时长，各用户CD互相独立
+配置项：
+	只需配置config-plugin文件中的 插件名.cd 配置项，就可以设置指定插件的CD时长了
+	例如将 translate.cd 配置项值设为5s，则单个用户两次使用翻译插件的间隔将不允许低于5秒`,
 	IsPassive:   true,
 	IsSuperOnly: true,
 }

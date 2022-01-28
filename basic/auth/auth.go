@@ -31,6 +31,10 @@ var info = manager.PluginInfo{
 	群管理员变动时会自动刷新该群权限，并清除被撤下的管理员的所有权限;（event包）
 	权限level(>=1)数字越小，权限越高
 	权限level设为0代表清除该用户权限，该用户无管理员权限
+配置项：
+	部分插件已预置了最低权限等级，但所有插件皆可通过config-plugin问句进行权限等级配置
+	只需配置该文件中的 插件名.adminlevel 配置项，即可设置指定插件的最低权限等级了
+	例如将 translate.adminlevel 配置项值设为5，则只有群权限等级高于5(level<=5)的成员才能使用翻译插件
 `,
 	Classify:    "群功能",
 	IsSuperOnly: true,
