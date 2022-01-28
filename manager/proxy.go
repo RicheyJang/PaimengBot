@@ -50,6 +50,13 @@ func (p *PluginProxy) OnCommands(cmd []string, rules ...zero.Rule) *zero.Matcher
 	return matcher
 }
 
+// OnFullMatch 添加新的全匹配器
+func (p *PluginProxy) OnFullMatch(cmd []string, rules ...zero.Rule) *zero.Matcher {
+	matcher := p.OnMessage(append([]zero.Rule{zero.FullMatchRule(cmd...)}, rules...)...)
+	p.addCommands(cmd, rules...)
+	return matcher
+}
+
 // OnMessage 添加消息事件处理器
 func (p *PluginProxy) OnMessage(rules ...zero.Rule) *zero.Matcher {
 	return p.On("message", rules...)

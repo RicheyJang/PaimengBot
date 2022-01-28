@@ -34,6 +34,9 @@ func GetCommand(ctx *zero.Ctx) string {
 		return ""
 	}
 	res, ok := ctx.State["command"]
+	if !ok { // 尝试全匹配
+		res, ok = ctx.State["matched"]
+	}
 	if !ok {
 		return ""
 	}

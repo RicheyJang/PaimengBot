@@ -34,7 +34,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"原神抽卡更新"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(updateAllForce)
+	proxy.OnCommands([]string{"原神抽卡更新", "原神卡池更新"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(updateAllForce)
 	proxy.OnCommands([]string{"原神当前卡池", "原神当前祈愿"}).SetBlock(true).SetPriority(3).Handle(showNowPool)
 	proxy.OnRegex(`原神(.*)(10|十)[发连]`).SetBlock(true).SetPriority(4).Handle(drawTenCard)
 	proxy.OnRegex(`原神(.*)[1一][发连]`).SetBlock(true).SetPriority(5).Handle(drawOneCard)
