@@ -37,8 +37,8 @@ func GetDialogue(groupID int64, question string) message.Message {
 		GroupID:  groupID,
 		Question: question,
 	}, "group_id", "question").Find(&resD).RowsAffected
-	if rows == 0 {
-		return nil
+	if rows == 0 { // 数据库中没有，尝试从问答集文件中读取
+		return GetDialogueByFilesRandom(groupID, question)
 	}
 	return message.ParseMessage([]byte(resD.Answer))
 }

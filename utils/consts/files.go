@@ -12,6 +12,7 @@ const GroupImageDir = DefaultImageDir + "/group"
 const GenshinDataDir = "./data/genshin"
 const GenshinImageDir = GenshinDataDir + "/img"
 const IdiomsImageDir = DefaultImageDir + "/idioms"
+const DIYDialogueDir = "./data/dialogue"
 
 const TempRootDir = "./data/tmp"
 const TempImageDir = TempRootDir + "/img"

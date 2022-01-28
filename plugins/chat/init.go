@@ -7,6 +7,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/basic/auth"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -29,6 +30,8 @@ var info = manager.PluginInfo{
 	另，相应问答只会在调用上述命令的群聊中生效哦
 	若想添加全局问答，请联系超级用户`,
 	SuperUsage: `超级用户在私聊中调用上述命令，会对全局所有群和私聊生效
+此外，还可通过文件批量导入问答集，可选文件格式参见DIYDialogueDir/0.txt及0.json
+文件名为生效群号，以英文逗号分隔，0代表全局生效；文件请统一放置于DIYDialogueDir目录下
 config-plugin文件配置项：
 chat.default.self 自我介绍内容
 chat.diylevel 自定义问答功能所需的最低管理员权限等级，默认为5，设为0则非群管理员用户也可自定义
@@ -39,6 +42,7 @@ chat.at 在群聊中，机器人的回复是(true)否(false)@提问者`,
 const DIYDialogueLevelKey = "diylevel"
 
 func init() {
+	info.SuperUsage = strings.ReplaceAll(info.SuperUsage, "DIYDialogueDir", consts.DIYDialogueDir)
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
 		return

@@ -172,18 +172,13 @@ func (manager *PluginManager) SetupDatabase(config DBConfig) error {
 	case SQLite:
 		dsn := config.Name
 		// 创建文件夹
-		preIndex := strings.LastIndexByte(dsn, '/')
-		if strings.LastIndexByte(dsn, '\\') > preIndex {
-			preIndex = strings.LastIndexByte(dsn, '\\')
-		}
-		prePath := "."
-		if preIndex > 0 {
-			prePath = dsn[:preIndex]
-		}
-		_, err := utils.MakeDirWithMode(prePath, 0o755)
-		if err != nil {
-			log.Errorf("初始化创建SQLite数据库文件夹失败；%v", err)
-			return err
+		prePath, _ := filepath.Split(dsn)
+		if len(prePath) > 0 {
+			_, err := utils.MakeDirWithMode(prePath, 0o755)
+			if err != nil {
+				log.Errorf("初始化创建SQLite数据库文件夹失败；%v", err)
+				return err
+			}
 		}
 		// 连接数据库
 		db, err := gorm.Open(sqlite.Open(dsn), gormC)
