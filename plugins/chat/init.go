@@ -30,7 +30,7 @@ var info = manager.PluginInfo{
 	另，相应问答只会在调用上述命令的群聊中生效哦
 	若想添加全局问答，请联系超级用户`,
 	SuperUsage: `超级用户在私聊中调用上述命令，会对全局所有群和私聊生效
-此外，还可通过文件批量导入问答集，可选文件格式参见DIYDialogueDir/0.txt及0.json
+此外，还可通过文件批量导入问答集，可选文件格式参见DIYDialogueDir/0.txt及0.json；支持CQ码和\n作为换行；
 文件名为生效群号，以英文逗号分隔，0代表全局生效；文件请统一放置于DIYDialogueDir目录下
 config-plugin文件配置项：
 chat.default.self 自我介绍内容

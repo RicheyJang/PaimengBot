@@ -25,12 +25,16 @@ import (
 func GetDialogueByFilesRandom(groupID int64, question string) message.Message {
 	answers := group2Dialogues.Load(groupID, question)
 	if len(answers) > 0 { // 随机选择一个答案
-		if len(answers) == 1 {
-			return message.Message{message.Text(answers[0])}
-		}
-		return message.Message{message.Text(answers[rand.Intn(len(answers))])}
+		randIndex := rand.Intn(len(answers))
+		return preprocessFileAnswer(answers[randIndex])
 	}
 	return nil
+}
+
+// 将文件中的答句解析为消息
+func preprocessFileAnswer(answer string) message.Message {
+	answer = strings.ReplaceAll(answer, "\\n", "\n") // 支持换行符
+	return message.ParseMessageFromString(answer)    // 支持CQ码
 }
 
 func init() {
@@ -38,50 +42,7 @@ func init() {
 	LoadDialoguesFromDir(consts.DIYDialogueDir)
 
 	// 监听文件夹变化
-	initWG := sync.WaitGroup{}
-	initWG.Add(1)
-	go func() {
-		watcher, err := fsnotify.NewWatcher()
-		if err != nil {
-			log.Error(err)
-			return
-		}
-		defer watcher.Close()
-
-		eventsWG := sync.WaitGroup{}
-		eventsWG.Add(1)
-		go func() {
-			defer func() {
-				if err := recover(); err != nil {
-					log.Error("Load Dialogue File Goroutine Panic: ", err)
-				}
-			}()
-			for {
-				select {
-				case event, ok := <-watcher.Events:
-					if !ok { // 'Events' channel is closed
-						eventsWG.Done()
-						return
-					}
-
-					const opMask = fsnotify.Write | fsnotify.Create | fsnotify.Remove | fsnotify.Rename
-					if event.Op&opMask != 0 {
-						LoadDialoguesFromDir(consts.DIYDialogueDir)
-					}
-
-				case err, ok := <-watcher.Errors:
-					if ok { // 'Errors' channel is not closed
-						log.Warnf("chat dialogue files watcher error: %v\n", err)
-					}
-					continue
-				}
-			}
-		}()
-		watcher.Add(consts.DIYDialogueDir)
-		initWG.Done()   // done initializing the watch in this go routine, so the parent routine can move on...
-		eventsWG.Wait() // now, wait for event loop to end in this go-routine...
-	}()
-	initWG.Wait() // make sure that the go routine above fully ended before returning
+	watchDialogueFileChange()
 }
 
 // LoadDialoguesFromDir 从文件夹中读取问答集
@@ -259,4 +220,54 @@ func parseDialoguesJSONFile(content []byte) (map[string][]string, error) {
 		return nil, err
 	}
 	return result, nil
+}
+
+func watchDialogueFileChange() {
+	initWG := sync.WaitGroup{}
+	initWG.Add(1)
+	go func() {
+		watcher, err := fsnotify.NewWatcher()
+		if err != nil {
+			log.Error(err)
+			return
+		}
+		defer watcher.Close()
+
+		eventsWG := sync.WaitGroup{}
+		eventsWG.Add(1)
+		go func() {
+			defer func() {
+				if err := recover(); err != nil {
+					log.Error("Load Dialogue File Goroutine Panic: ", err)
+				}
+			}()
+			for {
+				select {
+				case event, ok := <-watcher.Events:
+					if !ok { // 'Events' channel is closed
+						eventsWG.Done()
+						return
+					}
+
+					const opMask = fsnotify.Write | fsnotify.Create | fsnotify.Remove | fsnotify.Rename
+					if event.Op&opMask != 0 {
+						LoadDialoguesFromDir(consts.DIYDialogueDir)
+					}
+
+				case err, ok := <-watcher.Errors:
+					if ok { // 'Errors' channel is not closed
+						log.Warnf("chat dialogue files watcher error: %v\n", err)
+					}
+					continue
+				}
+			}
+		}()
+		addErr := watcher.Add(consts.DIYDialogueDir)
+		if addErr != nil {
+			log.Warnf("Watch dir=%v err: %v", consts.DIYDialogueDir, addErr)
+		}
+		initWG.Done()   // done initializing the watch in this go routine, so the parent routine can move on...
+		eventsWG.Wait() // now, wait for event loop to end in this go-routine...
+	}()
+	initWG.Wait() // make sure that the go routine above fully ended before returning
 }
