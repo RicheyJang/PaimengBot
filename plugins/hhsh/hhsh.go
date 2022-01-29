@@ -29,20 +29,34 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"缩写翻译", "简写翻译"}).SetBlock(true).FirstPriority().Handle(translateHHSH)
+	proxy.OnCommands([]string{"缩写翻译", "简写翻译"}).SetBlock(true).SecondPriority().Handle(handleTranslate)
+	proxy.OnRegex("^什么是([a-z]+)$").SetBlock(true).SetPriority(4).Handle(handleTranslateReg)
+	proxy.OnRegex("^([a-z]+)是?什么意思$").SetBlock(true).SetPriority(4).Handle(handleTranslateReg)
 	proxy.AddConfig("max", 5)
 }
 
-const hhshAPI = "https://lab.magiconch.com/api/nbnhhsh/guess"
-
-func translateHHSH(ctx *zero.Ctx) {
+func handleTranslate(ctx *zero.Ctx) {
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	if len(arg) == 0 {
 		ctx.Send("？")
 		return
 	}
+	translateHHSH(ctx, arg)
+}
+
+func handleTranslateReg(ctx *zero.Ctx) {
+	subs := utils.GetRegexpMatched(ctx)
+	if len(subs) <= 1 { // 不予理睬
+		return
+	}
+	translateHHSH(ctx, subs[1])
+}
+
+const hhshAPI = "https://lab.magiconch.com/api/nbnhhsh/guess"
+
+func translateHHSH(ctx *zero.Ctx, text string) {
 	c := client.NewHttpClient(nil)
-	res, err := c.PostJson(hhshAPI, map[string]interface{}{"text": arg})
+	res, err := c.PostJson(hhshAPI, map[string]interface{}{"text": text})
 	if err != nil {
 		log.Errorf("translateHHSH post err: %v", err)
 		ctx.Send("翻译失败了...")
@@ -74,5 +88,5 @@ func translateHHSH(ctx *zero.Ctx) {
 		ctx.Send(fmt.Sprintf("%s也不知道...", utils.GetBotNickname()))
 		return
 	}
-	ctx.SendChain(message.Text(str), message.At(ctx.Event.UserID))
+	ctx.SendChain(message.At(ctx.Event.UserID), message.Text(str))
 }
