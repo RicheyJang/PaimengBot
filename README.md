@@ -69,7 +69,9 @@
 
 参照详细文档：[派蒙Bot文档](https://richeyjang.github.io/PaimengBot)
 
-如果安装或使用中遇到问题，或者有任何问题或建议想要讨论，欢迎加群[应急食品测试群(724694686)](https://qm.qq.com/cgi-bin/qm/qr?k=2u70XSTgORNbVzAnnsSYD2GLrelRuQC6&jump_from=webapi)
+如果安装或使用中遇到问题，或者有任何问题或建议想要讨论，总之欢迎加群[应急食品测试群(724694686)](https://qm.qq.com/cgi-bin/qm/qr?k=2u70XSTgORNbVzAnnsSYD2GLrelRuQC6&jump_from=webapi)
+
+开发不易，如果感觉还不错，就在右上角点个star好啦，谢谢
 
 ## 开发
 
@@ -79,6 +81,13 @@
 
 此外，还需要64位的gcc，以保证cgo依赖包正常编译，若未安装64位gcc，可以从这里下载安装：http://tdm-gcc.tdragon.net/
 
-#### 开发规范
+```bash
+# 开启CGO后
+go build ./cmd/main.go
+```
 
-参照开发文档：[派蒙Bot文档](https://richeyjang.github.io/PaimengBot)
+#### 开发文档
+
+派蒙Bot作为一个较为完毕的机器人后端框架，提供了**插件式**集中管理和许多固有能力，参见开发文档。
+
+[派蒙Bot开发文档](https://richeyjang.github.io/PaimengBot/develop/)
