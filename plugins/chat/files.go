@@ -21,6 +21,11 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
+// AddDialogueMap 以 问句 -> 答句集 map的形式添加问答集，仅在本次运行中生效
+func AddDialogueMap(groupID int64, question2answers map[string][]string) {
+	group2Dialogues.Merge(groupID, question2answers) // 保存至内存中
+}
+
 // GetDialogueByFilesRandom 随机获取一条答句（来自文件）消息
 func GetDialogueByFilesRandom(groupID int64, question string) message.Message {
 	answers := group2Dialogues.Load(groupID, question)
@@ -80,7 +85,7 @@ func LoadDialoguesFromDir(dir string) {
 			return nil
 		}
 		for _, id := range ids {
-			group2Dialogues.Merge(id, mp)
+			AddDialogueMap(id, mp)
 		}
 		log.Infof("成功通过%v文件为群%v载入%d条问答", path, ids, len(mp))
 		return nil
@@ -250,7 +255,9 @@ func watchDialogueFileChange() {
 					}
 
 					const opMask = fsnotify.Write | fsnotify.Create | fsnotify.Remove | fsnotify.Rename
-					if event.Op&opMask != 0 {
+					if event.Op&opMask != 0 &&
+						(strings.HasSuffix(event.Name, ".txt") || strings.HasSuffix(event.Name, ".json")) {
+						// 仅限TXT文件和JSON文件
 						LoadDialoguesFromDir(consts.DIYDialogueDir)
 					}
 
