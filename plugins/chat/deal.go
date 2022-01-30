@@ -18,6 +18,13 @@ var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自�
 	IDoNotKnow,
 }
 
+func checkOnlyToMeWithConfig(ctx *zero.Ctx) bool {
+	if !proxy.GetConfigBool("onlytome") {
+		return true
+	}
+	return ctx.Event.IsToMe
+}
+
 func dealChat(ctx *zero.Ctx) {
 	question := ctx.ExtractPlainText()
 	// 优先尝试自定义问答
@@ -57,21 +64,20 @@ func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
 	if len(question) == 0 {
 		return nil
 	}
-	if !ctx.Event.IsToMe && proxy.GetConfigBool("onlytome") { // 若配置了onlytome，则仅处理onlytome消息
-		return nil
-	}
 	if utils.IsMessageGroup(ctx) {
 		msg := GetDialogue(ctx.Event.GroupID, question)
 		if len(msg) > 0 {
 			return msg
 		}
 	}
-	return GetDialogue(0, question)
+	return GetDialogue(0, question) // 全局问答
 }
 
 // WhoAreYou Dealer: 自我介绍
 func WhoAreYou(ctx *zero.Ctx, question string) message.Message {
-	if question == "你是谁" || question == "是谁" || question == "你是什么" || question == "是什么" {
+	if question == "你是谁" || question == "是谁" ||
+		question == "你是什么" || question == "是什么" ||
+		question == "自我介绍" {
 		return message.Message{message.Text(proxy.GetConfigString("default.self"))}
 	}
 	return nil

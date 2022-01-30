@@ -18,7 +18,7 @@ var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
 	Name: "聊天",
 	Usage: `来闲聊吧！
-	如何进行自定义问答：（默认仅限群管理员在群中调用，且开头需要加上机器人昵称 如派蒙）
+	如何进行自定义问答：（默认仅限群管理员在群中调用）
 	新增问答
 	[问句内容]
 	[回答内容]：注意共三行哦，将会添加一条相应的问答，[回答内容]可以为多行
@@ -52,7 +52,7 @@ func init() {
 	proxy.OnCommands([]string{"删除对话", "删除问答"}).SetBlock(true).SetPriority(5).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}).SetBlock(true).SetPriority(5).Handle(showDialogue)
 
-	proxy.OnMessage().SetBlock(true).SetPriority(10).Handle(dealChat)
+	proxy.OnMessage(checkOnlyToMeWithConfig).SetBlock(true).SetPriority(10).Handle(dealChat)
 
 	proxy.AddConfig("default.self", "我是派蒙，最好的伙伴！\n才不是应急食品呢")
 	proxy.AddConfig(DIYDialogueLevelKey, 5)
