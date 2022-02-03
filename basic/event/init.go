@@ -17,7 +17,7 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name:        "处理除消息外其它基本事件",
+	Name:        "基本事件处理",
 	Usage:       "防止被动拉入群聊；捕获好友、群邀请发送给超级用户",
 	IsPassive:   true,
 	IsSuperOnly: true,
@@ -61,8 +61,9 @@ func preventForcedInviteGroup(ctx *zero.Ctx) {
 	}).Create(&groupS).Error; err != nil {
 		log.Errorf("set group(id=%v) flag error(sql): %v", groupS.ID, err)
 	}
-	utils.SendToSuper(message.Text(fmt.Sprintf("%v被%v拉入了群%v",
-		utils.GetBotNickname(), ctx.Event.OperatorID, ctx.Event.GroupID)))
+	utils.SendToSuper(message.Text(fmt.Sprintf("%v成功加入了群%v",
+		utils.GetBotNickname(), ctx.Event.GroupID)))
+	go auth.InitialGroupPriority(ctx, ctx.Event.GroupID) // 初始化群管理员权限等级
 }
 
 // 群管理员变动时
@@ -114,9 +115,10 @@ func handleFriendRequest(ctx *zero.Ctx) {
 		DoUpdates: clause.AssignmentColumns([]string{"flag"}), // Upsert
 	}).Create(&userS).Error; err != nil {
 		log.Errorf("set user(id=%v) flag error(sql): %v", ctx.Event.UserID, err)
-		utils.SendToSuper(message.Text("处理好友请求时SQL出错，请尽快处理"))
+		utils.SendToSuper(message.Text("处理好友请求时SQL出错，请尽快查看日志处理"))
 	} else {
 		str := fmt.Sprintf("收到一条好友请求：\nID: %v\n验证消息：%v", ctx.Event.UserID, ctx.Event.Comment)
+		str += fmt.Sprintf("\n若同意请说：同意好友请求 %[1]v\n若拒绝请说：拒绝好友请求 %[1]v\n", ctx.Event.UserID)
 		utils.SendToSuper(message.Text(str))
 	}
 }
@@ -131,9 +133,10 @@ func handleGroupInvite(ctx *zero.Ctx) {
 		DoUpdates: clause.AssignmentColumns([]string{"flag"}), // Upsert
 	}).Create(&groupS).Error; err != nil {
 		log.Errorf("set group(id=%v) flag error(sql): %v", ctx.Event.GroupID, err)
-		utils.SendToSuper(message.Text("处理群邀请请求时SQL出错，请尽快处理"))
+		utils.SendToSuper(message.Text("处理群邀请请求时SQL出错，请尽快查看日志处理"))
 	} else {
-		str := fmt.Sprintf("收到一条群邀请：\nID: %v\n邀请者ID：%v", ctx.Event.GroupID, ctx.Event.UserID)
+		str := fmt.Sprintf("收到一条群邀请：\n群ID: %v\n邀请者ID：%v", ctx.Event.GroupID, ctx.Event.UserID)
+		str += fmt.Sprintf("\n若同意请说：同意群邀请 %[1]v\n若拒绝请说：拒绝群邀请 %[1]v", ctx.Event.GroupID)
 		utils.SendToSuper(message.Text(str))
 	}
 }
