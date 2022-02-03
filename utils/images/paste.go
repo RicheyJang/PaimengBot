@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/RicheyJang/PaimengBot/utils"
+
 	"github.com/fogleman/gg"
 )
 
@@ -49,6 +51,66 @@ func (img *ImageCtx) DrawStar(n int, x, y, r float64) {
 	}
 }
 
+// DrawStringWrapped 重载gg的DrawStringWrapped，支持首尾空格和换行
+func (img *ImageCtx) DrawStringWrapped(s string, x, y, ax, ay, width, lineSpacing float64, align gg.Align) {
+	lines := img.WordWrap(s, width)
+
+	// sync h formula with MeasureMultilineString
+	h := float64(len(lines)) * img.FontHeight() * lineSpacing
+	h -= (lineSpacing - 1) * img.FontHeight()
+
+	x -= ax * width
+	y -= ay * h
+	switch align {
+	case gg.AlignLeft:
+		ax = 0
+	case gg.AlignCenter:
+		ax = 0.5
+		x += width / 2
+	case gg.AlignRight:
+		ax = 1
+		x += width
+	}
+	ay = 1
+	for _, line := range lines {
+		img.DrawStringAnchored(line, x, y, ax, ay)
+		y += img.FontHeight() * lineSpacing
+	}
+}
+
+// WordWrap 重载gg的WordWrap，支持首尾空格和换行
+func (img *ImageCtx) WordWrap(s string, width float64) []string {
+	var result []string
+	for _, line := range strings.Split(s, "\n") {
+		fields := utils.SplitOnSpace(line)
+		if len(fields)%2 == 1 {
+			fields = append(fields, "")
+		}
+		x := ""
+		for i := 0; i < len(fields); i += 2 {
+			w, _ := img.MeasureString(x + fields[i])
+			if w > width {
+				if x == "" {
+					result = append(result, fields[i])
+					x = ""
+					continue
+				} else {
+					result = append(result, x)
+					x = ""
+				}
+			}
+			x += fields[i] + fields[i+1]
+		}
+		//if x != "" { // 空行
+		result = append(result, x)
+		//}
+	}
+	//for i, line := range result { // 首尾空格
+	//	result[i] = strings.TrimSpace(line)
+	//}
+	return result
+}
+
 var colorMap map[string]string = map[string]string{
 	"white":  "#ffffff",
 	"black":  "#000000",
@@ -59,6 +121,7 @@ var colorMap map[string]string = map[string]string{
 	"yellow": "#ffd43b",
 }
 
+// SetColorAuto 根据参数自动识别并设置颜色
 func (img *ImageCtx) SetColorAuto(colorStr string) {
 	if res, ok := colorMap[colorStr]; ok {
 		img.SetHexColor(res)

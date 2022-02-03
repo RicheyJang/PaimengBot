@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"runtime"
 	"sync"
+	"unicode"
 	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
@@ -110,4 +111,21 @@ func IsNumber(s string) bool {
 // StringRealLength 计算字符串的真实长度
 func StringRealLength(s string) int {
 	return utf8.RuneCountInString(s)
+}
+
+// SplitOnSpace 按文字、空格、文字...分隔字符串
+func SplitOnSpace(x string) []string {
+	var result []string
+	pi := 0
+	ps := false
+	for i, c := range x {
+		s := unicode.IsSpace(c)
+		if s != ps && i > 0 {
+			result = append(result, x[pi:i])
+			pi = i
+		}
+		ps = s
+	}
+	result = append(result, x[pi:])
+	return result
 }
