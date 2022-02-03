@@ -7,17 +7,19 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
-	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/fogleman/gg"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
+const defaultClassify = "一般功能"
+const passiveClassify = "被动"
+
 func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
-	defaultClassify := "一般功能"
-	passiveClassify := "被动"
 	// 获取所有插件信息
 	var helps helpSummaryMap = make(map[string]*blockInfo)
 	for _, plugin := range plugins {
@@ -55,57 +57,82 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 			helps[classify] = &blockInfo{classify: classify, items: []blockItem{item}}
 		}
 	}
-	headTips := "所有功能列表  （划红线的为被禁用功能）\n若想查看某一项功能的详细用法, 请输入：帮助 功能名\n"
+	headTips := "所有功能列表  （划红线的为被禁用功能）\n" +
+		"若想查看某一项功能的详细用法, 请输入：帮助 功能名\n" +
+		"大多数功能在群聊中使用时，请加上\"%[1]v\"前缀，例如：%[1]v帮助、%[1]v关闭复读\n"
+	headTips = fmt.Sprintf(headTips, utils.GetBotNickname())
 	if isSuper && isPrimary {
-		headTips += "绿字标识的代表包含超级用户专属内容\n某些插件名前方括号内的数字代表最低使用权限等级，参见：帮助 权限鉴权"
+		headTips += "\n绿字标识的代表包含超级用户专属内容\n某些插件名前方括号内的数字代表最低使用权限等级，参见：帮助 权限鉴权"
 	}
 	// 生成子图片
+	blocks := sortAllBlocks(helps)
+	maxH, currentH, cols := 600.0, 0.0, 1 // 最大列高度, 当前列高度, 列数
 	w, h := images.MeasureStringDefault(headTips, 24, 1.3)
-	nowH := 10 + h + 20
-	i := 0
-	for _, block := range helps {
-		i += 1
-		block.fill(i)
-		w = math.Max(block.w, w)
-		h += block.h + 40
-	}
-	w, h = w+30, h+40
-	// 提示文字
-	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
-	err := img.PasteStringDefault(headTips, 24, 1.3, 10, 10, w)
-	if err != nil {
-		return message.Text(helps)
-	}
-	// 一般功能
-	if block, ok := helps[defaultClassify]; ok {
-		img.DrawImage(block.img, 15, int(nowH))
-		nowH += block.h + 40
-	}
-	// 其它功能
-	for c, block := range helps {
-		if c == defaultClassify || c == passiveClassify {
-			continue
+	tipH := h // 文字高度
+	maxSingleW := 0.0
+	for i, block := range blocks {
+		block.fill(i + 1)
+		maxSingleW = math.Max(maxSingleW, block.w)
+		currentH += block.h + 40
+		if currentH >= maxH { // 需要开新列
+			currentH = block.h + 40
+			if currentH >= maxH { // 单个框过高
+				maxH = currentH + 10
+			}
+			cols += 1
 		}
-		img.DrawImage(block.img, 15, int(nowH))
-		nowH += block.h + 40
+		blocks[i].colNum = cols
 	}
-	// 被动功能
-	if block, ok := helps[passiveClassify]; ok {
-		img.DrawImage(block.img, 15, int(nowH))
+	w = math.Max(w, maxSingleW*float64(cols)+20*float64(cols-1)) // 多列，取最大框宽度的n倍
+	w, h = w+30, h+maxH+40
+	// 贴提示文字
+	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
+	err := img.PasteStringDefault(headTips, 24, 1.3, 10, 20, w)
+	if err != nil {
+		return message.Text(helps.String())
+	}
+	// 贴图
+	nowX, nowY := 15, 20+int(tipH)+40
+	for i, block := range blocks {
+		if i > 0 && block.colNum > blocks[i-1].colNum { // 开新列
+			nowX += int(maxSingleW) + 20
+			nowY = 20 + int(tipH) + 40
+		}
+		img.DrawImage(block.img, nowX, nowY)
+		nowY += int(block.h) + 40
 	}
 	msg, err := img.GenMessageAuto()
 	if err != nil {
-		return message.Text(helps)
+		return message.Text(helps.String())
 	}
 	return msg
+}
+
+// 将功能块排序
+func sortAllBlocks(helps helpSummaryMap) []*blockInfo {
+	var res []*blockInfo
+	for _, block := range helps {
+		res = append(res, block)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].classify == defaultClassify || res[j].classify == passiveClassify {
+			return true
+		}
+		if res[i].classify == passiveClassify || res[j].classify == defaultClassify {
+			return false
+		}
+		return res[i].classify < res[j].classify
+	})
+	return res
 }
 
 type blockInfo struct {
 	classify string
 	items    []blockItem
 
-	img  image.Image
-	w, h float64
+	img    image.Image
+	w, h   float64
+	colNum int
 }
 
 type blockItem struct {

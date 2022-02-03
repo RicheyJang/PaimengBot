@@ -20,6 +20,9 @@ var info = manager.PluginInfo{
 	帮助：展示已有的所有功能
 	帮助[插件名或命令]：展示具体某个功能的详细帮助
 `,
+	SuperUsage: `超级用户专用插件只有在私聊中"帮助"时才会被展示
+config-plugin配置项：
+	help.showban：普通用户被禁用的功能是否在帮助中有所展示`,
 }
 
 const showBanPluginKey = "showban"
@@ -30,6 +33,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"帮助", "help", "功能"}, zero.OnlyToMe).SetBlock(true).SetPriority(5).Handle(helpHandle)
+	proxy.OnFullMatch([]string{"帮助", "help", "功能"}).SetBlock(true).SetPriority(6).Handle(helpHandle)
 	proxy.AddConfig(showBanPluginKey, true) // 普通用户(SuperUser无效)被禁用的功能是否在帮助中有所展示，不过，哪怕设定为true，也会有明显标识该功能被禁用
 }
 
