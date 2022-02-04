@@ -19,6 +19,7 @@ import (
 
 	// 普通插件
 	_ "github.com/RicheyJang/PaimengBot/plugins/COVID"
+	_ "github.com/RicheyJang/PaimengBot/plugins/admin"
 	_ "github.com/RicheyJang/PaimengBot/plugins/chat"
 	_ "github.com/RicheyJang/PaimengBot/plugins/contact"
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"

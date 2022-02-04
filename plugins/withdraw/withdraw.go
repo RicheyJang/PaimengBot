@@ -1,10 +1,9 @@
 package withdraw
 
 import (
-	"strings"
-
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/rules"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
@@ -25,36 +24,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnMessage(zero.OnlyGroup, zero.OnlyToMe, checkNeedWithdraw).SetBlock(true).FirstPriority().Handle(withDrawMsg)
-}
-
-func checkNeedWithdraw(ctx *zero.Ctx) bool {
-	if len(ctx.Event.Message) < 2 || ctx.Event.Message[0].Type != "reply" { // 回复消息
-		return false
-	}
-	for _, msg := range ctx.Event.Message {
-		if msg.Type == "text" && checkTextMsgNeedWithdraw(msg.Data["text"]) {
-			ctx.State["reply_id"] = ctx.Event.Message[0].Data["id"]
-			return true
-		}
-	}
-	return false
-}
-
-// 检查消息中是否包含撤回字眼
-func checkTextMsgNeedWithdraw(msg string) bool {
-	if len(msg) <= 1 {
-		return false
-	}
-	msg = strings.TrimSpace(msg)
-	for _, nick := range utils.GetBotConfig().NickName { // 去除昵称前缀
-		if strings.HasPrefix(msg, nick) {
-			msg = msg[len(nick):]
-			msg = strings.TrimSpace(msg)
-			break
-		}
-	}
-	return strings.HasPrefix(msg, "撤回") || strings.HasPrefix(msg, "快撤回")
+	proxy.OnMessage(zero.OnlyGroup, rules.ReplyAndCommands("撤回", "快撤回")).SetBlock(true).FirstPriority().Handle(withDrawMsg)
 }
 
 func withDrawMsg(ctx *zero.Ctx) {
