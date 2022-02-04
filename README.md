@@ -33,7 +33,6 @@
 - [x] 复读 (echo)
 - [x] 自检 (inspection)
 - [x] 功能使用统计(可分人分日) (statistic)
-- [x] 回复撤回消息 (withdraw)
 - [x] 点歌 (music)
 - [x] 随机\随机数 (random)
 
@@ -42,6 +41,7 @@
 - [x] 模拟原神抽卡 (genshin_draw)
 
 ### 群功能
+- [x] 撤回消息 (withdraw)
 - [x] 设置入群欢迎 (welcome)
 
 ### 小游戏
