@@ -21,7 +21,7 @@ var info = manager.PluginInfo{
 	Classify: "群功能",
 	Usage: `用法：（需要设为管理员）
 	踢了 [QQ号或@]：并在后续询问中答复"是"，则将指定QQ号或@的人踢出本群
-	禁言 [QQ号或@] [时长]：将指定QQ号或@的人指定时长（时长为0则解除禁言）
+	禁言 [QQ号或@] [时长]：将指定QQ号或@的人指定时长（时长为0则解除禁言; QQ号为0则全体禁言）
 另外，回复某条消息"禁言 [时长]"，则可以将原消息发送者禁言指定时长
 示例：
 	禁言 123456 30m：将123456禁言30分钟
@@ -81,7 +81,7 @@ func muteSomeone(ctx *zero.Ctx) {
 		duration = time.Minute
 	}
 	// 禁言
-	if id == 0 { // WARNING Go-Cqhttp的全员禁言目前无法使用，会在下一版本修复
+	if id == 0 {
 		ctx.SetGroupWholeBan(ctx.Event.GroupID, duration != 0)
 	} else {
 		ctx.SetGroupBan(ctx.Event.GroupID, id, int64(duration/time.Second))
