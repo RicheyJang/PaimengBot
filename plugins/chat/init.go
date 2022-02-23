@@ -36,6 +36,7 @@ var info = manager.PluginInfo{
 
 config-plugin文件配置项：
 	chat.default.self 自我介绍内容
+	chat.default.donotknow 无法处理某消息时的回答内容，留空则不回答；{nickname}代表机器人昵称
 	chat.diylevel 自定义问答功能所需的最低管理员权限等级，默认为5，设为0则非群管理员用户也可自定义
 	chat.onlytome 在群中调用已自定义的问句时是(true)否(false)需要加上机器人名字前缀或者@机器人
 	chat.at 在群聊中，机器人的回复是(true)否(false)@提问者`,
@@ -57,6 +58,7 @@ func init() {
 	proxy.OnMessage(checkOnlyToMeWithConfig).SetBlock(true).SetPriority(10).Handle(dealChat)
 
 	proxy.AddConfig("default.self", "我是派蒙，最好的伙伴！\n才不是应急食品呢")
+	proxy.AddConfig("default.donotknow", "{nickname}不知道哦")
 	proxy.AddConfig(DIYDialogueLevelKey, 5)
 	proxy.AddConfig("onlytome", true)
 	proxy.AddConfig("at", true)

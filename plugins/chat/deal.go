@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -88,8 +89,11 @@ func PluginName(ctx *zero.Ctx, question string) message.Message {
 	plugins := manager.GetAllPluginConditions()
 	for _, plugin := range plugins {
 		if question == plugin.Name {
-			return message.Message{message.Text(
-				fmt.Sprintf("这是%v的一个功能名哟，想知道这个功能怎么使用的话，请说：\n帮助 %v", utils.GetBotNickname(), question))}
+			str := fmt.Sprintf("这是%v的一个功能名哟，想知道这个功能怎么使用的话，请说：\n帮助 %v", utils.GetBotNickname(), question)
+			if !utils.IsMessagePrimary(ctx) {
+				str = fmt.Sprintf("这是%v的一个功能名哟，想知道这个功能怎么使用的话，请说：\n%[1]v帮助 %v", utils.GetBotNickname(), question)
+			}
+			return message.Message{message.Text(str)}
 		}
 	}
 	return nil
@@ -97,5 +101,10 @@ func PluginName(ctx *zero.Ctx, question string) message.Message {
 
 // IDoNotKnow Dealer: XX不知道
 func IDoNotKnow(ctx *zero.Ctx, question string) message.Message {
-	return message.Message{message.Text(fmt.Sprintf("%v不知道哦", utils.GetBotNickname()))}
+	str := proxy.GetConfigString("default.donotknow")
+	if len(str) == 0 {
+		return nil
+	}
+	str = strings.ReplaceAll(str, "{nickname}", utils.GetBotNickname())
+	return message.Message{message.Text(str)}
 }
