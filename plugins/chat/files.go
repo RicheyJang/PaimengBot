@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -21,9 +22,9 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-// AddDialogueMap 以 问句 -> 答句集 map的形式添加问答集，仅在本次运行中生效
-func AddDialogueMap(groupID int64, question2answers map[string][]string) {
-	group2Dialogues.Merge(groupID, question2answers) // 保存至内存中
+// AddDialogueCollection 以 DialoguesCollection 的形式添加问答集，仅在本次运行中生效
+func AddDialogueCollection(groupID int64, dc *DialoguesCollection) {
+	group2Dialogues.Merge(groupID, dc) // 保存至内存中
 }
 
 // GetDialogueByFilesRandom 随机获取一条答句（来自文件）消息
@@ -79,73 +80,156 @@ func LoadDialoguesFromDir(dir string) {
 			}
 		}
 		// 解析
-		mp, err := ParseDialoguesFile(path)
+		dc, err := ParseDialoguesFile(path)
 		if err != nil {
 			log.Warnf("解析问答集文件[%v]失败：%v", path, err)
 			return nil
 		}
 		for _, id := range ids {
-			AddDialogueMap(id, mp)
+			AddDialogueCollection(id, dc)
 		}
-		log.Infof("成功通过%v文件为群%v载入%d条问答", path, ids, len(mp))
+		log.Infof("成功通过%v文件为群%v载入%d条问答", path, ids, dc.Length())
 		return nil
 	})
 }
 
+// 问答集映射结构
 type dialoguesMap struct {
 	mutex sync.RWMutex
-	mp    map[int64]map[string][]string // 群号 -> 问题 -> 答句列表
+	dcMap map[int64]*DialoguesCollection // 群号 -> 问答集
+}
+
+// DialoguesCollection 一个问答集
+type DialoguesCollection struct {
+	full map[string][]string // 全匹配：问题 -> 答句列表
+	regs []regexpDialogue    // 正则匹配：问题正则及其答句列表
+}
+
+// 问句为正则格式的单个问答
+type regexpDialogue struct {
+	reg     *regexp.Regexp
+	answers []string
 }
 
 // 群对话映射（来自文件）
 var group2Dialogues dialoguesMap
 
+func newDialoguesCollection(mp map[string][]string, regs []regexpDialogue) *DialoguesCollection {
+	return &DialoguesCollection{
+		full: mp,
+		regs: regs,
+	}
+}
+
+// Length 获取问答集的问句个数
+func (dc DialoguesCollection) Length() int {
+	return len(dc.full) + len(dc.regs)
+}
+
+// Load 获取答句列表
+func (dc DialoguesCollection) Load(question string) []string {
+	// 优先全匹配
+	if dc.full != nil {
+		if ans, ok := dc.full[question]; ok {
+			return ans
+		}
+	}
+	// 随后遍历正则
+	for _, regD := range dc.regs {
+		if regD.reg != nil && regD.reg.MatchString(question) {
+			return regD.answers
+		}
+	}
+	return nil
+}
+
+// AutoSeparateReg 自动从全匹配map中分离出正则
+func (dc *DialoguesCollection) AutoSeparateReg() error {
+	for q, ans := range dc.full {
+		if len(q) >= 3 && strings.HasPrefix(q, "/") && strings.HasSuffix(q, "/") { // 符合正则问句约定
+			expr := q[1 : len(q)-1]
+			reg, err := regexp.Compile(expr)
+			if err != nil {
+				return fmt.Errorf("正则%v不符合规范：%v", q, err)
+			}
+			// 将该问答从全匹配map切换至正则切片
+			dc.regs = append(dc.regs, regexpDialogue{
+				reg:     reg,
+				answers: ans,
+			})
+			delete(dc.full, q)
+		}
+	}
+	return nil
+}
+
+// Merge 与另一问答集合并
+func (dc *DialoguesCollection) Merge(another *DialoguesCollection) {
+	if dc == nil || another == nil {
+		return
+	}
+	dc.full = mergeMaps(dc.full, another.full)
+	// 合并正则切片
+	for _, anotherReg := range another.regs {
+		needAppend := true
+		for i, thisReg := range dc.regs {
+			if thisReg.reg.String() == anotherReg.reg.String() { // 已存在相同正则，合并答案列表
+				dc.regs[i].answers = utils.MergeStringSlices(thisReg.answers, anotherReg.answers)
+				needAppend = false
+				break
+			}
+		}
+		if needAppend { // 不存在相同正则，直接添加
+			dc.regs = append(dc.regs, anotherReg)
+		}
+	}
+}
+
 // Load 读出一个答案集
 func (dm *dialoguesMap) Load(id int64, question string) []string {
 	dm.mutex.RLock()
 	defer dm.mutex.RUnlock()
-	if dm.mp == nil { // 映射为空
+	if dm.dcMap == nil { // 映射为空
 		return nil
 	}
-	d, ok := dm.mp[id] // 获取指定群对话映射
+	d, ok := dm.dcMap[id] // 获取指定群对话映射
 	if !ok || d == nil {
 		return nil
 	}
-	ans, ok := d[question] // 获取答句
-	if !ok {
-		return nil
-	}
-	return ans
+	return d.Load(question) // 获取答句
 }
 
 // Clear 清空
 func (dm *dialoguesMap) Clear() {
 	dm.mutex.Lock()
 	defer dm.mutex.Unlock()
-	for k := range dm.mp {
-		delete(dm.mp, k)
+	for k := range dm.dcMap {
+		delete(dm.dcMap, k)
 	}
 }
 
 // Merge 将新的问答集合并入
-func (dm *dialoguesMap) Merge(id int64, mp map[string][]string) {
+func (dm *dialoguesMap) Merge(id int64, dc *DialoguesCollection) {
 	dm.mutex.Lock()
 	defer dm.mutex.Unlock()
-	if dm.mp == nil {
-		dm.mp = make(map[int64]map[string][]string)
+	if dm.dcMap == nil {
+		dm.dcMap = make(map[int64]*DialoguesCollection)
 	}
-	if d, ok := dm.mp[id]; !ok || d == nil { // 直接记录
-		dm.mp[id] = mp
+	if d, ok := dm.dcMap[id]; !ok || d == nil { // 直接记录
+		dm.dcMap[id] = dc
 		return
 	}
-	// 与原问答映射合并
-	dm.mp[id] = mergeMaps(dm.mp[id], mp)
+	// 与原问答集合并
+	dm.dcMap[id].Merge(dc)
 }
 
-// merge two map
+// 合并多个map[string][]string类型的map
 func mergeMaps(mps ...map[string][]string) map[string][]string {
 	mp := make(map[string][]string)
 	for _, m := range mps {
+		if m == nil {
+			continue
+		}
 		for k, v := range m {
 			if _, ok := mp[k]; !ok {
 				mp[k] = v
@@ -158,7 +242,7 @@ func mergeMaps(mps ...map[string][]string) map[string][]string {
 }
 
 // ParseDialoguesFile 解析问答集文件
-func ParseDialoguesFile(filename string) (map[string][]string, error) {
+func ParseDialoguesFile(filename string) (dc *DialoguesCollection, err error) {
 	fi, err := os.Stat(filename)
 	if err != nil && !os.IsExist(err) {
 		return nil, err
@@ -172,8 +256,13 @@ func ParseDialoguesFile(filename string) (map[string][]string, error) {
 	}
 	// 解析
 	if len(content) == 0 { // 文件内容为空
-		return make(map[string][]string), nil
+		return newDialoguesCollection(make(map[string][]string), nil), nil
 	}
+	defer func() {
+		if dc != nil && err == nil { // 分离出正则问句
+			err = dc.AutoSeparateReg()
+		}
+	}()
 	if content[0] == '{' {
 		return parseDialoguesJSONFile(content)
 	} else if content[0] == 'Q' || content[0] == 'q' {
@@ -182,7 +271,8 @@ func ParseDialoguesFile(filename string) (map[string][]string, error) {
 	return nil, fmt.Errorf("文件格式错误或暂不支持")
 }
 
-func parseDialoguesTXTFile(content []byte) (map[string][]string, error) {
+// 解析TXT格式问答集
+func parseDialoguesTXTFile(content []byte) (*DialoguesCollection, error) {
 	contentStr := *(*string)(unsafe.Pointer(&content)) // 强制转换
 	lines := strings.Split(contentStr, "\n")
 	result := make(map[string][]string)
@@ -205,7 +295,7 @@ func parseDialoguesTXTFile(content []byte) (map[string][]string, error) {
 			result[currentQ] = append(result[currentQ], ans)
 		}
 	}
-	return result, nil
+	return newDialoguesCollection(result, nil), nil
 }
 
 // get prefixes length
@@ -218,15 +308,18 @@ func getPrefixLen(str string, prefixes ...string) int {
 	return 0
 }
 
-func parseDialoguesJSONFile(content []byte) (map[string][]string, error) {
+// 解析JSON格式问答集
+func parseDialoguesJSONFile(content []byte) (*DialoguesCollection, error) {
 	result := make(map[string][]string)
 	err := json.Unmarshal(content, &result)
 	if err != nil {
 		return nil, err
 	}
-	return result, nil
+	// ！JSON格式并不支持正则问句
+	return newDialoguesCollection(result, nil), nil
 }
 
+// 监听预置问答集文件目录变化，实时更新问答集
 func watchDialogueFileChange() {
 	initWG := sync.WaitGroup{}
 	initWG.Add(1)
@@ -258,7 +351,7 @@ func watchDialogueFileChange() {
 					if event.Op&opMask != 0 &&
 						(strings.HasSuffix(event.Name, ".txt") || strings.HasSuffix(event.Name, ".json")) {
 						// 仅限TXT文件和JSON文件
-						LoadDialoguesFromDir(consts.DIYDialogueDir)
+						LoadDialoguesFromDir(consts.DIYDialogueDir) // 更新问答集
 					}
 
 				case err, ok := <-watcher.Errors:
