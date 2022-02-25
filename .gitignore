@@ -1,10 +1,12 @@
 .idea
 *.yaml
+!.goreleaser.yaml
 *.exe
 *.db
 *.bat
 *.sh
+dist
 log
-ttf
-data
+/ttf
+/data
 go.sum

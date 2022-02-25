@@ -1,0 +1,79 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+      - GO111MODULE=on
+    
+    goos:
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    goarm:
+      - '7'
+    ignore:
+      - goos: windows
+        goarch: arm64
+      - goos: windows
+        goarch: arm
+    
+    main: ./cmd
+    binary: "paimeng" # 可执行文件名
+
+archives:
+  - 
+    name_template: "{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{ .Arm }}{{ end }}"
+    
+    replacements:
+      darwin: macOS
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    
+    format_overrides:
+      - goos: windows
+        format: zip
+    
+    wrap_in_directory: "paimengbot" # 压缩包内文件夹名，false为各文件独立
+    
+    files:
+      # a more complete example, check the globbing deep dive below
+      - src: 'release/data/dialogue/*'
+        dst: 'data/dialogue'
+        strip_parent: true
+      - src: 'release/ttf/*'
+        dst: 'ttf'
+        strip_parent: true
+
+checksum:
+  disable: true
+
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  groups:
+    - title: 新增
+      regexp: "^add[\\w\\s]*:+.*$"
+      order: 0
+    - title: '修复'
+      regexp: "^fix[\\s]*:+.*$"
+      order: 1
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - fix typo
+      - Merge pull request
+      - Merge branch
+      - Merge remote-tracking
+      - go mod tidy
