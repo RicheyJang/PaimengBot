@@ -6,10 +6,12 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 	"github.com/syndtr/goleveldb/leveldb"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"gorm.io/gorm"
@@ -96,7 +98,28 @@ func (p *PluginProxy) checkRules(rules ...zero.Rule) []zero.Rule {
 	if p.c.IsSuperOnly {
 		return append(rules, zero.SuperUserPermission)
 	}
+	if p.DoNotNeedOnlyToMe() {
+		for i, rule := range rules {
+			if utils.IsSameFunc(rule, zero.OnlyToMe) {
+				rules = append(rules[:i], rules[i+1:]...)
+				break
+			}
+		}
+	}
 	return rules
+}
+
+// DoNotNeedOnlyToMe 是否不需要OnlyToMe
+func (p *PluginProxy) DoNotNeedOnlyToMe() bool {
+	c := viper.Get(consts.AlwaysCallKey)
+	switch c.(type) {
+	case string, bool:
+		return cast.ToBool(c)
+	case []string, []interface{}:
+		return utils.StringSliceContain(cast.ToStringSlice(c), p.key)
+	default:
+		return false
+	}
 }
 
 // ---- 定时任务 ----

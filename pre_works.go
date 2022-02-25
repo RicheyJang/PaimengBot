@@ -44,7 +44,8 @@ func init() {
 	viper.SetDefault("db.passwd", "password")
 	viper.SetDefault("db.name", "database")
 	// 其它配置
-	viper.SetDefault("tmp.maxcount", 1000) // 同种类临时文件同时存在的最大数量
+	viper.SetDefault("tmp.maxcount", 1000)        // 同种类临时文件同时存在的最大数量
+	viper.SetDefault(consts.AlwaysCallKey, false) // 是否可以自由调用（完全去除onlytome），不支持热更新
 	// 此init会在manager.common前被调用，随后manager.common.init调用DoPreWorks
 }
 

@@ -19,13 +19,6 @@ var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自�
 	IDoNotKnow,
 }
 
-func checkOnlyToMeWithConfig(ctx *zero.Ctx) bool {
-	if !proxy.GetConfigBool("onlytome") {
-		return true
-	}
-	return ctx.Event.IsToMe
-}
-
 func dealChat(ctx *zero.Ctx) {
 	question := ctx.ExtractPlainText()
 	// 优先尝试自定义问答
