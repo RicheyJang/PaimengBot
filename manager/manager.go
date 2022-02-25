@@ -17,9 +17,10 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	levelopt "github.com/syndtr/goleveldb/leveldb/opt"
 	zero "github.com/wdvxdr1123/ZeroBot"
+
+	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )

@@ -7,6 +7,7 @@ require (
 	github.com/chromedp/chromedp v0.7.6
 	github.com/fogleman/gg v1.3.0
 	github.com/fsnotify/fsnotify v1.5.1
+	github.com/glebarez/sqlite v1.3.5
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/robfig/cron/v3 v3.0.1
@@ -22,7 +23,6 @@ require (
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	gorm.io/driver/mysql v1.3.2
 	gorm.io/driver/postgres v1.3.1
-	gorm.io/driver/sqlite v1.3.1
 	gorm.io/gorm v1.23.1
 )
 
@@ -31,12 +31,14 @@ require (
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77 // indirect
 	github.com/chromedp/sysutil v1.0.0 // indirect
+	github.com/glebarez/go-sqlite v1.14.7 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-sql-driver/mysql v1.6.0 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
@@ -55,10 +57,11 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
-	github.com/mattn/go-sqlite3 v1.14.9 // indirect
+	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/mapstructure v1.4.2 // indirect
 	github.com/pelletier/go-toml v1.9.4 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
+	github.com/remyoudompheng/bigfft v0.0.0-20200410134404-eec4a21b6bb0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
@@ -73,4 +76,8 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	modernc.org/libc v1.14.3 // indirect
+	modernc.org/mathutil v1.4.1 // indirect
+	modernc.org/memory v1.0.5 // indirect
+	modernc.org/sqlite v1.14.5 // indirect
 )

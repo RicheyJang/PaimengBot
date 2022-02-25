@@ -99,12 +99,9 @@
 
 #### 编译
 
-本项目的编译基于go1.17+
-
-此外，还需要64位的gcc，以保证cgo依赖包正常编译，若未安装64位gcc，可以从这里下载安装：http://tdm-gcc.tdragon.net/
+本项目使用纯Go语言实现，编译基于go1.17+
 
 ```bash
-# 开启CGO后
 go build ./cmd/main.go
 ```
 
