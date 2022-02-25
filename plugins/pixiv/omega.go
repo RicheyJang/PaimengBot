@@ -47,7 +47,9 @@ func getPicturesFromOmega(tags []string, num int, isR18 bool) (pics []PictureInf
 		})
 	}
 	// 刷新图片URL
-	go flushOmegaURL(models)
+	if len(models) > 0 {
+		go flushOmegaURL(models)
+	}
 	return
 }
 

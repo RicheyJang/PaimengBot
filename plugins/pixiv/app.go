@@ -11,6 +11,7 @@ import (
 // 从Lolicon API随机获取图片，返回图片URL切片
 func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 	if num <= 0 {
+		log.Warnf("num <= 0, num: %d", num)
 		return []PictureInfo{}
 	}
 	// 请求

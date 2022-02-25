@@ -60,6 +60,7 @@ func (d *downloader) get() {
 		}
 		single := float64(scale) / float64(sum)
 		pics := getter(d.tags, int(float64(d.cap)*single)+1, d.isR18)
+		log.Infof("From %v get %d pics", k, len(pics))
 		for i := range pics { // 标注来源图库
 			pics[i].Src = k
 		}
