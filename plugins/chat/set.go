@@ -23,11 +23,8 @@ func SetDialogue(groupID int64, question string, answer message.Message) error {
 
 // DeleteDialogue 根据问题删除一个问答
 func DeleteDialogue(groupID int64, question string) error {
-	groupD := GroupChatDialogue{
-		GroupID:  groupID,
-		Question: question,
-	}
-	return proxy.GetDB().Delete(&groupD).Error
+	return proxy.GetDB().
+		Where("group_id = ? AND question = ?", groupID, question).Delete(&GroupChatDialogue{}).Error
 }
 
 // GetDialogue 根据群号和问题获取answer消息
