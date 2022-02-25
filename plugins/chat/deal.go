@@ -45,8 +45,21 @@ func dealChat(ctx *zero.Ctx) {
 	}
 }
 
+var singleCQTypeSet = map[string]struct{}{
+	"record": {}, "video": {}, "rps": {}, "dice": {}, "shake": {}, "poke": {}, "share": {},
+	"contact": {}, "location": {}, "music": {}, "reply": {}, "forward": {}, "node": {},
+}
+
 func sendChatMessage(ctx *zero.Ctx, msg message.Message) {
-	if utils.IsMessagePrimary(ctx) || !proxy.GetConfigBool("at") { // 私聊或无需@
+	doNotAt := false
+	// 检查是否包含不能@的消息类型
+	for _, seg := range msg {
+		if _, ok := singleCQTypeSet[seg.Type]; ok {
+			doNotAt = true
+			break
+		}
+	}
+	if doNotAt || utils.IsMessagePrimary(ctx) || !proxy.GetConfigBool("at") { // 私聊或无需@
 		ctx.Send(msg)
 	} else {
 		ctx.SendChain(append(message.Message{message.At(ctx.Event.UserID)}, msg...)...)
