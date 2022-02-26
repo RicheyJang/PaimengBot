@@ -22,6 +22,9 @@ var info = manager.PluginInfo{
 	Usage: `用法：
 	猜成语：扔给你一张图片，猜出来是什么成语吧
 	猜不出来的话，发送"算了"或"不知道"结束游戏`,
+	SuperUsage: `
+config-plugin文件配置项：
+	idioms.localfirst: 是(true)否(false)优先使用本地成语图片，图片放于data/img/idioms目录即可`,
 	Classify: "小游戏",
 }
 var proxy *manager.PluginProxy
