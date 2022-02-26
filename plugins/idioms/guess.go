@@ -31,7 +31,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"猜成语"}).SetBlock(true).ThirdPriority().Handle(guessIdioms)
+	proxy.OnFullMatch([]string{"猜成语"}).SetBlock(true).ThirdPriority().Handle(guessIdioms)
 	proxy.AddConfig("localFirst", false) // 优先使用本地词库IdiomsImageDir, 文件名：某个成语.png/jpg
 	_, _ = utils.MakeDir(consts.IdiomsImageDir)
 }
@@ -45,7 +45,7 @@ func guessIdioms(ctx *zero.Ctx) {
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("失败了..."))
 		return
 	}
-	ctx.SendChain(message.At(ctx.Event.UserID), msg)
+	ctx.SendChain(message.At(ctx.Event.UserID), message.Text(`猜不出来的话，跟我说"算了"或者"不知道"`), msg)
 	log.Infof("正确答案：%v", key)
 	// 等待用户回复
 	r, cancel := ctx.FutureEvent("message", ctx.CheckSession()).Repeat()
