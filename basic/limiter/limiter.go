@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/time/rate"
 )
 
@@ -48,7 +49,8 @@ func (pl *PluginLimiter) ResetCD(cd time.Duration) {
 		if !ok {
 			return true
 		}
-		l.limiter.SetLimit(rate.Every(cd))
+		l.ttl = cd * 3
+		l.limiter.SetLimitAt(l.lastGet, rate.Every(cd)) // 重设CD并防止重新获取Token
 		return true
 	})
 }
@@ -92,6 +94,7 @@ func (pl *PluginLimiter) gc() {
 				return true
 			}
 			if l.lastGet.Add(l.ttl).Before(time.Now()) { // 超时，删除
+				log.Infof("删除超时的<%v>插件[%v]子限流器", pl.Key, key)
 				pl.limiters.Delete(key)
 				return true
 			}
