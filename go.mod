@@ -20,7 +20,6 @@ require (
 	github.com/tidwall/gjson v1.11.0
 	github.com/wcharczuk/go-chart/v2 v2.1.0
 	github.com/wdvxdr1123/ZeroBot v1.4.1
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	gorm.io/driver/mysql v1.3.2
 	gorm.io/driver/postgres v1.3.1
 	gorm.io/gorm v1.23.1
