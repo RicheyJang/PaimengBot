@@ -26,6 +26,7 @@ import (
 )
 
 type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
+type FileHook func(event fsnotify.Event) error
 
 // PluginManager 插件管理器结构
 type PluginManager struct {
@@ -35,9 +36,10 @@ type PluginManager struct {
 	dbConfig DBConfig     // 数据库配置
 	leveldb  *leveldb.DB  // LevelDB实例
 
-	plugins   map[string]*PluginProxy // plugin.key -> pluginContext
-	preHooks  []PluginHook            // 插件Pre Hook
-	postHooks []PluginHook            // 插件Post Hook
+	plugins     map[string]*PluginProxy // plugin.key -> pluginContext
+	preHooks    []PluginHook            // 插件Pre Hook
+	postHooks   []PluginHook            // 插件Post Hook
+	configHooks []FileHook              // 配置文件更改 Hook
 }
 
 // NewPluginManager 新建插件管理器
@@ -107,8 +109,19 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 	manager.configs.WatchConfig()
 	manager.configs.OnConfigChange(func(in fsnotify.Event) {
 		manager.FlushAllAdminLevelFromConfig()
+		for _, hook := range manager.configHooks { // 执行配置文件更改时的各个Hook
+			err := hook(in)
+			if err != nil {
+				log.Errorf("处理配置文件(%v)变更时出错：%v", in.Name, err)
+			}
+		}
 	})
 	return nil
+}
+
+// WhenConfigFileChange 增加配置文件变更时的处理函数
+func (manager *PluginManager) WhenConfigFileChange(hook ...FileHook) {
+	manager.configHooks = append(manager.configHooks, hook...)
 }
 
 // FlushAllAdminLevelFromConfig 从插件配置文件中刷新所有插件管理员权限等级，配置文件 插件名.adminlevel 配置项优先级高于代码预设info.AdminLevel

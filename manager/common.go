@@ -91,6 +91,11 @@ func AddPostHook(hook ...PluginHook) {
 	defaultManager.AddPostHook(hook...)
 }
 
+// WhenConfigFileChange 增加配置文件变更时的处理函数
+func WhenConfigFileChange(hook ...FileHook) {
+	defaultManager.WhenConfigFileChange(hook...)
+}
+
 // GetDB 获取数据库
 func GetDB() *gorm.DB {
 	return defaultManager.GetDB()
