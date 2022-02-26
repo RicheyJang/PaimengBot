@@ -28,7 +28,7 @@
 - [x] 用户昵称系统 (nickname)
 
 ### 一般功能
-- [x] 聊天 (chat)
+- [x] 聊天\自定义问答 (chat)
 - [x] 联系管理员 (contact)
 - [x] 复读 (echo)
 - [x] 自检 (inspection)
@@ -41,12 +41,13 @@
 - [x] 模拟原神抽卡 (genshin_draw)
 
 ### 群功能
+- [x] 群管理:快捷禁言/踢人 (admin)
 - [x] 撤回消息 (withdraw)
 - [x] 设置入群欢迎 (welcome)
 
 ### 小游戏
 - [x] 看图猜成语 (idioms)
-- [ ] 多人五子棋
+- [ ] 五子棋
 
 ### 实用工具
 - [x] 任意语种翻译(甚至文言文) (translate)
