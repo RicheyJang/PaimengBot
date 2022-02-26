@@ -4,8 +4,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/basic/limiter/rate"
+
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/time/rate"
 )
 
 // PluginLimiter 插件级限流器，可以区分用户地管理插件的CD限流
@@ -56,11 +57,11 @@ func (pl *PluginLimiter) ResetCD(cd time.Duration) {
 }
 
 // Allow 判断指定用户(key)能否拿到令牌
-func (pl *PluginLimiter) Allow(key int64) bool {
+func (pl *PluginLimiter) Allow(key int64) (bool, time.Duration) {
 	// 获取subLimiter
 	l := pl.getSubLimiter(key)
 	if l == nil {
-		return false
+		return false, pl.cd
 	}
 	// 检查rate
 	return l.allow()
@@ -130,7 +131,7 @@ func newSubLimiter(cd time.Duration, burst int) *subLimiter {
 }
 
 // 判断rate
-func (l *subLimiter) allow() bool {
+func (l *subLimiter) allow() (bool, time.Duration) {
 	l.lastGet = time.Now()
-	return l.limiter.Allow()
+	return l.limiter.AllowAndLeft()
 }
