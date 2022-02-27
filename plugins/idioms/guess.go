@@ -24,7 +24,7 @@ var info = manager.PluginInfo{
 	猜不出来的话，发送"算了"或"不知道"结束游戏`,
 	SuperUsage: `
 config-plugin文件配置项：
-	idioms.localfirst: 是(true)否(false)优先使用本地成语图片，图片放于data/img/idioms目录即可`,
+	idioms.localfirst: 是(true)否(false)优先使用本地成语图片，图片放于data/img/idioms目录即可，文件名为答案`,
 	Classify: "小游戏",
 }
 var proxy *manager.PluginProxy

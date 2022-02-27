@@ -21,6 +21,9 @@ var info = manager.PluginInfo{
 用法：
 	搜梗 [梗]+
 `,
+	SuperUsage: `config-plugin配置项：
+	geng.max: 单个梗查询的最大答案条数
+	geng.shield: 群聊中答案的屏蔽词列表`,
 	Classify: "实用工具",
 }
 

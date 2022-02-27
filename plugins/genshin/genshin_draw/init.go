@@ -24,7 +24,9 @@ var info = manager.PluginInfo{
 	`,
 	SuperUsage: `更新指令：
 	原神抽卡更新：强制更新图片素材以及卡池信息
-	另外每天2点10分会自动更新`,
+	另外每天2点10分会自动更新
+config-plugin配置项：
+	genshin_draw.skip.normal4: 角色、武器池中所不包含的4星角色列表`,
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy

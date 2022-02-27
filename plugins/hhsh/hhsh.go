@@ -21,6 +21,8 @@ var info = manager.PluginInfo{
 用法：
 	缩写翻译 [全小写缩写]+：将缩写翻译成人话
 `,
+	SuperUsage: `config-plugin配置项：
+	hhsh.max: 一条简写翻译的最大答案条数`,
 	Classify: "实用工具",
 }
 

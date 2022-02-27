@@ -25,7 +25,8 @@ var info = manager.PluginInfo{
 	SuperUsage: `默认使用的是有道Hook，翻译效果可能不大好，且只支持少数语种
 想要更好的翻译效果，可以在配置中配置上baidu.appid和baidu.key来使用百度翻译
 appid和key可以在https://api.fanyi.baidu.com/上注册获取，完全免费（百度打钱
-此外，还可配置baidu.maxdaily来指定每日最大请求字符上限，防止超限`,
+	baidu.maxdaily: 每日最大请求字符上限，防止超限
+	baidu.max: 单次翻译的最大字符数`,
 	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy

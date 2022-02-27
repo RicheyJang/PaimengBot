@@ -35,13 +35,13 @@ var info = manager.PluginInfo{
 	群今日统计
 `,
 	SuperUsage: `
-全局统计
-全局今日统计
+	全局统计
+	全局今日统计
 统计某人的使用情况：
-统计 [QQ号]
-今日统计 [QQ号]
+	统计 [QQ号]
+	今日统计 [QQ号]
 配置项：
-statistic.ignore 不纳入统计范围的插件`,
+	statistic.ignore: 不纳入统计范围的插件Key列表`,
 }
 
 func init() {

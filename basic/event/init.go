@@ -17,8 +17,10 @@ import (
 
 var proxy *manager.PluginProxy
 var info = manager.PluginInfo{
-	Name:        "基本事件处理",
-	Usage:       "防止被动拉入群聊；捕获好友、群邀请发送给超级用户",
+	Name: "基本事件处理",
+	Usage: `防止被动拉入群聊；捕获好友、群邀请发送给超级用户
+config-plugin配置项：
+	event.notautoleave: 是(true)否(false)关闭被动拉群时自动退群`,
 	IsPassive:   true,
 	IsSuperOnly: true,
 }
