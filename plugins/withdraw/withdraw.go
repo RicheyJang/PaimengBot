@@ -24,7 +24,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnMessage(zero.OnlyGroup, rules.ReplyAndCommands("撤回", "快撤回")).SetBlock(true).FirstPriority().Handle(withDrawMsg)
+	proxy.OnMessage(zero.OnlyGroup, rules.ReplyAndCommands("撤回", "快撤回")).SetBlock(true).SecondPriority().Handle(withDrawMsg)
 }
 
 func withDrawMsg(ctx *zero.Ctx) {

@@ -115,6 +115,7 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 				log.Errorf("处理配置文件(%v)变更时出错：%v", in.Name, err)
 			}
 		}
+		log.Infof("reload plugins config from %v", in.Name)
 	})
 	return nil
 }
