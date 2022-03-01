@@ -9,14 +9,16 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+var apiMap = make(map[string]string)
+
 // SetAPIDefault 设置默认API地址
 func SetAPIDefault(api string, value string) {
-	proxy.AddConfig("api."+api, value)
+	apiMap[api] = value
 }
 
 // GetAPI 获取API地址
 func GetAPI(api string) (url string) {
-	return proxy.GetConfigString("api." + api)
+	return apiMap[api]
 }
 
 // 一些预定义
@@ -121,7 +123,7 @@ func (s *Search) Type(searchType string, keyword string) (gjson.Result, error) {
 		return gjson.Result{}, fmt.Errorf("search or client is nil")
 	}
 	api := GetAPI("search.type")
-	api = api + "&search_type=" + searchType + "&keyword=" + keyword
+	api = api + "?search_type=" + searchType + "&keyword=" + keyword
 	rsp, err := s.c.GetGJson(api)
 	if err == nil && rsp.Get("code").Int() != 0 {
 		return gjson.Result{}, fmt.Errorf("bilibili error: %s", rsp.Get("message").String())
@@ -171,7 +173,7 @@ func (b *Bangumi) ByMDID(mediaID int64) (BangumiLatestInfo, error) {
 		return BangumiLatestInfo{}, fmt.Errorf("bangumi or client is nil")
 	}
 	api := GetAPI("bangumi.mdid")
-	api = api + "&media_id=" + fmt.Sprintf("%d", mediaID)
+	api = api + "?media_id=" + fmt.Sprintf("%d", mediaID)
 	rsp, err := b.c.GetGJson(api)
 	if err != nil {
 		return BangumiLatestInfo{}, err
@@ -215,7 +217,7 @@ func (u *User) Info() (UserInfo, error) {
 		return *u.info, nil
 	}
 	api := GetAPI("user.info")
-	api = api + "&mid=" + fmt.Sprintf("%d", u.id)
+	api = api + "?mid=" + fmt.Sprintf("%d", u.id)
 	rsp, err := u.c.GetGJson(api)
 	if err != nil {
 		return UserInfo{}, err
@@ -245,7 +247,7 @@ func (u *User) Dynamics(offset int, hasTop bool) ([]DynamicInfo, string, error) 
 		return nil, "0", fmt.Errorf("user or client is nil")
 	}
 	api := GetAPI("user.dynamic")
-	api = api + "&host_uid=" + fmt.Sprintf("%d", u.id) +
+	api = api + "?host_uid=" + fmt.Sprintf("%d", u.id) +
 		"&offset_dynamic_id=" + fmt.Sprintf("%d", offset) +
 		"&need_top=" + fmt.Sprintf("%v", hasTop)
 	rsp, err := u.c.GetGJson(api)
@@ -296,7 +298,7 @@ func (l *LiveRoom) Info() (LiveRoomInfo, error) {
 		return LiveRoomInfo{}, fmt.Errorf("liveroom or client is nil")
 	}
 	api := GetAPI("live.info")
-	api = api + "&room_id=" + fmt.Sprintf("%d", l.id)
+	api = api + "?room_id=" + fmt.Sprintf("%d", l.id)
 	rsp, err := l.c.GetGJson(api)
 	if err != nil {
 		return LiveRoomInfo{}, err
