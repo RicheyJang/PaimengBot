@@ -119,6 +119,7 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 		return nil, err
 	}
 	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2, Timeout: getTimeout()})
+	c.SetUserAgent()
 	err = c.DownloadToFile(path, pic.URL)
 	if err != nil {
 		return nil, err
