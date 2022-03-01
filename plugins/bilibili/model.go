@@ -24,7 +24,7 @@ const (
 func init() {
 	err := manager.GetDB().AutoMigrate(&Subscription{})
 	if err != nil {
-		log.Errorf("表Bilibili Subscription初始化失败: %v", err)
+		log.Errorf("[SQL] Bilibili Subscription初始化失败，err: %v", err)
 	}
 }
 
@@ -190,8 +190,25 @@ func DeleteSubscription(sub Subscription) error {
 	if result.RowsAffected == 0 { // 不存在
 		return nil
 	}
-	newUsers := utils.DeleteStringInSlice(strings.Split(oldSub.SubUsers, ","),
-		strings.Split(sub.SubUsers, ",")...)
+	// 筛选需要删除的用户
+	var newUsers []string
+	delUsers := strings.Split(sub.SubUsers, ",")
+	oldUsers := strings.Split(oldSub.SubUsers, ",")
+	for _, old := range oldUsers {
+		couldAdd := true
+		for _, del := range delUsers {
+			// ID一致，或群ID前缀一致
+			if old == del ||
+				(strings.ContainsRune(old, ':') && strings.HasSuffix(del, ":") && strings.HasPrefix(old, del)) {
+				couldAdd = false
+				break
+			}
+		}
+		if couldAdd {
+			newUsers = append(newUsers, old)
+		}
+	}
+	// 执行删除
 	if len(newUsers) == 0 || sub.SubUsers == SubUserAll { // 没有其它用户订阅了或指令删除全部
 		return proxy.GetDB().Delete(&oldSub).Error
 	} else {

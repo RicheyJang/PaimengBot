@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils/client"
+
 	"github.com/tidwall/gjson"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var apiMap = make(map[string]string)
@@ -93,6 +95,17 @@ type LiveRoomInfo struct {
 	Status   int      `json:"live_status"`
 	CoverURL string   `json:"cover"`
 	Anchor   UserInfo `json:"anchor_info"`
+}
+
+func (b BangumiInfo) GenMessage(index int) message.Message {
+	str := b.Title + "\n"
+	if index > 0 {
+		str = "[" + fmt.Sprintf("%d", index) + "] " + str
+	}
+	str += "番剧ID：" + fmt.Sprintf("%d", b.MediaID) + "\n"
+	str += "地区：" + b.Areas + "\n"
+	str += "简介" + b.Description
+	return message.Message{message.Text(str)}
 }
 
 // Client bilibili客户端（请求器）
