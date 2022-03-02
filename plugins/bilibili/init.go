@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/basic/auth"
 
@@ -30,7 +31,9 @@ var info = manager.PluginInfo{
 	SuperUsage: `
 	b站全部订阅：（仅限私聊）展示所有用户、所有群的订阅
 	b站取消订阅 [订阅ID] [QQ号]：取消指定用户的指定订阅；若QQ号为0，则取消该订阅ID下的所有订阅
-	b站取消订阅 [订阅ID] 群[群号]：取消指定群的指定订阅`,
+	b站取消订阅 [订阅ID] 群[群号]：取消指定群的指定订阅
+config-plugin配置项：
+	bilibili.maxsearch: 最大搜索结果条数`,
 	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy
@@ -45,6 +48,7 @@ func init() {
 	proxy.OnCommands([]string{"b站取消订阅"}).SetBlock(true).SetPriority(3).Handle(unsubscribeHandler)
 	proxy.OnFullMatch([]string{"b站全部订阅"}, zero.SuperUserPermission, zero.OnlyPrivate).
 		SetBlock(true).SetPriority(3).Handle(allSubscribeHandler)
+	proxy.AddConfig("maxsearch", 10)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")
@@ -97,6 +101,9 @@ func allSubscribeHandler(ctx *zero.Ctx) {
 			ctx.Send(msg)
 		}
 	}
+	if len(subs) == 0 {
+		ctx.Send("暂时没有b站订阅")
+	}
 }
 
 // 查看已有订阅处理
@@ -108,10 +115,13 @@ func listSubscribeHandler(ctx *zero.Ctx) {
 		subs = GetSubForPrimary(ctx.Event.UserID)
 	}
 	for _, sub := range subs {
-		msg := sub.GenMessage(true)
+		msg := sub.GenMessage(false)
 		if len(msg) > 0 {
 			ctx.Send(msg)
 		}
+	}
+	if len(subs) == 0 {
+		ctx.Send("暂时没有b站订阅")
 	}
 }
 
@@ -201,8 +211,13 @@ func subscribeBangumi(ctx *zero.Ctx, arg string, userID string) {
 		id = s[0].MediaID
 		// 选择番剧
 		if len(s) > 1 {
+			maxSearch := int(proxy.GetConfigInt64("maxsearch"))
+			if maxSearch > 0 && len(s) > maxSearch { // 限定最大结果条数
+				s = s[:maxSearch]
+			}
 			for i, b := range s {
 				ctx.Send(b.GenMessage(i + 1))
+				time.Sleep(100 * time.Millisecond) // 间隔100ms
 			}
 			ctx.Send("如果上述番剧中有你想订阅的番剧，请答复其序号（方括号内）；若没有，请说没有")
 			event := utils.WaitNextMessage(ctx)
@@ -232,9 +247,10 @@ func subscribeBangumi(ctx *zero.Ctx, arg string, userID string) {
 	// 确定订阅
 	if isConfirm(ctx, fmt.Sprintf("是否订阅番剧：%v", i.Title)) {
 		err := AddSubscription(Subscription{
-			SubType:  SubTypeBangumi,
-			SubUsers: userID,
-			BID:      id,
+			SubType:          SubTypeBangumi,
+			SubUsers:         userID,
+			BID:              id,
+			BangumiLastIndex: i.NewEP.Name,
 		})
 		if err != nil {
 			log.Errorf("AddSubscription err: %v", err)

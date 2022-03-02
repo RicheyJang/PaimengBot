@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
 
 	"github.com/tidwall/gjson"
@@ -104,7 +105,11 @@ func (b BangumiInfo) GenMessage(index int) message.Message {
 	}
 	str += "番剧ID：" + fmt.Sprintf("%d", b.MediaID) + "\n"
 	str += "地区：" + b.Areas + "\n"
-	str += "简介" + b.Description
+	if utils.StringRealLength(b.Description) > 50 {
+		str += "简介：" + string([]rune(b.Description)[:50]) + "..."
+	} else {
+		str += "简介：" + b.Description
+	}
 	return message.Message{message.Text(str)}
 }
 
@@ -168,7 +173,8 @@ func (s *Search) Bangumi(keyword string) ([]BangumiInfo, error) {
 }
 
 func replaceEM(org string) string {
-	str := strings.ReplaceAll(org, `<em class=\"keyword\">`, "")
+	str := strings.ReplaceAll(org, `<em class="keyword">`, "")
+	str = strings.ReplaceAll(str, `<em class=\"keyword\">`, "")
 	return strings.ReplaceAll(str, `</em>`, "")
 }
 

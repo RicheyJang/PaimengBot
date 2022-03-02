@@ -86,8 +86,8 @@ func (s Subscription) GenUsersText() string {
 		if len(str) > 0 {
 			str += "、"
 		}
-		if strings.ContainsRune(user, ':') {
-			str += "群" + user
+		if index := strings.Index(user, ":"); index > 0 {
+			str += "群" + user[:index] + "(发起订阅者:" + user[index+1:] + ")"
 		} else {
 			str += user
 		}
@@ -155,9 +155,6 @@ func AddSubscription(sub Subscription) error {
 		SubType: sub.SubType,
 		BID:     sub.BID,
 	}).First(&oldSub)
-	if result.Error != nil {
-		return fmt.Errorf("before add: get bilibili subscription error: %v", result.Error)
-	}
 	if result.RowsAffected == 0 { // 新增
 		sub.ID = 0
 		sub.DynamicLastTime = time.Now()
