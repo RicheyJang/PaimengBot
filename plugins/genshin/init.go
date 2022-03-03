@@ -5,4 +5,5 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_draw"
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_query"
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_resource"
+	_ "github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign_single"
 )
