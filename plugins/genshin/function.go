@@ -1,4 +1,4 @@
-package genshin_sign
+package genshin
 
 import (
 	"crypto/md5"
@@ -10,36 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
-	_ "github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_func"
 )
-
-func get_server(uid string) (u string){
-	return "cn_gf01"
-}
-
-
-func query_func(uid string,user_cokie string) (result string){
-
-
-	role, err := GetUserGameRoleByUid(user_cokie,uid)
-	if err != nil {
-		result = "获取角色信息失败"
-		return
-	}
-	//result = "获取配置角色信息成功["+"区服:"+role.RegionName+"昵称:"+role.NickName+ "UID:"+role.Uid+"]"
-	result = fmt.Sprintf("获取配置角色信息成功[区服:%s,昵称:%s,UID:%s]",role.RegionName,role.NickName,role.Uid)
-	dailyNote, err := GetGenshinDailyNote(user_cokie, uid, role.Region)
-	if err != nil {
-		result = "获取角色信息失败"
-		return
-	}
-	result = fmt.Sprintf("用户:%s\n[用户树脂:%d/%d]\n[用户洞天宝钱:%d/%d]\n[用户派遣%d/%d]",uid,dailyNote.CurrentResin,dailyNote.MaxResin,dailyNote.CurrentHomeCoin,dailyNote.MaxHomeCoin,dailyNote.CurrentExpeditionNum,dailyNote.MaxExpeditionNum)
-	return ;
-
-
-
-
-}
 
 type GameRoleList struct {
 	List []GameRole `json:"list"`
@@ -99,7 +70,6 @@ type GameRoleExpedition struct {
 	RemainedTime       string `json:"remained_time"`
 }
 
-
 func GetGenshinDailyNote(cookie, uid, server string) (*GenshinDailyNote, error) {
 	url := fmt.Sprintf("https://api-takumi-record.mihoyo.com/game_record/app/genshin/api/dailyNote?server=%s&role_id=%s", server, uid)
 	mr := NewMiyoRequest(url)
@@ -119,6 +89,7 @@ func GetGenshinDailyNote(cookie, uid, server string) (*GenshinDailyNote, error) 
 	json.Unmarshal(data, &dailyNote)
 	return &dailyNote, nil
 }
+
 /* contributor: https://github.com/Azure99/GenshinPlayerQuery/issues/20 @lulu666lulu */
 func GetDS(url, data string) (t, v, ds string) {
 	// 5: mobile web
