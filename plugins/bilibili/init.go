@@ -50,7 +50,7 @@ func init() {
 	proxy.OnFullMatch([]string{"b站全部订阅"}, zero.SuperUserPermission, zero.OnlyPrivate).
 		SetBlock(true).SetPriority(3).Handle(allSubscribeHandler)
 	proxy.AddConfig("maxsearch", 10)
-	proxy.AddConfig("link", false)
+	proxy.AddConfig("link", true)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")

@@ -5,11 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
 
 	"github.com/tidwall/gjson"
-	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var apiMap = make(map[string]string)
@@ -114,31 +112,6 @@ func (d DynamicInfo) VideoTitle() string {
 
 func (l LiveRoomInfo) IsOpen() bool {
 	return l.Status == LiveStatusOpen
-}
-
-func (u UserInfo) GenMessage(index int) message.Message {
-	str := u.Name + "\n"
-	if index > 0 {
-		str = "[" + fmt.Sprintf("%d", index) + "] " + str
-	}
-	str += "粉丝数：" + fmt.Sprintf("%d", u.Fans) + "\n"
-	str += "等级：lv" + fmt.Sprintf("%d", u.Level)
-	return message.Message{message.Text(str)}
-}
-
-func (b BangumiInfo) GenMessage(index int) message.Message {
-	str := b.Title + "\n"
-	if index > 0 {
-		str = "[" + fmt.Sprintf("%d", index) + "] " + str
-	}
-	str += "番剧ID：" + fmt.Sprintf("%d", b.MediaID) + "\n"
-	str += "地区：" + b.Areas + "\n"
-	if utils.StringRealLength(b.Description) > 50 {
-		str += "简介：" + string([]rune(b.Description)[:50]) + "..."
-	} else {
-		str += "简介：" + b.Description
-	}
-	return message.Message{message.Text(str)}
 }
 
 // Client bilibili客户端（请求器）

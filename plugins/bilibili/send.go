@@ -26,7 +26,6 @@ func startPolling() {
 }
 
 func checkSubscriptionStatus() {
-	var msg message.Message
 	subs := AllSubscription()
 	if len(subs) > 1 { // 多个订阅，则打乱顺序
 		rand.Shuffle(len(subs), func(i, j int) {
@@ -34,18 +33,22 @@ func checkSubscriptionStatus() {
 		})
 	}
 	// 检查更新
+	var msgs []message.Message
 	for _, sub := range subs {
 		time.Sleep(time.Second) // 间隔一秒调用
 		switch sub.SubType {
 		case SubTypeBangumi:
-			msg = checkBangumiStatus(sub)
+			msgs = checkBangumiStatus(sub)
 		case SubTypeUp:
-			msg = checkUpStatus(sub)
+			msgs = checkUpStatus(sub)
 		case SubTypeLive:
-			msg = checkLiveStatus(sub)
+			msgs = checkLiveStatus(sub)
 		}
 		// 推送
-		if len(msg) > 0 {
+		for _, msg := range msgs {
+			if len(msg) == 0 {
+				continue
+			}
 			f, g := sub.GetFriendsGroups()
 			push.Send(push.Target{
 				Msg:     msg,
@@ -56,7 +59,7 @@ func checkSubscriptionStatus() {
 	}
 }
 
-func checkBangumiStatus(sub Subscription) (msg message.Message) {
+func checkBangumiStatus(sub Subscription) (msg []message.Message) {
 	b, err := NewBangumi().ByMDID(sub.BID)
 	if err != nil {
 		log.Warnf("获取B站番剧(%v)信息失败：%v", sub.BID, err)
@@ -69,7 +72,7 @@ func checkBangumiStatus(sub Subscription) (msg message.Message) {
 		if proxy.GetConfigBool("link") {
 			str += link
 		}
-		msg = message.Message{message.Text(str)}
+		msg = []message.Message{{message.Text(str)}}
 		// 更新状态
 		sub.BangumiLastIndex = b.NewEP.Name
 		err = UpdateSubsStatus(sub)
@@ -81,7 +84,7 @@ func checkBangumiStatus(sub Subscription) (msg message.Message) {
 	return
 }
 
-func checkLiveStatus(sub Subscription) (msg message.Message) {
+func checkLiveStatus(sub Subscription) (msg []message.Message) {
 	l, err := NewLiveRoom(sub.BID).Info()
 	if err != nil {
 		log.Warnf("获取B站直播(%v)信息失败：%v", sub.BID, err)
@@ -95,7 +98,7 @@ func checkLiveStatus(sub Subscription) (msg message.Message) {
 			if proxy.GetConfigBool("link") {
 				str += link
 			}
-			msg = message.Message{message.Text(str)}
+			msg = []message.Message{{message.Text(str)}}
 		}
 		// 更新状态
 		sub.LiveStatus = l.IsOpen()
@@ -108,7 +111,7 @@ func checkLiveStatus(sub Subscription) (msg message.Message) {
 	return
 }
 
-func checkUpStatus(sub Subscription) (msg message.Message) {
+func checkUpStatus(sub Subscription) (msg []message.Message) {
 	ds, _, err := NewUser(sub.BID).Dynamics(0, false)
 	if err != nil {
 		log.Warnf("获取B站UP主(%v)动态失败：%v", sub.BID, err)
@@ -137,7 +140,7 @@ func checkUpStatus(sub Subscription) (msg message.Message) {
 		if proxy.GetConfigBool("link") {
 			str += link
 		}
-		msg = message.Message{message.Text(str)}
+		msg = []message.Message{{message.Text(str)}}
 		// 更新状态
 		sub.DynamicLastTime = d.Time
 		err = UpdateSubsStatus(sub)
