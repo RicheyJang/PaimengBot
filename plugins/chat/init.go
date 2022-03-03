@@ -32,8 +32,12 @@ var info = manager.PluginInfo{
 	SuperUsage: `超级用户在私聊中调用上述命令，会对全局所有群和私聊生效
 
 此外，还可通过文件批量导入问答集，可选文件格式参见DIYDialogueDir/0.txt及0.json；
-txt格式文件问句支持正则表达式（以/开头/结尾 用于标识使用正则）；答句支持CQ码和\n作为换行；
 文件名为生效群号，以英文逗号分隔，0代表全局生效；文件请统一放置于DIYDialogueDir目录下
+txt格式文件特有：
+  问句支持正则表达式（以/开头/结尾 用于标识使用正则）；
+  答句支持CQ码和\n作为换行；答句支持变量：
+    {bot}代表机器人昵称；{id}代表提问者ID；{nickname}代表提问者昵称
+    若问句为正则，则可以通过{reg[i]}代表匹配到的问句中的第i个分组，i从1开始
 
 config-plugin文件配置项：
 	chat.default.self 自我介绍内容

@@ -14,11 +14,13 @@ import (
 	"sync"
 	"unsafe"
 
+	"github.com/RicheyJang/PaimengBot/basic/nickname"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
+	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
@@ -28,19 +30,48 @@ func AddDialogueCollection(groupID int64, dc *DialoguesCollection) {
 }
 
 // GetDialogueByFilesRandom 随机获取一条答句（来自文件）消息
-func GetDialogueByFilesRandom(groupID int64, question string) message.Message {
+func GetDialogueByFilesRandom(ctx *zero.Ctx, groupID int64, question string) message.Message {
 	answers := group2Dialogues.Load(groupID, question)
 	if len(answers) > 0 { // 随机选择一个答案
 		randIndex := rand.Intn(len(answers))
-		return preprocessFileAnswer(answers[randIndex])
+		return preprocessFileAnswer(ctx, answers[randIndex])
 	}
 	return nil
 }
 
 // 将文件中的答句解析为消息
-func preprocessFileAnswer(answer string) message.Message {
+func preprocessFileAnswer(ctx *zero.Ctx, answer string) message.Message {
+	if strings.Contains(answer, "{bot}") {
+		answer = strings.ReplaceAll(answer, "{bot}", utils.GetBotNickname())
+	}
+	if strings.Contains(answer, "{nickname}") {
+		answer = strings.ReplaceAll(answer, "{nickname}", nickname.GetNickname(ctx.Event.UserID, "你"))
+	}
+	if strings.Contains(answer, "{id}") {
+		answer = strings.ReplaceAll(answer, "{id}", strconv.FormatInt(ctx.Event.UserID, 10))
+	}
 	answer = strings.ReplaceAll(answer, "\\n", "\n") // 支持换行符
 	return message.ParseMessageFromString(answer)    // 支持CQ码
+}
+
+// 在正则匹配成功后，返回答案集前调用：将正则问句的答句内{reg[i]}替换为正则表达式中的第i个组
+func preprocessRegAnswer(regD regexpDialogue, question string) (answers []string) {
+	matches := regD.reg.FindStringSubmatch(question)
+	if len(matches) <= 1 {
+		return regD.answers
+	}
+	answers = make([]string, len(regD.answers))
+	copy(answers, regD.answers)
+	for i, match := range matches {
+		if i == 0 {
+			continue
+		}
+		key := "{reg[" + strconv.Itoa(i) + "]}"
+		for k, org := range answers {
+			answers[k] = strings.ReplaceAll(org, key, match)
+		}
+	}
+	return
 }
 
 func init() {
@@ -137,7 +168,7 @@ func (dc DialoguesCollection) Load(question string) []string {
 	// 随后遍历正则
 	for _, regD := range dc.regs {
 		if regD.reg != nil && regD.reg.MatchString(question) {
-			return regD.answers
+			return preprocessRegAnswer(regD, question)
 		}
 	}
 	return nil
