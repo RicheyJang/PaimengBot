@@ -37,8 +37,10 @@ func (c *PluginCondition) Disabled() {
 // InitialCron 初始化定时器
 func (c *PluginCondition) InitialCron() {
 	if c.schedule == nil {
-		c.schedule = cron.New(cron.WithLogger(utils.NewCronLogger()), // 设置日志
-			cron.WithChain(cron.SkipIfStillRunning(utils.NewCronLogger()))) // 若前一任务仍在执行，则跳过当前任务
+		cronLogger := utils.NewCronLogger()
+		c.schedule = cron.New(cron.WithLogger(cronLogger), // 设置日志
+			cron.WithChain(cron.Recover(cronLogger), // panic恢复
+				cron.SkipIfStillRunning(cronLogger))) // 若前一任务仍在执行，则跳过当前任务
 	}
 	c.StartCron()
 }
