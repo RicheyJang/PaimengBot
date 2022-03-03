@@ -1,4 +1,4 @@
-package genshin
+package genshin_public
 
 import (
 	"crypto/md5"

@@ -2,18 +2,18 @@ package genshin_query
 
 import (
 	"fmt"
-	"github.com/RicheyJang/PaimengBot/plugins/genshin"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
 	"strconv"
 	"time"
 )
 
-func Query(uid string, cookie string) (string, *genshin.GenshinDailyNote, error) {
-	role, err := genshin.GetUserGameRoleByUid(cookie, uid)
+func Query(uid string, cookie string) (string, *genshin_public.GenshinDailyNote, error) {
+	role, err := genshin_public.GetUserGameRoleByUid(cookie, uid)
 	if err != nil {
 		msg := fmt.Sprintf("获取角色信息失败,error:%s", err.Error())
 		return msg, nil, err
 	}
-	dailyNote, err := genshin.GetGenshinDailyNote(cookie, uid, role.Region)
+	dailyNote, err := genshin_public.GetGenshinDailyNote(cookie, uid, role.Region)
 	if err != nil {
 		msg := fmt.Sprintf("获取角色信息失败,error:%s", err.Error())
 		return msg, nil, err
