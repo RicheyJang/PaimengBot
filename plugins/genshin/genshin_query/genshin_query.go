@@ -20,7 +20,7 @@ func Query(uid string, cookie string) (string, *genshin_public.GenshinDailyNote,
 	}
 	now := time.Now()
 	msg := fmt.Sprintf(
-		"用户:%s\n[用户树脂:%d/%d]\n[树脂回满时间:%s]\n[用户洞天宝钱:%d/%d]\n[宝钱回满时间:%s]\n[用户派遣%d/%d]",
+		"用户:%s\n[用户树脂:%d/%d]\n[rct:%s]\n[用户洞天宝钱:%d/%d]\n[rct:%s]\n[用户派遣%d/%d]",
 		uid,
 		dailyNote.CurrentResin,
 		dailyNote.MaxResin,
