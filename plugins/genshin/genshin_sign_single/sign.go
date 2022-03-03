@@ -1,21 +1,20 @@
-package genshin_query
+package genshin_sign_single
 
 import (
 	"fmt"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
-	Name: "查询信息",
+	Name: "签到",
 	Usage: `如果你填写了对应的cookie
-将会自动在查询对应的信息 说 查询 就可以啦
-存入方法:
-私聊机器人"存入cookie 自己的cookie"
-"存入uid 自己的uid"`,
+将会自动在查询对应的信息 说 签到 就可以啦
+` + genshin_public.GetInitializaationPrompt(),
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
@@ -26,18 +25,18 @@ func init() {
 		return
 	}
 	// [4] 此处进行其它初始化操作
-	proxy.OnCommands([]string{"查询", "体力", "树脂"}).SetBlock(true).SetPriority(3).Handle(queryInfo)
+	proxy.OnCommands([]string{"签到"}).SetBlock(true).SetPriority(3).Handle(sign)
 }
 
 // [5] 其它代码实现
 
-func queryInfo(ctx *zero.Ctx) {
+func sign(ctx *zero.Ctx) {
 	user_cookie, user_uid, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
 	}
-	msg, _, _ := Query(user_uid, user_cookie)
-	fmt.Printf("查询状态%s", msg)
-	ctx.Send(message.Text(fmt.Sprintf("查询:%s", msg)))
+	msg, err := genshin_sign.Sign(user_uid, user_cookie)
+	fmt.Printf("签到%s", msg)
+	ctx.Send(message.Text(fmt.Sprintf("签到:%s", msg)))
 }
