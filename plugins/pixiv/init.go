@@ -26,6 +26,7 @@ config-plugin配置项：
 	pixiv.timeout： 下载图片超时时长，至少为1s；越长下载成功率越高、等待时间越长
 	pixiv.proxy： Pixiv反代网站，默认为i.pixiv.re，令外可选i.pixiv.cat
 	pixiv.scale：从各个图库取图的比例，导入Omega图库后，将pixiv.scale.omega设为非0值才可使其生效
+	pixiv.r18：是否允许18+，设为false则开启强力不可以涩涩模式
 	pixiv.omega.setu：在请求非R18图片时，是(true)否(false)从Omega图库中拿取nsfw=1(setu)的图片
 另外，Omega图库是指从https://github.com/Ailitonia/omega-miya/raw/master/archive_data/db_pixiv.7z手动导入数据库`,
 	Classify: "好康的",
@@ -69,6 +70,7 @@ func init() {
 	proxy.AddAPIConfig(consts.APIOfHibiAPIKey, "api.obfs.dev")
 	proxy.AddConfig("timeout", "10s") // 下载图片超时时长 格式要求time.ParseDuration 至少为1s
 	proxy.AddConfig("proxy", "i.pixiv.re")
+	proxy.AddConfig("r18", true)
 	for k, v := range getterScale { // 各个图库取图比例配置
 		proxy.AddConfig(fmt.Sprintf("scale.%s", k), v)
 	}
