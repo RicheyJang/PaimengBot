@@ -32,12 +32,11 @@ func init() {
 // [5] 其它代码实现
 
 func queryInfo(ctx *zero.Ctx) {
-	user_cookie, user_uid, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	user_uid, user_cookie, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
 	}
 	msg, _, _ := Query(user_uid, user_cookie)
-	fmt.Printf("查询状态%s", msg)
 	ctx.Send(message.Text(fmt.Sprintf("查询:%s", msg)))
 }

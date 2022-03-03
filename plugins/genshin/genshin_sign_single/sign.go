@@ -31,12 +31,14 @@ func init() {
 // [5] 其它代码实现
 
 func sign(ctx *zero.Ctx) {
-	user_cookie, user_uid, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	user_uid, user_cookie, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
 	}
 	msg, err := genshin_sign.Sign(user_uid, user_cookie)
-	fmt.Printf("签到%s", msg)
+	if err != nil {
+		ctx.Send(images.GenStringMsg(msg))
+	}
 	ctx.Send(message.Text(fmt.Sprintf("签到:%s", msg)))
 }
