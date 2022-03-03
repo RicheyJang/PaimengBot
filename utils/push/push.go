@@ -55,6 +55,9 @@ func (t *Target) Send() {
 	if !t.DoNotCheck {
 		t.SelfCheck()
 	}
+	if len(t.Friends)+len(t.Groups) > 0 {
+		log.Infof("开始推送消息，目标私聊：%v，目标群聊：%v", t.Friends, t.Groups)
+	}
 	for _, friend := range t.Friends {
 		ctx.SendPrivateMessage(friend, t.Msg)
 	}

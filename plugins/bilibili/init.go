@@ -20,7 +20,7 @@ var info = manager.PluginInfo{
 	Usage: `订阅B站番剧、up主动态、直播，自动推送
 用法：
 	b站订阅番剧 [番剧名称或ID]: 订阅指定番剧，支持番剧名称模糊搜索
-	b站订阅up [up主ID]：订阅指定up主的动态
+	b站订阅up [up主名称或ID]：订阅指定up主的动态，支持用户名称模糊搜索
 	b站订阅直播 [直播间ID]：订阅指定直播间的直播
 
 	b站已有订阅：群聊中，展示该群所有群订阅；私聊中，展示你的所有个人订阅
@@ -33,7 +33,8 @@ var info = manager.PluginInfo{
 	b站取消订阅 [订阅ID] [QQ号]：取消指定用户的指定订阅；若QQ号为0，则取消该订阅ID下的所有订阅
 	b站取消订阅 [订阅ID] 群[群号]：取消指定群的指定订阅
 config-plugin配置项：
-	bilibili.maxsearch: 最大搜索结果条数`,
+	bilibili.maxsearch: 最大搜索结果条数
+	bilibili.link: 订阅内容更新时是(true)否(false)在消息中附加链接`,
 	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy
@@ -49,11 +50,15 @@ func init() {
 	proxy.OnFullMatch([]string{"b站全部订阅"}, zero.SuperUserPermission, zero.OnlyPrivate).
 		SetBlock(true).SetPriority(3).Handle(allSubscribeHandler)
 	proxy.AddConfig("maxsearch", 10)
+	proxy.AddConfig("link", false)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")
 	SetAPIDefault("user.dynamic", "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history")
 	SetAPIDefault("live.info", "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom")
+	if len(AllSubscription()) > 0 {
+		startPolling()
+	}
 }
 
 var subscribeDealerMap = map[string]func(ctx *zero.Ctx, arg string, userID string){
@@ -268,9 +273,45 @@ func subscribeUp(ctx *zero.Ctx, arg string, userID string) {
 	// 解析参数
 	id, err := strconv.ParseInt(arg, 10, 64)
 	if err != nil {
-		log.Errorf("UP主参数错误：%v", err)
-		ctx.Send("UP主ID格式不对哦，可以看看帮助")
-		return
+		// 搜索相关UP主
+		us, err := NewSearch().User(arg)
+		if err != nil {
+			log.Errorf("bilibili search user error: %v", err)
+			ctx.Send("失败了...")
+			return
+		}
+		if len(us) == 0 {
+			ctx.Send("没有找到相关的UP主")
+			return
+		}
+		id = us[0].MID
+		// 选择UP主
+		if len(us) > 1 {
+			maxSearch := int(proxy.GetConfigInt64("maxsearch"))
+			if maxSearch > 0 && len(us) > maxSearch { // 限定最大结果条数
+				us = us[:maxSearch]
+			}
+			for i, u := range us {
+				ctx.Send(u.GenMessage(i + 1))
+				time.Sleep(100 * time.Millisecond) // 间隔100ms
+			}
+			ctx.Send("如果上述UP主中有你想订阅的UP主，请答复其序号（方括号内）；若没有，请说没有")
+			event := utils.WaitNextMessage(ctx)
+			if event == nil {
+				ctx.Send("那算啦")
+				return
+			}
+			index, err := strconv.Atoi(strings.TrimSpace(event.Message.ExtractPlainText()))
+			if err != nil {
+				ctx.Send("那算啦")
+				return
+			}
+			if index <= 0 || index > len(us) {
+				ctx.Send("没有这个序号的UP主")
+				return
+			}
+			id = us[index-1].MID
+		}
 	}
 	// 获取UP主信息
 	i, err := NewUser(id).Info()
@@ -280,7 +321,11 @@ func subscribeUp(ctx *zero.Ctx, arg string, userID string) {
 		return
 	}
 	// 确定订阅
-	if isConfirm(ctx, fmt.Sprintf("是否订阅UP主：%v(id=%v)", i.Name, i.MID)) {
+	subStr := fmt.Sprintf("id=%v", i.MID)
+	if i.LiveRoomID > 0 {
+		subStr += fmt.Sprintf(",直播间ID=%v", i.LiveRoomID)
+	}
+	if isConfirm(ctx, fmt.Sprintf("是否订阅UP主：%v(%s)", i.Name, subStr)) {
 		err := AddSubscription(Subscription{
 			SubType:  SubTypeUp,
 			SubUsers: userID,
@@ -319,7 +364,7 @@ func subscribeLive(ctx *zero.Ctx, arg string, userID string) {
 			SubType:    SubTypeLive,
 			SubUsers:   userID,
 			BID:        id,
-			LiveStatus: l.Status == LiveStatusOpen,
+			LiveStatus: l.IsOpen(),
 		})
 		if err != nil {
 			log.Errorf("AddSubscription err: %v", err)

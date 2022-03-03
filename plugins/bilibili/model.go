@@ -11,6 +11,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	"github.com/wdvxdr1123/ZeroBot/message"
+	"gorm.io/gorm"
 )
 
 const (
@@ -95,6 +96,26 @@ func (s Subscription) GenUsersText() string {
 	return str
 }
 
+func (s Subscription) GetFriendsGroups() (friends, groups []int64) {
+	users := strings.Split(s.SubUsers, ",")
+	for _, user := range users {
+		if index := strings.Index(user, ":"); index > 0 {
+			group, err := strconv.ParseInt(user[:index], 10, 64)
+			if err != nil {
+				continue
+			}
+			groups = append(groups, group)
+		} else {
+			friend, err := strconv.ParseInt(user, 10, 64)
+			if err != nil {
+				continue
+			}
+			friends = append(friends, friend)
+		}
+	}
+	return
+}
+
 // AllSubscription 获取所有订阅
 func AllSubscription() []Subscription {
 	var subs []Subscription
@@ -150,66 +171,79 @@ func GetSubForGroup(groupID int64) []Subscription {
 
 // AddSubscription 添加订阅
 func AddSubscription(sub Subscription) error {
-	oldSub := Subscription{}
-	result := proxy.GetDB().Where(&Subscription{
-		SubType: sub.SubType,
-		BID:     sub.BID,
-	}).First(&oldSub)
-	if result.RowsAffected == 0 { // 新增
-		sub.ID = 0
-		sub.DynamicLastTime = time.Now()
-		result = proxy.GetDB().Create(&sub)
-		if result.Error != nil {
-			return fmt.Errorf("add bilibili subscription error: %v", result.Error)
+	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
+		oldSub := Subscription{}
+		result := tx.Where(&Subscription{
+			SubType: sub.SubType,
+			BID:     sub.BID,
+		}).First(&oldSub)
+		if result.RowsAffected == 0 { // 新增
+			sub.ID = 0
+			sub.DynamicLastTime = time.Now()
+			result = tx.Create(&sub)
+			if result.Error != nil {
+				return fmt.Errorf("add bilibili subscription error: %v", result.Error)
+			}
+		} else { // 更新用户
+			newUsers := utils.MergeStringSlices(strings.Split(sub.SubUsers, ","),
+				strings.Split(oldSub.SubUsers, ","))
+			result = tx.Model(&oldSub).Update("sub_users", strings.Join(newUsers, ","))
+			if result.Error != nil {
+				return fmt.Errorf("update bilibili subscription error: %v", result.Error)
+			}
 		}
-	} else { // 更新
-		oldSub.SubUsers = strings.Join(utils.MergeStringSlices(strings.Split(sub.SubUsers, ","),
-			strings.Split(oldSub.SubUsers, ",")), ",")
-		result = proxy.GetDB().Save(&oldSub)
-		if result.Error != nil {
-			return fmt.Errorf("update bilibili subscription error: %v", result.Error)
-		}
+		return nil
+	})
+	if err == nil {
+		startPolling()
 	}
-	return nil
+	return err
+}
+
+func UpdateSubsStatus(sub Subscription) error {
+	copySub := sub
+	return proxy.GetDB().Model(&copySub).
+		Select("bangumi_last_index", "dynamic_last_time", "live_status").Updates(sub).Error
 }
 
 // DeleteSubscription 删除订阅，必须指定SubUsers(=SubUserAll则该订阅全部删除)，另外至少需要SubType和BID，或单独指定ID
 func DeleteSubscription(sub Subscription) error {
-	oldSub := Subscription{}
-	result := proxy.GetDB().Where(&Subscription{
-		ID:      sub.ID,
-		SubType: sub.SubType,
-		BID:     sub.BID,
-	}).First(&oldSub)
-	if result.Error != nil {
-		return fmt.Errorf("before delete: get bilibili subscription error: %v", result.Error)
-	}
-	if result.RowsAffected == 0 { // 不存在
-		return nil
-	}
-	// 筛选需要删除的用户
-	var newUsers []string
-	delUsers := strings.Split(sub.SubUsers, ",")
-	oldUsers := strings.Split(oldSub.SubUsers, ",")
-	for _, old := range oldUsers {
-		couldAdd := true
-		for _, del := range delUsers {
-			// ID一致，或群ID前缀一致
-			if old == del ||
-				(strings.ContainsRune(old, ':') && strings.HasSuffix(del, ":") && strings.HasPrefix(old, del)) {
-				couldAdd = false
-				break
+	return proxy.GetDB().Transaction(func(tx *gorm.DB) error {
+		oldSub := Subscription{}
+		result := tx.Where(&Subscription{
+			ID:      sub.ID,
+			SubType: sub.SubType,
+			BID:     sub.BID,
+		}).First(&oldSub)
+		if result.Error != nil {
+			return fmt.Errorf("before delete: get bilibili subscription error: %v", result.Error)
+		}
+		if result.RowsAffected == 0 { // 不存在
+			return nil
+		}
+		// 筛选需要删除的用户
+		var newUsers []string
+		delUsers := strings.Split(sub.SubUsers, ",")
+		oldUsers := strings.Split(oldSub.SubUsers, ",")
+		for _, old := range oldUsers {
+			couldAdd := true
+			for _, del := range delUsers {
+				// ID一致，或群ID前缀一致
+				if old == del ||
+					(strings.ContainsRune(old, ':') && strings.HasSuffix(del, ":") && strings.HasPrefix(old, del)) {
+					couldAdd = false
+					break
+				}
+			}
+			if couldAdd {
+				newUsers = append(newUsers, old)
 			}
 		}
-		if couldAdd {
-			newUsers = append(newUsers, old)
+		// 执行删除
+		if len(newUsers) == 0 || sub.SubUsers == SubUserAll { // 没有其它用户订阅了或指令删除全部
+			return tx.Delete(&oldSub).Error
+		} else {
+			return tx.Model(&oldSub).Update("sub_users", strings.Join(newUsers, ",")).Error
 		}
-	}
-	// 执行删除
-	if len(newUsers) == 0 || sub.SubUsers == SubUserAll { // 没有其它用户订阅了或指令删除全部
-		return proxy.GetDB().Delete(&oldSub).Error
-	} else {
-		oldSub.SubUsers = strings.Join(newUsers, ",")
-		return proxy.GetDB().Save(&oldSub).Error
-	}
+	})
 }

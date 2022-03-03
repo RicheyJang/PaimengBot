@@ -27,6 +27,7 @@ func GetAPI(api string) (url string) {
 // 一些预定义
 const (
 	SearchTypeBangumi  = "media_bangumi"
+	SearchTypeUser     = "bili_user"
 	DynamicTypeShare   = 1 // 转发
 	DynamicTypePic     = 2 // 图片动态
 	DynamicTypeText    = 4 // 文字动态
@@ -45,7 +46,9 @@ type UserInfo struct {
 	Level    int    `json:"level"`
 	Birthday string `json:"birthday"`
 	// 与哔哩哔哩回包不一致的字段：
-	Silence bool `json:"silence"` // 是否被封禁
+	Silence    bool  `json:"silence"` // 是否被封禁
+	Fans       int64 `json:"fans"`    // 粉丝数（仅在搜索结果中提供）
+	LiveRoomID int64 `json:"live_room_id"`
 }
 
 type DynamicInfo struct {
@@ -55,6 +58,9 @@ type DynamicInfo struct {
 	View int64     `json:"view"`
 	Like int64     `json:"like"`
 	Time time.Time `json:"timestamp"`
+	// 与哔哩哔哩回包不一致的附加字段：
+	Uname string `json:"uname"`
+	BVID  string `json:"bvid"`
 }
 
 type BangumiInfo struct {
@@ -98,6 +104,28 @@ type LiveRoomInfo struct {
 	Anchor   UserInfo `json:"anchor_info"`
 }
 
+func (d DynamicInfo) IsVideo() bool {
+	return d.Type == DynamicTypeVideo
+}
+
+func (d DynamicInfo) VideoTitle() string {
+	return gjson.Get(d.Card, "title").String()
+}
+
+func (l LiveRoomInfo) IsOpen() bool {
+	return l.Status == LiveStatusOpen
+}
+
+func (u UserInfo) GenMessage(index int) message.Message {
+	str := u.Name + "\n"
+	if index > 0 {
+		str = "[" + fmt.Sprintf("%d", index) + "] " + str
+	}
+	str += "粉丝数：" + fmt.Sprintf("%d", u.Fans) + "\n"
+	str += "等级：lv" + fmt.Sprintf("%d", u.Level)
+	return message.Message{message.Text(str)}
+}
+
 func (b BangumiInfo) GenMessage(index int) message.Message {
 	str := b.Title + "\n"
 	if index > 0 {
@@ -136,17 +164,48 @@ func NewSearch() *Search {
 	return &Search{c: NewClient()}
 }
 
-func (s *Search) Type(searchType string, keyword string) (gjson.Result, error) {
+func (s *Search) Type(searchType string, keyword string, additionalKV ...string) (gjson.Result, error) {
 	if s == nil || s.c == nil {
 		return gjson.Result{}, fmt.Errorf("search or client is nil")
 	}
 	api := GetAPI("search.type")
 	api = api + "?search_type=" + searchType + "&keyword=" + keyword
+	for i := 0; i+1 < len(additionalKV); i += 2 {
+		api += fmt.Sprintf("&%s=%s", additionalKV[i], additionalKV[i+1])
+	}
 	rsp, err := s.c.GetGJson(api)
 	if err == nil && rsp.Get("code").Int() != 0 {
 		return gjson.Result{}, fmt.Errorf("bilibili error: %s", rsp.Get("message").String())
 	}
 	return rsp, err
+}
+
+func (s *Search) User(keyword string) ([]UserInfo, error) {
+	rsp, err := s.Type(SearchTypeUser, keyword, "order", "fans")
+	if err != nil {
+		return nil, err
+	}
+	var users []UserInfo
+	for _, v := range rsp.Get("data.result").Array() {
+		face := v.Get("upic").String()
+		if len(face) > 0 && !strings.HasPrefix(face, "http") {
+			face = "https:" + face
+		}
+		users = append(users, UserInfo{
+			MID:     v.Get("mid").Int(),
+			Name:    v.Get("uname").String(),
+			FaceURL: face,
+			Sign:    v.Get("usign").String(),
+			Level:   int(v.Get("level").Int()),
+			Fans:    v.Get("fans").Int(),
+
+			Sex:        "",
+			Birthday:   "",
+			Silence:    false,
+			LiveRoomID: 0,
+		})
+	}
+	return users, nil
 }
 
 func (s *Search) Bangumi(keyword string) ([]BangumiInfo, error) {
@@ -246,14 +305,15 @@ func (u *User) Info() (UserInfo, error) {
 	}
 	rsp = rsp.Get("data")
 	user := UserInfo{
-		MID:      rsp.Get("mid").Int(),
-		Name:     rsp.Get("name").String(),
-		Sex:      rsp.Get("sex").String(),
-		FaceURL:  rsp.Get("face").String(),
-		Sign:     rsp.Get("sign").String(),
-		Level:    int(rsp.Get("level").Int()),
-		Birthday: rsp.Get("birthday").String(),
-		Silence:  rsp.Get("silence").Int() == 1,
+		MID:        rsp.Get("mid").Int(),
+		Name:       rsp.Get("name").String(),
+		Sex:        rsp.Get("sex").String(),
+		FaceURL:    rsp.Get("face").String(),
+		Sign:       rsp.Get("sign").String(),
+		Level:      int(rsp.Get("level").Int()),
+		Birthday:   rsp.Get("birthday").String(),
+		Silence:    rsp.Get("silence").Int() == 1,
+		LiveRoomID: rsp.Get("live_room.roomid").Int(),
 	}
 	if user.MID > 0 {
 		u.info = &user
@@ -281,10 +341,13 @@ func (u *User) Dynamics(offset int, hasTop bool) ([]DynamicInfo, string, error) 
 		dynamics = append(dynamics, DynamicInfo{
 			ID:   v.Get("desc.dynamic_id_str").String(),
 			Type: int(v.Get("desc.type").Int()),
-			Card: v.Get("card").String(),
+			Card: strings.ReplaceAll(v.Get("card").String(), `\/`, "/"),
 			View: v.Get("desc.view").Int(),
 			Like: v.Get("desc.like").Int(),
 			Time: parseTimestampAuto(v.Get("desc.timestamp").Int()),
+
+			Uname: v.Get("desc.user_profile.info.uname").String(),
+			BVID:  v.Get("desc.bvid").String(),
 		})
 	}
 	return dynamics, rsp.Get("data.next_offset").String(), nil
