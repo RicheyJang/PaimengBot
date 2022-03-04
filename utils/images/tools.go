@@ -101,6 +101,44 @@ func GenStringMsg(str string) message.MessageSegment {
 	return msg
 }
 
+// MergeImageFile 将src图片文件由上到下合并至dest，取最大图片的宽度，其它图片居中，背景色为background
+func MergeImageFile(background string, destFile string, srcFiles ...string) (finalErr error) {
+	intervalH := 10 // 间隔
+	var W, H int
+	// 载入所有图片
+	var imgs []image.Image
+	for i, src := range srcFiles {
+		img, err := gg.LoadImage(src)
+		if err != nil || img == nil { // 载入图片失败，记录错误
+			finalErr = err
+			continue
+		}
+		imgs = append(imgs, img)
+		if img.Bounds().Size().X > W {
+			W = img.Bounds().Size().X
+		}
+		H += img.Bounds().Size().Y
+		if i != 0 {
+			H += intervalH
+		}
+	}
+	if len(imgs) == 0 {
+		return
+	}
+	// 合并
+	if W%2 == 1 { // 宽度取偶数
+		W += 1
+	}
+	ctx := NewImageCtxWithBGColor(W, H, background)
+	h := 0
+	for _, img := range imgs {
+		ctx.DrawImageAnchored(img, W/2, h, 0.5, 0)
+		h += img.Bounds().Size().Y + intervalH
+	}
+	// 保存
+	return ctx.SavePNG(destFile)
+}
+
 // ClipImgToCircle 裁切图像成圆形
 func ClipImgToCircle(img image.Image) image.Image {
 	w := img.Bounds().Size().X

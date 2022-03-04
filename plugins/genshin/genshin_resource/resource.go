@@ -8,6 +8,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
+	"github.com/RicheyJang/PaimengBot/utils/images"
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -86,18 +87,53 @@ func checkTodayResourceFile() string {
 	return filename
 }
 
+// 有新截图加入时，修改此列表即可，filename为所需保存至的文件名
+var snapshotFunctions = []func(filename string) error{
+	getTodayResourceByGenshinPub, // 0 主图 通过genshin.pub获取今日素材图
+	getTodayEventByMhyObc,        // 1 通过米游社的观测枢获取今日活动进展图
+}
+
 // 获取今日素材图片文件（会强制替换已有文件）
-func getTodayResource() (string, error) {
-	filename, err := getTodayResourceFilename()
+func getTodayResource() (filename string, err error) {
+	filename, err = getTodayResourceFilename()
 	if err != nil {
 		return "", err
 	}
-	// 通过genshin.pub获取今日素材图
-	err = getTodayResourceByGenshinPub(filename)
-	if err != nil {
-		log.Errorf("getTodayResourceByGenshinPub fail, err=%v", err)
-		return "", err
+	// 截图
+	var srcFilenames []string // 成功截图所保存的文件名列表
+	for i, f := range snapshotFunctions {
+		src := filename // 当前截图保存的文件名
+		if i != 0 {     // 非主图（第一个）
+			src = fmt.Sprintf("%s-%d.png", filename, i)
+		}
+		err = f(src) // 截图去
+		if err != nil {
+			log.Errorf("snapshot func[%d] fail, err=%v", i, err)
+			if i == 0 { // 主图失败，直接返回
+				return "", err
+			}
+		} else { // 截图成功，保存至srcFilenames
+			srcFilenames = append(srcFilenames, src)
+		}
 	}
-	log.Infof("成功更新原神今日素材图片：%v", filename)
-	return filename, nil
+	defer func() {
+		// 删除多余文件
+		for _, src := range srcFilenames {
+			if src != filename {
+				_ = os.Remove(src)
+			}
+		}
+	}()
+	// 合并文件
+	if len(srcFilenames) == 0 {
+		return "", fmt.Errorf("no snapshot success")
+	} else { // 有至少一个截图成功了
+		err = images.MergeImageFile("#f6f2ee", filename, srcFilenames...)
+		if err != nil {
+			log.Errorf("MergeImageFile err: %v", err)
+			return filename, err
+		}
+	}
+	log.Infof("成功更新原神今日素材+活动图片：%v", filename)
+	return filename, err
 }
