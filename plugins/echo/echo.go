@@ -21,8 +21,8 @@ func init() {
 	if proxy == nil {                    // 若初始化失败，请return，失败原因会在日志中打印
 		return
 	}
-	proxy.OnCommands([]string{"复读", "echo"}).SetBlock(true).FirstPriority().Handle(EchoHandler) // [4] 注册事件处理函数
-	proxy.AddConfig("times", 2)                                                                 // proxy提供的统一配置项管理功能，此函数新增一个配置项times，默认值为2
+	proxy.OnCommands([]string{"复读", "echo"}).SetBlock(true).SecondPriority().Handle(EchoHandler) // [4] 注册事件处理函数
+	proxy.AddConfig("times", 2)                                                                  // proxy提供的统一配置项管理功能，此函数新增一个配置项times，默认值为2
 }
 
 // EchoHandler [5] Handler实现
