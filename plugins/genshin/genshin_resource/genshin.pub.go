@@ -27,7 +27,7 @@ func tryGetGenshinPubResourceShot(file string) error {
 		chromedp.WithDebugf(log.Debugf),
 		chromedp.WithErrorf(log.Errorf),
 	)
-	ctx, cancel = context.WithTimeout(ctx, 15*time.Second)
+	ctx, cancel = context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
 
 	// 截图
@@ -50,7 +50,9 @@ func genshinResourceScreenshot(url, sel string, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.EmulateViewport(1500, 1500),
 		chromedp.Navigate(url),
+		chromedp.WaitVisible(`.GSIcon_optimized_icon__7M4-Q`, chromedp.ByQueryAll), // 等待各大头照加载完成
 		chromedp.WaitVisible(sel),
+		chromedp.Sleep(time.Second), // 额外等待1秒
 		chromedp.Evaluate("document.getElementsByClassName('MewBanner_root__3GKl2')[0].remove();", nil),
 		chromedp.Evaluate("document.getElementsByClassName('GSContainer_gs_container__2FbUz')[0].setAttribute(\"style\", \"height:1050px\");", nil),
 		chromedp.Screenshot(sel, res, chromedp.NodeVisible),

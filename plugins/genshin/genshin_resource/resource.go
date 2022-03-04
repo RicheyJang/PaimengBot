@@ -18,6 +18,9 @@ var info = manager.PluginInfo{
 	Usage: `看看今天都可以打什么材料吧！
 用法：
 	今日素材：丢给你今天要打(上班)的材料清单`,
+	SuperUsage: `
+	更新今日素材：强制更新今日素材图片
+另，每天4点半会自动更新当天素材`,
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
