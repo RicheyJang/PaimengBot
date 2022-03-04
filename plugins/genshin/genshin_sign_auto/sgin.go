@@ -156,7 +156,7 @@ func auto_sign() {
 }
 
 func sign(ctx *zero.Ctx) {
-	user_uid, user_cookie, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	_, _, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
@@ -213,12 +213,13 @@ func sign(ctx *zero.Ctx) {
 	这样，机器人每天就会定时帮你签到了，还会在你打开该功能的地方告诉你`)
 		return
 	}
-
-	msg, err := genshin_sign.Sign(user_uid, user_cookie)
-	if err != nil {
-		ctx.Send(images.GenStringMsg(msg))
-	}
-	ctx.Send(message.Text(fmt.Sprintf("签到:%s", msg)))
+	return
+	//
+	//msg, err := genshin_sign.Sign(user_uid, user_cookie)
+	//if err != nil {
+	//	ctx.Send(images.GenStringMsg(msg))
+	//}
+	//ctx.Send(message.Text(fmt.Sprintf("签到:%s", msg)))
 }
 
 func isIn(str string, deps string) bool {
