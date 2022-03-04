@@ -105,24 +105,26 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 			return err
 		}
 	}
-	manager.FlushAllAdminLevelFromConfig()
+	manager.callAllConfigChangeHooks(fsnotify.Event{
+		Name: fullPath,
+		Op:   fsnotify.Create,
+	})
 	manager.configs.WatchConfig()
 	manager.configs.OnConfigChange(func(in fsnotify.Event) {
-		manager.FlushAllAdminLevelFromConfig()
-		for _, hook := range manager.configHooks { // 执行配置文件更改时的各个Hook
-			err := hook(in)
-			if err != nil {
-				log.Errorf("处理配置文件(%v)变更时出错：%v", in.Name, err)
-			}
-		}
+		manager.callAllConfigChangeHooks(in)
 		log.Infof("reload plugins config from %v", in.Name)
 	})
 	return nil
 }
 
-// WhenConfigFileChange 增加配置文件变更时的处理函数
-func (manager *PluginManager) WhenConfigFileChange(hook ...FileHook) {
-	manager.configHooks = append(manager.configHooks, hook...)
+func (manager *PluginManager) callAllConfigChangeHooks(in fsnotify.Event) {
+	manager.FlushAllAdminLevelFromConfig()     // 单独调用
+	for _, hook := range manager.configHooks { // 执行配置文件更改时的各个Hook
+		err := hook(in)
+		if err != nil {
+			log.Errorf("处理配置文件(%v)变更时出错：%v", in.Name, err)
+		}
+	}
 }
 
 // FlushAllAdminLevelFromConfig 从插件配置文件中刷新所有插件管理员权限等级，配置文件 插件名.adminlevel 配置项优先级高于代码预设info.AdminLevel
@@ -247,6 +249,11 @@ func (manager *PluginManager) AddPreHook(hook ...PluginHook) {
 // AddPostHook 添加后置hook
 func (manager *PluginManager) AddPostHook(hook ...PluginHook) {
 	manager.postHooks = append(manager.postHooks, hook...)
+}
+
+// WhenConfigFileChange 添加配置文件变更时的hook
+func (manager *PluginManager) WhenConfigFileChange(hook ...FileHook) {
+	manager.configHooks = append(manager.configHooks, hook...)
 }
 
 // GetDB 获取数据库
