@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils"
 
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
@@ -16,7 +17,8 @@ var info = manager.PluginInfo{
 	Usage: `若有群成员说了包含某些关键词的话，Bot将自动撤回该消息
 需要Bot作为群管理员；配置关键词请联系超级用户`,
 	SuperUsage: `config-plugin配置项：
-	keyword.withdraw: 触发自动撤回的关键词列表，为字符串数组格式，默认为空`,
+	keyword.withdraw: 触发自动撤回的关键词列表，为字符串数组格式，默认为空
+	keyword.skipsuper: 是(true)否(false)给予超级用户特权，不检查超级用户发出的消息`,
 }
 var proxy *manager.PluginProxy
 
@@ -27,6 +29,7 @@ func init() {
 	}
 	proxy.OnMessage(zero.OnlyGroup, needCheck, needDeal).SetBlock(false).FirstPriority().Handle(msgHandler)
 	proxy.AddConfig("withdraw", []string{}) // 触发撤回的关键词列表
+	proxy.AddConfig("skipsuper", true)      // 是否给予超级用户特权
 	// 配置文件更新时重载关键词列表
 	manager.WhenConfigFileChange(func(event fsnotify.Event) error {
 		flushWithdrawKeywords()
@@ -36,7 +39,15 @@ func init() {
 
 // 检查：是否需要检查关键词
 func needCheck(ctx *zero.Ctx) bool {
-	return len(getWithdrawKeywords()) > 0 && ctx.Event.MessageID != 0 && ctx.Event.SelfID != ctx.Event.UserID
+	// 基本检查
+	if !(len(getWithdrawKeywords()) > 0 && ctx.Event.MessageID != 0) {
+		return false
+	}
+	// 消息来源检查
+	if ctx.Event.SelfID == ctx.Event.UserID || (proxy.GetConfigBool("skipsuper") && utils.IsSuperUser(ctx.Event.UserID)) {
+		return false
+	}
+	return true
 }
 
 // 检查：是否包含关键词
