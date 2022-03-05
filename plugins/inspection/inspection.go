@@ -39,8 +39,8 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).FirstPriority().Handle(selfCheck)
-	proxy.OnCommands([]string{"清理临时数据"}).SetBlock(true).FirstPriority().Handle(cleanTemp)
+	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).SecondPriority().Handle(selfCheck)
+	proxy.OnCommands([]string{"清理临时数据"}).SetBlock(true).SecondPriority().Handle(cleanTemp)
 }
 
 func cleanTemp(ctx *zero.Ctx) {

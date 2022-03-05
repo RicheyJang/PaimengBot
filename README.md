@@ -40,16 +40,8 @@
 - [x] 今日可肝素材查询 (genshin_resource)
 - [x] 模拟原神抽卡 (genshin_draw)
 
-### 群功能
-- [x] 群管理:快捷禁言/踢人 (admin)
-- [x] 撤回消息 (withdraw)
-- [x] 设置入群欢迎 (welcome)
-
-### 小游戏
-- [x] 看图猜成语 (idioms)
-- [ ] 五子棋
-
 ### 实用工具
+- [x] B站订阅、自动推送 (bilibili)
 - [x] 任意语种翻译(甚至文言文) (translate)
 - [x] 纯小写缩写翻译 (hhsh)
 - [x] 搜梗 (geng)
@@ -57,6 +49,15 @@
 - [x] 疫情查询 (COVID)
 - [x] 短链接还原 (short_url)
 - [ ] ~~短链接生成~~(防止滥用，暂不提供)
+
+### 群功能
+- [x] 群管理:快捷禁言/踢人 (admin)
+- [x] 撤回消息 (withdraw)
+- [x] 设置入群欢迎 (welcome)
+
+### 小游戏
+- [x] 看图猜成语 (idioms)
+- [ ] 谁是卧底
 
 ### 好康的
 - [x] 涩图 (pixiv)

@@ -4,6 +4,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	log "github.com/sirupsen/logrus"
+	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 	"gorm.io/gorm/clause"
 )
@@ -28,14 +29,14 @@ func DeleteDialogue(groupID int64, question string) error {
 }
 
 // GetDialogue 根据群号和问题获取answer消息
-func GetDialogue(groupID int64, question string) message.Message {
+func GetDialogue(ctx *zero.Ctx, groupID int64, question string) message.Message {
 	resD := GroupChatDialogue{}
 	rows := proxy.GetDB().Where(&GroupChatDialogue{
 		GroupID:  groupID,
 		Question: question,
 	}, "group_id", "question").Find(&resD).RowsAffected
 	if rows == 0 { // 数据库中没有，尝试从问答集文件中读取
-		return GetDialogueByFilesRandom(groupID, question)
+		return GetDialogueByFilesRandom(ctx, groupID, question)
 	}
 	return message.ParseMessage([]byte(resD.Answer))
 }

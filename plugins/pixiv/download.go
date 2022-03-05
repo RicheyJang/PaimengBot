@@ -38,7 +38,7 @@ func newDownloader(tags []string, num int, isR18 bool) *downloader {
 	}
 	return &downloader{
 		has: false,
-		cap: (num + 5) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
+		cap: (num + 10) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
 
 		tags:  realTags,
 		num:   num,
@@ -76,6 +76,10 @@ func (d *downloader) get() {
 }
 
 func (d *downloader) send(ctx *zero.Ctx) {
+	if d.isR18 && !proxy.GetConfigBool("r18") { // 明知故犯！
+		ctx.Send("不可以涩涩！")
+		return
+	}
 	if !d.has {
 		d.get()
 	}
@@ -107,6 +111,9 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 	if pic == nil {
 		return nil, fmt.Errorf("pic is nil")
 	}
+	if !proxy.GetConfigBool("r18") && utils.StringSliceContain(pic.Tags, "R-18") {
+		return nil, fmt.Errorf("不可以涩涩！")
+	}
 	if len(pic.URL) == 0 {
 		err := pic.GetURLByPID()
 		if err != nil {
@@ -119,6 +126,7 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 		return nil, err
 	}
 	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2, Timeout: getTimeout()})
+	c.SetUserAgent()
 	err = c.DownloadToFile(path, pic.URL)
 	if err != nil {
 		return nil, err

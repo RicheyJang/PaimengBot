@@ -3,9 +3,10 @@ package pixiv
 import (
 	"time"
 
-	log "github.com/sirupsen/logrus"
-
+	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // 从Lolicon API随机获取图片，返回图片URL切片
@@ -39,6 +40,9 @@ func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 	}
 	var pics []PictureInfo
 	for _, data := range rsp.Data {
+		if !isR18 && (data.R18 || utils.StringSliceContain(data.Tags, "R-18")) { // 该图片包含R-18标签，也跳过
+			continue
+		}
 		pic := PictureInfo{
 			Title:  data.Title,
 			URL:    data.Urls["original"],

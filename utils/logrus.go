@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -145,9 +146,15 @@ func (l *LoggerCron) Info(msg string, keysAndValues ...interface{}) {
 	if msg == "wake" || msg == "run" {
 		return
 	}
+	for i := 0; i+1 < len(keysAndValues); i += 2 {
+		msg += fmt.Sprintf(", %v=%v", keysAndValues[i], keysAndValues[i+1])
+	}
 	log.Info("cron msg: ", msg)
 }
 
 func (l *LoggerCron) Error(err error, msg string, keysAndValues ...interface{}) {
-	log.Error("cron msg: ", msg, "err: ", err)
+	for i := 0; i+1 < len(keysAndValues); i += 2 {
+		msg += fmt.Sprintf(", %v=%v", keysAndValues[i], keysAndValues[i+1])
+	}
+	log.Error("cron error msg: ", msg, ", err=", err)
 }

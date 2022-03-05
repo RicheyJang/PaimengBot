@@ -20,6 +20,7 @@ import (
 	// 普通插件
 	_ "github.com/RicheyJang/PaimengBot/plugins/COVID"
 	_ "github.com/RicheyJang/PaimengBot/plugins/admin"
+	_ "github.com/RicheyJang/PaimengBot/plugins/bilibili"
 	_ "github.com/RicheyJang/PaimengBot/plugins/chat"
 	_ "github.com/RicheyJang/PaimengBot/plugins/contact"
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"
@@ -28,6 +29,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
+	_ "github.com/RicheyJang/PaimengBot/plugins/keyword"
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_rank"

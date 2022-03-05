@@ -9,9 +9,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func getTodayResourceByGenshinPub(file string) (err error) {
+func getTodayEventByMhyObc(file string) (err error) {
 	for i := 0; i < 3; i++ { // 最多尝试3次
-		err = tryGetGenshinPubResourceShot(file)
+		err = tryGetMhyObcTodayEventShot(file)
 		if err == nil { // 直到成功
 			break
 		}
@@ -19,7 +19,7 @@ func getTodayResourceByGenshinPub(file string) (err error) {
 	return
 }
 
-func tryGetGenshinPubResourceShot(file string) error {
+func tryGetMhyObcTodayEventShot(file string) error {
 	// 创建 context
 	ctx, cancel := chromedp.NewContext(
 		context.Background(),
@@ -33,28 +33,29 @@ func tryGetGenshinPubResourceShot(file string) error {
 	// 截图
 	var buf []byte
 	if err := chromedp.Run(ctx,
-		genshinResourceScreenshot(`https://genshin.pub/daily`, `.GSContainer_content_box__1sIXz`, &buf),
+		genshinTodayEventScreenshot(`https://bbs.mihoyo.com/ys/obc/channel/map/193`, `cal-pc__row cal-pc__row--event`, &buf),
 	); err != nil {
-		log.Warnf("chromedp genshinResourceScreenshot err: %v", err)
+		log.Warnf("chromedp genshinTodayEventScreenshot err: %v", err)
 		return err
 	}
 	if err := ioutil.WriteFile(file, buf, 0o644); err != nil {
-		log.Warnf("genshinResourceScreenshot write file err: %v", err)
+		log.Warnf("genshinTodayEventScreenshot write file err: %v", err)
 		return err
 	}
 	return nil
 }
 
 // elementScreenshot takes a screenshot of a specific element.
-func genshinResourceScreenshot(url, sel string, res *[]byte) chromedp.Tasks {
+func genshinTodayEventScreenshot(url, sel string, res *[]byte) chromedp.Tasks {
 	return chromedp.Tasks{
 		chromedp.EmulateViewport(1500, 1500),
 		chromedp.Navigate(url),
-		chromedp.WaitVisible(`.GSIcon_optimized_icon__7M4-Q`, chromedp.ByQueryAll), // 等待各大头照加载完成
+		chromedp.WaitVisible(`.cal-event__icon`, chromedp.ByQueryAll), // 等待各大头照加载完成
 		chromedp.WaitVisible(sel),
 		chromedp.Sleep(time.Second), // 额外等待1秒
-		chromedp.Evaluate("document.getElementsByClassName('MewBanner_root__3GKl2')[0].remove();", nil),
-		chromedp.Evaluate("document.getElementsByClassName('GSContainer_gs_container__2FbUz')[0].setAttribute(\"style\", \"height:1050px\");", nil),
+		// 放大
+		chromedp.Evaluate("document.getElementsByClassName('map-catalog')[0].remove();", nil),
+		chromedp.Evaluate(`document.getElementsByClassName("cal-pc__row cal-pc__row--event")[0].style.transform = 'scale(1.2,1.2)'`, nil),
 		chromedp.Screenshot(sel, res, chromedp.NodeVisible),
 	}
 }

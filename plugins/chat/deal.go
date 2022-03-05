@@ -72,12 +72,12 @@ func DIYDialogue(ctx *zero.Ctx, question string) message.Message {
 		return nil
 	}
 	if utils.IsMessageGroup(ctx) {
-		msg := GetDialogue(ctx.Event.GroupID, question)
+		msg := GetDialogue(ctx, ctx.Event.GroupID, question)
 		if len(msg) > 0 {
 			return msg
 		}
 	}
-	return GetDialogue(0, question) // 全局问答
+	return GetDialogue(ctx, 0, question) // 全局问答
 }
 
 // WhoAreYou Dealer: 自我介绍
