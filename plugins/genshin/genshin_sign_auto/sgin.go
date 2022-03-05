@@ -25,10 +25,10 @@ var info = manager.PluginInfo{
 var proxy *manager.PluginProxy
 
 type EventFrom struct {
-	isFromGroup bool
-	fromId      string
-	qq          string
-	auto        bool
+	IsFromGroup bool
+	FromId      string
+	Qq          string
+	Auto        bool
 }
 type UserInfo struct {
 	ID         string
@@ -47,14 +47,14 @@ func init() {
 	// [4] 此处进行其它初始化操作
 	// 添加定时签到任务
 	auto_sign()
-	proxy.AddScheduleDailyFunc(14, 00, auto_sign)
+	proxy.AddScheduleDailyFunc(21, 40, auto_sign)
 	proxy.OnCommands([]string{"自动签到", "定时签到"}).SetBlock(true).SetPriority(3).Handle(sign)
 	proxy.OnCommands([]string{"查询签到"}).SetBlock(true).SetPriority(3).Handle(query)
 }
 
-func query(ctx *zero.Ctx){
-	event_from,_:=GetEventFrom(ctx.Event.UserID)
-	value, _ :=json.Marshal(event_from)
+func query(ctx *zero.Ctx) {
+	event_from, _ := GetEventFrom(ctx.Event.UserID)
+	value, _ := json.Marshal(event_from)
 	ctx.Send(message.Text(fmt.Sprintf(string(value))))
 	return
 }
@@ -116,7 +116,7 @@ func init_event(key string, value []byte) {
 		// cookie
 		name := key[index+len("genshin_eventfrom.u"):]
 		user_info, ok := users[name]
-		event_info := EventFrom{false,"","",false};
+		event_info := EventFrom{false, "", "", false}
 		_ = json.Unmarshal(value, &event_info)
 		if ok {
 			user_info.event_from = event_info
@@ -125,19 +125,16 @@ func init_event(key string, value []byte) {
 			userInfo := UserInfo{name, "", "", event_info}
 			users[name] = userInfo
 		}
-		fmt.Println(key,user_info.event_from)
 	}
 }
 
 func auto_sign() {
 	init_corn_taks()
 	for k, v := range users {
-		if v.event_from.auto {
+		if v.event_from.Auto {
 			// 执行定时任务
 			ctx := utils.GetBotCtx()
-			fmt.Println(v.ID)
-			fmt.Println(v.event_from)
-			if v.event_from.isFromGroup {
+			if v.event_from.IsFromGroup {
 				// 来自群的定时
 				msg, err := genshin_sign.Sign(v.uin, v.cookie)
 				if err != nil {
@@ -145,7 +142,7 @@ func auto_sign() {
 				} else {
 					msg = "定时任务执行完成:\n" + msg
 				}
-				group_id, _ := strconv.ParseInt(v.event_from.fromId, 10, 64)
+				group_id, _ := strconv.ParseInt(v.event_from.FromId, 10, 64)
 				qq_id, _ := strconv.ParseInt(k, 10, 64)
 				ctx.SendGroupMessage(group_id, message.Message{message.At(qq_id), message.Text(msg)})
 			} else {
@@ -173,16 +170,16 @@ func sign(ctx *zero.Ctx) {
 	}
 	// 接收参数 判断是开还是关
 	args := utils.GetArgs(ctx)
-	if isIn(args, "开") {
+	if isIn(args, "开") == true {
 		// 添加定时
 		if ctx.Event.GroupID != 0 {
 			//来自群聊
-			err:=PutEventFrom(ctx.Event.UserID, EventFrom{
+			err := PutEventFrom(ctx.Event.UserID, EventFrom{
 				true,
 				strconv.FormatInt(ctx.Event.GroupID, 10),
 				strconv.FormatInt(ctx.Event.UserID, 10),
 				true})
-			if err != nil{
+			if err != nil {
 				fmt.Println(err.Error())
 			}
 			ctx.Send(message.Message{
@@ -242,22 +239,22 @@ func isIn(str string, deps string) bool {
 	} else {
 		return false
 	}
+	return false
 }
 
-func GetEventFrom(id int64) (event_from EventFrom,e error) {
+func GetEventFrom(id int64) (event_from EventFrom, e error) {
 	key := fmt.Sprintf("genshin_eventfrom.u%v", id)
 	v, err := proxy.GetLevelDB().Get([]byte(key), nil)
 	if err != nil {
-		e=err
-		return 
+		e = err
+		return
 	}
 
 	_ = json.Unmarshal(v, &event_from)
-	return 
+	return
 }
 
 func PutEventFrom(id int64, u EventFrom) error {
-	fmt.Println(u)
 	key := fmt.Sprintf("genshin_eventfrom.u%v", id)
 	value, err := json.Marshal(u)
 	if err != nil {
