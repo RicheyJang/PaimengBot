@@ -31,13 +31,13 @@ type EventFrom struct {
 	Auto        bool
 }
 type UserInfo struct {
-	ID         string
-	uin        string
-	cookie     string
-	event_from EventFrom
+	ID        string
+	Uin       string
+	cookie    string
+	EventFrom EventFrom
 }
 
-var users = map[string]UserInfo{}
+//var users = map[string]UserInfo{}
 
 func init() {
 	proxy = manager.RegisterPlugin(info) // [3] 使用插件信息初始化插件代理
@@ -46,10 +46,13 @@ func init() {
 	}
 	// [4] 此处进行其它初始化操作
 	// 添加定时签到任务
-	auto_sign()
-	proxy.AddScheduleDailyFunc(21, 40, auto_sign)
+	//auto_sign()
+	//proxy.AddConfig("daily.hour",9)
+	//proxy.AddConfig("daily.min",0)
+	//proxy.AddScheduleDailyFunc(22, 22, auto_sign)
 	proxy.OnCommands([]string{"自动签到", "定时签到"}).SetBlock(true).SetPriority(3).Handle(sign)
 	proxy.OnCommands([]string{"查询签到"}).SetBlock(true).SetPriority(3).Handle(query)
+	proxy.OnCommands([]string{"自动签到测试"}).SetBlock(true).SetPriority(3).Handle(auto_sign)
 }
 
 func query(ctx *zero.Ctx) {
@@ -59,96 +62,103 @@ func query(ctx *zero.Ctx) {
 	return
 }
 
-func init_corn_taks() {
+func init_corn_taks() map[string]UserInfo {
 
 	db := proxy.GetLevelDB()
 	iter := db.NewIterator(nil, nil)
+	users := map[string]UserInfo{}
 	for iter.Next() {
 		key := iter.Key()
 		key_str := string(key)
 		value := iter.Value()
-		value_str := string(value)
-
-		init_cookie(key_str, value_str)
-		init_uin(key_str, value_str)
-		init_event(key_str, value)
+		init_cookie(key_str, value, &users)
+		init_uin(key_str, value, &users)
+		init_event(key_str, value, &users)
 		//fmt.Println(fmt.Sprintf("%s|%s",key,value))
 	}
 	iter.Release()
 	//err = iter.Error()
 	//fmt.Println(users)
+	return users
 }
 
-func init_cookie(key string, value string) {
+func init_cookie(key string, value []byte, users *map[string]UserInfo) {
 	index := strings.Index(key, "genshin_cookie.u")
 	if index != -1 {
 		// cookie
 		name := key[index+len("genshin_cookie.u"):]
-		user_info, ok := users[name]
+		user_info, ok := (*users)[name]
+		str_value := ""
+		_ = json.Unmarshal(value, &str_value)
 		if ok {
 			user_info.ID = name
-			user_info.cookie = value
+			user_info.cookie = str_value
+			(*users)[name] = user_info
 		} else {
-			userInfo := UserInfo{name, "", value, EventFrom{false, "", "", false}}
-			users[name] = userInfo
+			userInfo := UserInfo{name, "", str_value, EventFrom{false, "", "", false}}
+			(*users)[name] = userInfo
 		}
 	}
 }
 
-func init_uin(key string, value string) {
+func init_uin(key string, value []byte, users *map[string]UserInfo) {
 	index := strings.Index(key, "genshin_uid.u")
 	if index != -1 {
 		// cookie
 		name := key[index+len("genshin_uid.u"):]
-		user_info, ok := users[name]
+		user_info, ok := (*users)[name]
+		str_value := ""
+		_ = json.Unmarshal(value, &str_value)
 		if ok {
 			user_info.ID = name
-			user_info.uin = value
+			user_info.Uin = str_value
+			(*users)[name] = user_info
 		} else {
-			userInfo := UserInfo{name, value, "", EventFrom{false, "", "", false}}
-			users[name] = userInfo
+			userInfo := UserInfo{name, str_value, "", EventFrom{false, "", "", false}}
+			(*users)[name] = userInfo
 		}
 	}
 }
-func init_event(key string, value []byte) {
+func init_event(key string, value []byte, users *map[string]UserInfo) {
 	index := strings.Index(key, "genshin_eventfrom.u")
 	if index != -1 {
 		// cookie
 		name := key[index+len("genshin_eventfrom.u"):]
-		user_info, ok := users[name]
+		user_info, ok := (*users)[name]
 		event_info := EventFrom{false, "", "", false}
 		_ = json.Unmarshal(value, &event_info)
 		if ok {
-			user_info.event_from = event_info
+			user_info.EventFrom = event_info
 			user_info.ID = name
+			(*users)[name] = user_info
 		} else {
 			userInfo := UserInfo{name, "", "", event_info}
-			users[name] = userInfo
+			(*users)[name] = userInfo
 		}
 	}
 }
 
-func auto_sign() {
-	init_corn_taks()
+func auto_sign(ctx *zero.Ctx) {
+	users := init_corn_taks()
 	for k, v := range users {
-		if v.event_from.Auto {
+		if v.EventFrom.Auto {
 			// 执行定时任务
 			ctx := utils.GetBotCtx()
-			if v.event_from.IsFromGroup {
+			if v.EventFrom.IsFromGroup {
 				// 来自群的定时
-				msg, err := genshin_sign.Sign(v.uin, v.cookie)
+				msg, err := genshin_sign.Sign(v.Uin, v.cookie)
 				if err != nil {
 					msg = "定时任务执行失败\n" + err.Error()
 				} else {
 					msg = "定时任务执行完成:\n" + msg
 				}
-				group_id, _ := strconv.ParseInt(v.event_from.FromId, 10, 64)
+				group_id, _ := strconv.ParseInt(v.EventFrom.FromId, 10, 64)
 				qq_id, _ := strconv.ParseInt(k, 10, 64)
 				ctx.SendGroupMessage(group_id, message.Message{message.At(qq_id), message.Text(msg)})
 			} else {
 				// 来自个人的定时
 				qq_id, _ := strconv.ParseInt(k, 10, 64)
-				msg, err := genshin_sign.Sign(v.uin, v.cookie)
+				msg, err := genshin_sign.Sign(v.Uin, v.cookie)
 				if err != nil {
 					msg = "定时任务执行失败\n" + err.Error()
 				} else {
