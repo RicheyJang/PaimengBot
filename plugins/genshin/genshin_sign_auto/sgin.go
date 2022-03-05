@@ -47,12 +47,14 @@ func init() {
 	// [4] 此处进行其它初始化操作
 	// 添加定时签到任务
 	//auto_sign()
-	//proxy.AddConfig("daily.hour",9)
-	//proxy.AddConfig("daily.min",0)
-	//proxy.AddScheduleDailyFunc(22, 22, auto_sign)
+	proxy.AddConfig("daily.hour", 9)
+	proxy.AddConfig("daily.min", 0)
+	proxy.AddScheduleDailyFunc(
+		int(proxy.GetConfigInt64("daily.hour")),
+		int(proxy.GetConfigInt64("daily.min")),
+		auto_sign)
 	proxy.OnCommands([]string{"自动签到", "定时签到"}).SetBlock(true).SetPriority(3).Handle(sign)
 	proxy.OnCommands([]string{"查询签到"}).SetBlock(true).SetPriority(3).Handle(query)
-	proxy.OnCommands([]string{"自动签到测试"}).SetBlock(true).SetPriority(3).Handle(auto_sign)
 }
 
 func query(ctx *zero.Ctx) {
@@ -138,7 +140,7 @@ func init_event(key string, value []byte, users *map[string]UserInfo) {
 	}
 }
 
-func auto_sign(ctx *zero.Ctx) {
+func auto_sign() {
 	users := init_corn_taks()
 	for k, v := range users {
 		if v.EventFrom.Auto {
