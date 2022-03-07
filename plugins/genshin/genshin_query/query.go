@@ -25,6 +25,8 @@ func init() {
 	if proxy == nil {                    // 若初始化失败，请return，失败原因会在日志中打印
 		return
 	}
+	// 添加配置项
+	proxy.AddConfig("displayType", 1)
 	// [4] 此处进行其它初始化操作
 	proxy.OnCommands([]string{"查询", "体力", "树脂"}).SetBlock(true).SetPriority(3).Handle(queryInfo)
 }
@@ -37,6 +39,6 @@ func queryInfo(ctx *zero.Ctx) {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
 	}
-	msg, _, _ := Query(user_uid, user_cookie)
+	msg, _, _ := Query(user_uid, user_cookie, int(proxy.GetConfigInt64("displayType")))
 	ctx.Send(message.Text(fmt.Sprintf("查询:%s", msg)))
 }
