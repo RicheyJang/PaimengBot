@@ -8,6 +8,8 @@ import (
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
+	"github.com/fsnotify/fsnotify"
+	"github.com/robfig/cron/v3"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 	"strconv"
@@ -23,6 +25,7 @@ var info = manager.PluginInfo{
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
+var task_id cron.EntryID
 
 type EventFrom struct {
 	IsFromGroup bool
@@ -37,8 +40,6 @@ type UserInfo struct {
 	EventFrom EventFrom
 }
 
-//var users = map[string]UserInfo{}
-
 func init() {
 	proxy = manager.RegisterPlugin(info) // [3] 使用插件信息初始化插件代理
 	if proxy == nil {                    // 若初始化失败，请return，失败原因会在日志中打印
@@ -49,12 +50,23 @@ func init() {
 	//auto_sign()
 	proxy.AddConfig("daily.hour", 9)
 	proxy.AddConfig("daily.min", 0)
-	proxy.AddScheduleDailyFunc(
+	task_id, _ = proxy.AddScheduleDailyFunc(
 		int(proxy.GetConfigInt64("daily.hour")),
 		int(proxy.GetConfigInt64("daily.min")),
 		auto_sign)
 	proxy.OnCommands([]string{"自动签到", "定时签到"}).SetBlock(true).SetPriority(3).Handle(sign)
 	proxy.OnCommands([]string{"查询签到"}).SetBlock(true).SetPriority(3).Handle(query)
+	manager.WhenConfigFileChange(configReload)
+}
+
+func configReload(event fsnotify.Event) error {
+	proxy.DeleteSchedule(task_id)
+	id, err := proxy.AddScheduleDailyFunc(
+		int(proxy.GetConfigInt64("daily.hour")),
+		int(proxy.GetConfigInt64("daily.min")),
+		auto_sign)
+	task_id = id
+	return err
 }
 
 func query(ctx *zero.Ctx) {
