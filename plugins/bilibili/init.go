@@ -4,14 +4,12 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/RicheyJang/PaimengBot/basic/auth"
-
-	log "github.com/sirupsen/logrus"
-
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
@@ -34,6 +32,7 @@ var info = manager.PluginInfo{
 	b站取消订阅 [订阅ID] 群[群号]：取消指定群的指定订阅
 config-plugin配置项：
 	bilibili.maxsearch: 最大搜索结果条数
+	bilibili.group: 搜索结果以多少条为一组进行发送
 	bilibili.link: 订阅内容更新时是(true)否(false)在消息中附加链接`,
 	Classify: "实用工具",
 }
@@ -49,7 +48,8 @@ func init() {
 	proxy.OnCommands([]string{"b站取消订阅"}).SetBlock(true).SetPriority(3).Handle(unsubscribeHandler)
 	proxy.OnFullMatch([]string{"b站全部订阅"}, zero.SuperUserPermission, zero.OnlyPrivate).
 		SetBlock(true).SetPriority(3).Handle(allSubscribeHandler)
-	proxy.AddConfig("maxsearch", 10)
+	proxy.AddConfig("maxsearch", 8)
+	proxy.AddConfig("group", 4)
 	proxy.AddConfig("link", true)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
@@ -220,10 +220,12 @@ func subscribeBangumi(ctx *zero.Ctx, arg string, userID string) {
 			if maxSearch > 0 && len(s) > maxSearch { // 限定最大结果条数
 				s = s[:maxSearch]
 			}
-			for i, b := range s {
-				ctx.Send(b.GenMessage(i + 1))
-				time.Sleep(100 * time.Millisecond) // 间隔100ms
+			// 发送搜索结果
+			ms := make([]messager, len(s))
+			for i := range s {
+				ms[i] = s[i]
 			}
+			SendSearchResult(ctx, ms)
 			ctx.Send("如果上述番剧中有你想订阅的番剧，请答复其序号（方括号内）；若没有，请说没有")
 			event := utils.WaitNextMessage(ctx)
 			if event == nil {
@@ -291,10 +293,12 @@ func subscribeUp(ctx *zero.Ctx, arg string, userID string) {
 			if maxSearch > 0 && len(us) > maxSearch { // 限定最大结果条数
 				us = us[:maxSearch]
 			}
-			for i, u := range us {
-				ctx.Send(u.GenMessage(i + 1))
-				time.Sleep(100 * time.Millisecond) // 间隔100ms
+			// 发送搜索结果
+			ms := make([]messager, len(us))
+			for i := range us {
+				ms[i] = us[i]
 			}
+			SendSearchResult(ctx, ms)
 			ctx.Send("如果上述UP主中有你想订阅的UP主，请答复其序号（方括号内）；若没有，请说没有")
 			event := utils.WaitNextMessage(ctx)
 			if event == nil {

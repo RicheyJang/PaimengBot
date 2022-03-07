@@ -154,7 +154,7 @@ func (s *Search) Type(searchType string, keyword string, additionalKV ...string)
 }
 
 func (s *Search) User(keyword string) ([]UserInfo, error) {
-	rsp, err := s.Type(SearchTypeUser, keyword, "order", "fans")
+	rsp, err := s.Type(SearchTypeUser, keyword)
 	if err != nil {
 		return nil, err
 	}
