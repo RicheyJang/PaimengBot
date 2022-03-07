@@ -55,7 +55,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"新增对话", "新增问答"}).SetBlock(true).SetPriority(5).Handle(addDialogue)
-	proxy.OnRegex("我问([^\n]*)你答([^\n]*)", zero.OnlyToMe).SetBlock(true).SetPriority(7).Handle(addDialogue)
+	proxy.OnRegex("^我问([^\n]*)你答([^\n]*)", zero.OnlyToMe).SetBlock(true).SetPriority(7).Handle(addDialogue)
 	proxy.OnCommands([]string{"删除对话", "删除问答"}).SetBlock(true).SetPriority(5).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}).SetBlock(true).SetPriority(5).Handle(showDialogue)
 
