@@ -55,7 +55,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"新增对话", "新增问答"}).SetBlock(true).SetPriority(5).Handle(addDialogue)
-	proxy.OnRegex("^我问([^\n]*)你答([^\n]*)", zero.OnlyToMe).SetBlock(true).SetPriority(7).Handle(addDialogue)
+	proxy.OnRegex("^我问([^\n]*)你答([^\n]*)$", zero.OnlyToMe).SetBlock(true).SetPriority(7).Handle(addDialogue)
 	proxy.OnCommands([]string{"删除对话", "删除问答"}).SetBlock(true).SetPriority(5).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}).SetBlock(true).SetPriority(5).Handle(showDialogue)
 
@@ -154,27 +154,26 @@ func showDialogue(ctx *zero.Ctx) {
 }
 
 func analysisCtx(ctx *zero.Ctx) (question string, answer message.Message, err error) {
-	// 去除消息[0]的命令前缀
+	var subs []string
 	cmd := utils.GetCommand(ctx)
-	firstMsg := ctx.Event.Message[0].Data["text"]
-	id := strings.Index(firstMsg, cmd)
-	if id < 0 {
-		return "", nil, fmt.Errorf("unexpected error: no command")
-	}
-	id += len(cmd)
-	firstMsg = firstMsg[id:]
-	// 解析命令消息
-	subs := strings.SplitN(firstMsg, "\n", 3)
-	if len(subs) < 3 {
+	if len(cmd) > 0 { // 命令式
+		// 去除消息的命令前缀
+		wholeMsg := ctx.MessageString() // 完整消息（包含CQ码）
+		id := strings.Index(wholeMsg, cmd)
+		if id < 0 {
+			return "", nil, fmt.Errorf("unexpected error: no command")
+		}
+		id += len(cmd)
+		wholeMsg = wholeMsg[id:]
+		subs = strings.SplitN(wholeMsg, "\n", 3)
+	} else { // 正则式
 		subs = utils.GetRegexpMatched(ctx)
 	}
+	// 解析命令消息
 	if len(subs) < 3 {
 		return "", nil, fmt.Errorf("too few parameters")
 	}
 	question = strings.TrimSpace(subs[1])
-	answer = append(answer, message.Text(subs[2]))
-	if len(ctx.Event.Message) > 1 {
-		answer = append(answer, ctx.Event.Message[1:]...)
-	}
+	answer = append(answer, message.ParseMessageFromString(subs[2])...)
 	return
 }

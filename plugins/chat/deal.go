@@ -20,7 +20,7 @@ var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自�
 }
 
 func dealChat(ctx *zero.Ctx) {
-	question := ctx.ExtractPlainText()
+	question := ctx.MessageString()
 	// 优先尝试自定义问答
 	msg := DIYDialogue(ctx, question)
 	if len(msg) > 0 {
