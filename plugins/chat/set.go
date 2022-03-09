@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"sort"
+
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	log "github.com/sirupsen/logrus"
@@ -25,7 +27,9 @@ func SetDialogue(groupID int64, question string, answer message.Message) error {
 // DeleteDialogue 根据问题删除一个问答
 func DeleteDialogue(groupID int64, question string) error {
 	return proxy.GetDB().
-		Where("group_id = ? AND question = ?", groupID, question).Delete(&GroupChatDialogue{}).Error
+		Where("group_id = ? AND question = ?", groupID, question).
+		Or("group_id = ? AND question = ?", groupID, preprocessQuestion(question)).
+		Delete(&GroupChatDialogue{}).Error
 }
 
 // GetDialogue 根据群号和问题获取answer消息
@@ -49,7 +53,18 @@ func GetAllQuestion(groupID int64) []string {
 	for _, r := range resD {
 		qs = append(qs, r.Question)
 	}
-	return utils.MergeStringSlices(qs)
+	qs = utils.MergeStringSlices(qs)
+	sort.Strings(qs)
+	return qs
+}
+
+// GetSpecQuestion 获取GetAllQuestion中的qs[i]问句
+func GetSpecQuestion(groupID int64, index int) string {
+	qs := GetAllQuestion(groupID)
+	if index < 0 || index >= len(qs) {
+		return ""
+	}
+	return qs[index]
 }
 
 type GroupChatDialogue struct {

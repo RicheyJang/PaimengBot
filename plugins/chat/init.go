@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/basic/auth"
@@ -23,10 +24,11 @@ var info = manager.PluginInfo{
 	[问句内容]
 	[回答内容]：注意共三行哦，将会添加一条相应的问答，[回答内容]可以为多行
 另外也可以通过单行一句话快速新增：[机器人昵称如"派蒙"]我问[问句内容]你答[回答内容]
-如何删除自定义问答：
-	删除问答 [问句内容]：即可将相应问答删除
 如何查看已有自定义问答：
 	已有问答
+如何删除自定义问答：
+	删除问答 [问句内容]：即可将相应问答删除
+	删除第[编号i]个问答：删除已有问答中的第i个
 另，相应问答只会在调用上述命令的群聊中生效哦
 若想添加全局问答，请联系超级用户`,
 	SuperUsage: `超级用户在私聊中调用上述命令，会对全局所有群和私聊生效
@@ -57,6 +59,7 @@ func init() {
 	proxy.OnCommands([]string{"新增对话", "新增问答"}).SetBlock(true).SetPriority(5).Handle(addDialogue)
 	proxy.OnRegex("^我问([^\n]*)你答([^\n]*)$", zero.OnlyToMe).SetBlock(true).SetPriority(7).Handle(addDialogue)
 	proxy.OnCommands([]string{"删除对话", "删除问答"}).SetBlock(true).SetPriority(5).Handle(delDialogue)
+	proxy.OnRegex(`^删除第(\d+)?个问答`).SetBlock(true).SetPriority(7).Handle(delDialogue)
 	proxy.OnCommands([]string{"已有对话", "已有问答"}).SetBlock(true).SetPriority(5).Handle(showDialogue)
 
 	proxy.OnMessage(zero.OnlyToMe).SetBlock(true).SetPriority(10).Handle(dealChat)
@@ -103,10 +106,20 @@ func addDialogue(ctx *zero.Ctx) {
 }
 
 func delDialogue(ctx *zero.Ctx) {
-	question := strings.TrimSpace(utils.GetArgs(ctx))
+	question := messageStringWithoutCmd(ctx)
 	if len(question) == 0 {
 		ctx.Send("参数不对哦")
 		return
+	}
+	// 若为正则式
+	subs := utils.GetRegexpMatched(ctx)
+	if len(subs) > 1 {
+		index, _ := strconv.Atoi(subs[1])
+		question = GetSpecQuestion(ctx.Event.GroupID, index-1)
+		if len(question) == 0 {
+			ctx.Send("没有这个问答")
+			return
+		}
 	}
 	if utils.IsSuperUser(ctx.Event.UserID) && utils.IsMessagePrimary(ctx) {
 		// 超级用户 in 私聊
@@ -173,7 +186,35 @@ func analysisCtx(ctx *zero.Ctx) (question string, answer message.Message, err er
 	if len(subs) < 3 {
 		return "", nil, fmt.Errorf("too few parameters")
 	}
-	question = strings.TrimSpace(subs[1])
+	question = preprocessQuestion(strings.TrimSpace(subs[1]))
 	answer = append(answer, message.ParseMessageFromString(subs[2])...)
 	return
+}
+
+// 去除消息的命令前缀的CQ码格式
+func messageStringWithoutCmd(ctx *zero.Ctx) string {
+	cmd := utils.GetCommand(ctx)
+	wholeMsg := ctx.MessageString() // 完整消息（包含CQ码）
+	id := strings.Index(wholeMsg, cmd)
+	if id < 0 {
+		return wholeMsg
+	}
+	id += len(cmd)
+	return strings.TrimSpace(wholeMsg[id:])
+}
+
+// 将收到的原问句org进行预处理
+func preprocessQuestion(org string) string {
+	if !strings.Contains(org, "[CQ:image") {
+		return org
+	}
+	msg := message.ParseMessageFromString(org)
+	for i, seg := range msg {
+		if seg.Type == "image" { // 只保留file字段
+			msg[i].Data = map[string]string{
+				"file": seg.Data["file"],
+			}
+		}
+	}
+	return msg.String()
 }
