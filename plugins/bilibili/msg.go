@@ -53,6 +53,9 @@ func (b BangumiInfo) GenText(index int) string {
 		str = "[" + fmt.Sprintf("%d", index) + "] " + str
 	}
 	str += "番剧ID：" + fmt.Sprintf("%d", b.MediaID) + "\n"
+	if b.Score > 0 {
+		str += "评分：" + fmt.Sprintf("%.1f", b.Score) + "\n"
+	}
 	str += "地区：" + b.Areas + "\n"
 	if utils.StringRealLength(b.Description) > 50 {
 		str += "简介：" + string([]rune(b.Description)[:50]) + "..."

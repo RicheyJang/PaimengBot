@@ -17,7 +17,7 @@ var info = manager.PluginInfo{
 	Name: "b站订阅",
 	Usage: `订阅B站番剧、up主动态、直播，自动推送
 用法：
-	b站订阅番剧 [番剧名称或ID]: 订阅指定番剧，支持番剧名称模糊搜索
+	b站订阅番剧 [番剧名称或ID]: 订阅指定番剧或影视，支持按名称模糊搜索
 	b站订阅up [up主名称或ID]：订阅指定up主的动态，支持用户名称模糊搜索
 	b站订阅直播 [直播间ID]：订阅指定直播间的直播
 
@@ -209,6 +209,12 @@ func subscribeBangumi(ctx *zero.Ctx, arg string, userID string) {
 			ctx.Send("失败了...")
 			return
 		}
+		// 同时尝试搜索影视
+		fts, err := NewSearch().FT(arg)
+		if err != nil { // 不返回
+			log.Errorf("bilibili search FT error: %v", err)
+		}
+		s = append(s, fts...)
 		if len(s) == 0 {
 			ctx.Send("没有找到相关的番剧")
 			return

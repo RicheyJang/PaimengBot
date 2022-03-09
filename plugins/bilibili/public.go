@@ -25,6 +25,7 @@ func GetAPI(api string) (url string) {
 // 一些预定义
 const (
 	SearchTypeBangumi  = "media_bangumi"
+	SearchTypeFT       = "media_ft"
 	SearchTypeUser     = "bili_user"
 	DynamicTypeShare   = 1 // 转发
 	DynamicTypePic     = 2 // 图片动态
@@ -186,6 +187,19 @@ func (s *Search) Bangumi(keyword string) ([]BangumiInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	return searchBFTResultToInfo(rsp)
+}
+
+// FT 搜索影视
+func (s *Search) FT(keyword string) ([]BangumiInfo, error) {
+	rsp, err := s.Type(SearchTypeFT, keyword)
+	if err != nil {
+		return nil, err
+	}
+	return searchBFTResultToInfo(rsp)
+}
+
+func searchBFTResultToInfo(rsp gjson.Result) ([]BangumiInfo, error) {
 	var bangumi []BangumiInfo
 	for _, v := range rsp.Get("data.result").Array() {
 		bangumi = append(bangumi, BangumiInfo{
