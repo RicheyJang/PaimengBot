@@ -12,11 +12,18 @@ import (
 
 type SignState struct {
 	Today        string `json:"today"`
-	TotalSignDay int8   `json:"total_sign_day"`
+	TotalSignDay int    `json:"total_sign_day"`
 	IsSign       bool   `json:"is_sign"`
 	IsSub        bool   `json:"is_sub"`
 	MonthFirst   bool   `json:"month_first"`
 	FirstBind    bool   `json:"first_bind"`
+}
+
+type SignAwardsList struct {
+	Awards []struct {
+		Name  string `json:"name"`
+		Count int    `json:"cnt"`
+	} `json:"awards"`
 }
 
 func Sign(cookie string, user GameRole) error {
@@ -27,7 +34,7 @@ func Sign(cookie string, user GameRole) error {
 	}
 	mr := NewMiyoRequest("https://api-takumi.mihoyo.com/event/bbs_sign_reward/sign")
 	mr.SetHeader("User-Agent", "Mozilla/5.0 (Linux; Android 5.1.1; f103 Build/LYZ28N; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/52.0.2743.100 Safari/537.36 miHoYoBBS/2.3.0")
-	mr.SetHeader("Referer", "gzip, deflate")
+	mr.SetHeader("Referer", "https://webstatic.mihoyo.com/bbs/event/signin-ys/index.html?bbs_auth_required=true&act_id=e202009291139501&utm_source=bbs&utm_medium=mys&utm_campaign=icon")
 	mr.SetHeader("Accept-Encoding", "gzip, deflate")
 	mr.SetHeader("Cookie", cookie)
 	mr.SetHeader("x-rpc-device_id", uuid.NewV4().String())
@@ -62,6 +69,23 @@ func GetSignStateInfo(cookie string, user GameRole) (*SignState, error) {
 	}
 	// 解析
 	signState := SignState{}
+	err = json.Unmarshal(data, &signState)
+	return &signState, err
+}
+
+func GetSignAwardsList() (*SignAwardsList, error) {
+	// 请求
+	mr := NewMiyoRequest("https://api-takumi.mihoyo.com/event/bbs_sign_reward/home?act_id=e202009291139501")
+	mr.SetHeader("x-rpc-app_version", "2.11.1")
+	mr.SetHeader("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) miHoYoBBS/2.11.1")
+	mr.SetHeader("Referer", "https://webstatic.mihoyo.com/")
+	mr.SetHeader("x-rpc-client_type", "5")
+	data, err := mr.Execute()
+	if err != nil {
+		return nil, err
+	}
+	// 解析
+	signState := SignAwardsList{}
 	err = json.Unmarshal(data, &signState)
 	return &signState, err
 }
