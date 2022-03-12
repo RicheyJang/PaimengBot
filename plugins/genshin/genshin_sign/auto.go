@@ -2,249 +2,122 @@ package genshin_sign
 
 import (
 	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
-	"github.com/RicheyJang/PaimengBot/utils"
-	"github.com/RicheyJang/PaimengBot/utils/images"
+	"github.com/RicheyJang/PaimengBot/utils/push"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/robfig/cron/v3"
-	zero "github.com/wdvxdr1123/ZeroBot"
+	log "github.com/sirupsen/logrus"
+	levelutil "github.com/syndtr/goleveldb/leveldb/util"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-var task_id cron.EntryID
+var taskID cron.EntryID
 
-type EventFrom struct {
-	IsFromGroup bool
-	FromId      string
-	Qq          string
-	Auto        bool
-}
-type UserInfo struct {
-	ID        string
-	Uin       string
-	cookie    string
-	EventFrom EventFrom
-}
-
-func configReload(event fsnotify.Event) error {
-	proxy.DeleteSchedule(task_id)
+func configReload(fsnotify.Event) error {
+	proxy.DeleteSchedule(taskID)
 	id, err := proxy.AddScheduleDailyFunc(
 		int(proxy.GetConfigInt64("daily.hour")),
 		int(proxy.GetConfigInt64("daily.min")),
-		auto_sign)
-	task_id = id
+		autoSignTask)
+	taskID = id
 	return err
 }
 
-func querySignHandler(ctx *zero.Ctx) {
-	event_from, _ := GetEventFrom(ctx.Event.UserID)
-	value, _ := json.Marshal(event_from)
-	ctx.Send(message.Text(fmt.Sprintf(string(value))))
-	return
-}
-
-func init_corn_taks() map[string]UserInfo {
-
-	db := proxy.GetLevelDB()
-	iter := db.NewIterator(nil, nil)
-	users := map[string]UserInfo{}
+// 获取所有需要定时签到的用户信息映射
+func initCornTasks() map[string]UserInfo {
+	iter := proxy.GetLevelDB().NewIterator(levelutil.BytesPrefix([]byte("genshin_")), nil)
+	users := make(map[string]UserInfo)
 	for iter.Next() {
-		key := iter.Key()
-		key_str := string(key)
+		keyStr := string(iter.Key())
 		value := iter.Value()
-		init_cookie(key_str, value, &users)
-		init_uin(key_str, value, &users)
-		init_event(key_str, value, &users)
-		//fmt.Println(fmt.Sprintf("%s|%s",key,value))
+		initCookie(keyStr, value, users)
+		initUin(keyStr, value, users)
+		initEvent(keyStr, value, users)
 	}
 	iter.Release()
-	//err = iter.Error()
-	//fmt.Println(users)
 	return users
 }
 
-func init_cookie(key string, value []byte, users *map[string]UserInfo) {
-	index := strings.Index(key, "genshin_cookie.u")
-	if index != -1 {
-		// cookie
-		name := key[index+len("genshin_cookie.u"):]
-		user_info, ok := (*users)[name]
-		str_value := ""
-		_ = json.Unmarshal(value, &str_value)
+func initCookie(key string, value []byte, users map[string]UserInfo) {
+	if strings.HasPrefix(key, "genshin_cookie.u") {
+		strValue := ""
+		_ = json.Unmarshal(value, &strValue)
+		name := key[len("genshin_cookie.u"):]
+		userInfo, ok := users[name]
 		if ok {
-			user_info.ID = name
-			user_info.cookie = str_value
-			(*users)[name] = user_info
+			userInfo.ID = name
+			userInfo.cookie = strValue
+			users[name] = userInfo
 		} else {
-			userInfo := UserInfo{name, "", str_value, EventFrom{false, "", "", false}}
-			(*users)[name] = userInfo
+			users[name] = UserInfo{ID: name, cookie: strValue}
 		}
 	}
 }
 
-func init_uin(key string, value []byte, users *map[string]UserInfo) {
-	index := strings.Index(key, "genshin_uid.u")
-	if index != -1 {
-		// cookie
-		name := key[index+len("genshin_uid.u"):]
-		user_info, ok := (*users)[name]
-		str_value := ""
-		_ = json.Unmarshal(value, &str_value)
+func initUin(key string, value []byte, users map[string]UserInfo) {
+	if strings.HasPrefix(key, "genshin_uid.u") {
+		strValue := ""
+		_ = json.Unmarshal(value, &strValue)
+		name := key[len("genshin_uid.u"):]
+		userInfo, ok := users[name]
 		if ok {
-			user_info.ID = name
-			user_info.Uin = str_value
-			(*users)[name] = user_info
+			userInfo.ID = name
+			userInfo.Uin = strValue
+			users[name] = userInfo
 		} else {
-			userInfo := UserInfo{name, str_value, "", EventFrom{false, "", "", false}}
-			(*users)[name] = userInfo
+			users[name] = UserInfo{ID: name, Uin: strValue}
 		}
 	}
 }
-func init_event(key string, value []byte, users *map[string]UserInfo) {
-	index := strings.Index(key, "genshin_eventfrom.u")
-	if index != -1 {
-		// cookie
-		name := key[index+len("genshin_eventfrom.u"):]
-		user_info, ok := (*users)[name]
-		event_info := EventFrom{false, "", "", false}
-		_ = json.Unmarshal(value, &event_info)
+
+func initEvent(key string, value []byte, users map[string]UserInfo) {
+	if strings.HasPrefix(key, "genshin_eventfrom.u") {
+		var eventInfo EventFrom
+		_ = json.Unmarshal(value, &eventInfo)
+		name := key[len("genshin_eventfrom.u"):]
+		userInfo, ok := users[name]
 		if ok {
-			user_info.EventFrom = event_info
-			user_info.ID = name
-			(*users)[name] = user_info
+			userInfo.ID = name
+			userInfo.EventFrom = eventInfo
+			users[name] = userInfo
 		} else {
-			userInfo := UserInfo{name, "", "", event_info}
-			(*users)[name] = userInfo
+			users[name] = UserInfo{ID: name, EventFrom: eventInfo}
 		}
 	}
 }
 
-func auto_sign() {
-	users := init_corn_taks()
-	for k, v := range users {
-		if v.EventFrom.Auto {
-			// 执行定时任务
-			ctx := utils.GetBotCtx()
-			if v.EventFrom.IsFromGroup {
-				// 来自群的定时
-				msg, err := Sign(v.Uin, v.cookie)
-				if err != nil {
-					msg = "定时任务执行失败\n" + err.Error()
-				} else {
-					msg = "定时任务执行完成:\n" + msg
-				}
-				group_id, _ := strconv.ParseInt(v.EventFrom.FromId, 10, 64)
-				qq_id, _ := strconv.ParseInt(k, 10, 64)
-				ctx.SendGroupMessage(group_id, message.Message{message.At(qq_id), message.Text(msg)})
-			} else {
-				// 来自个人的定时
-				qq_id, _ := strconv.ParseInt(k, 10, 64)
-				msg, err := Sign(v.Uin, v.cookie)
-				if err != nil {
-					msg = "定时任务执行失败\n" + err.Error()
-				} else {
-					msg = "定时任务执行完成:\n" + msg
-				}
-				ctx.SendPrivateMessage(qq_id, message.Text(msg))
-			}
-			time.Sleep(2 * time.Second)
+func autoSignTask() {
+	users := initCornTasks()
+	for k, user := range users {
+		if !user.EventFrom.Auto {
+			continue
 		}
-	}
-
-}
-
-func autoSignHandler(ctx *zero.Ctx) {
-	_, _, cookie_msg, err := mihoyo.GetUidCookieById(ctx.Event.UserID)
-	if err != nil {
-		ctx.Send(images.GenStringMsg(cookie_msg))
-		return
-	}
-	// 接收参数 判断是开还是关
-	args := utils.GetArgs(ctx)
-	if isIn(args, "开") == true {
-		// 添加定时
-		if ctx.Event.GroupID != 0 {
-			//来自群聊
-			err := PutEventFrom(ctx.Event.UserID, EventFrom{
-				true,
-				strconv.FormatInt(ctx.Event.GroupID, 10),
-				strconv.FormatInt(ctx.Event.UserID, 10),
-				true})
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-			ctx.Send(message.Message{
-				message.At(ctx.Event.UserID),
-				message.Text("定时签到已打开"),
-			})
-		} else {
-			PutEventFrom(ctx.Event.UserID,
-				EventFrom{false,
-					strconv.FormatInt(ctx.Event.UserID, 10),
-					strconv.FormatInt(ctx.Event.UserID, 10),
-					true})
-			ctx.Send(message.Text("定时签到已打开"))
+		// 执行定时签到
+		msg, err := Sign(user.Uin, user.cookie)
+		if err != nil {
+			log.Warnf("Auto Sign(id=%v, uid=%v) err: %v", user.ID, user.Uin, err)
+			continue
 		}
-	} else if isIn(args, "关") {
-		if ctx.Event.GroupID != 0 {
-			//来自群聊
-			PutEventFrom(ctx.Event.UserID, EventFrom{
-				true,
-				strconv.FormatInt(ctx.Event.GroupID, 10),
-				strconv.FormatInt(ctx.Event.UserID, 10),
-				false})
-			ctx.Send(message.Message{
-				message.At(ctx.Event.UserID),
-				message.Text("定时签到已关闭"),
-			})
-		} else {
-			PutEventFrom(ctx.Event.UserID,
-				EventFrom{false,
-					strconv.FormatInt(ctx.Event.UserID, 10),
-					strconv.FormatInt(ctx.Event.UserID, 10),
-					false})
-			ctx.Send(message.Text("定时签到已关闭"))
-		}
-	} else {
-		// 不知道啥情况
-		ctx.Send(`？可以看看帮助`)
-		return
+		log.Infof("米游社自动签到成功：%v", msg)
+		// 推送消息 目前仅推送给个人
+		//if user.EventFrom.IsFromGroup { // 来自群的定时签到
+		//	groupID, _ := strconv.ParseInt(user.EventFrom.FromId, 10, 64)
+		//	qq, _ := strconv.ParseInt(k, 10, 64)
+		//	push.Send(push.Target{
+		//		Msg:    message.Message{message.At(qq), message.Text(msg)},
+		//		Groups: []int64{groupID},
+		//	})
+		//} else { // 来自个人的定时签到
+		qq, _ := strconv.ParseInt(k, 10, 64)
+		push.Send(push.Target{
+			Msg:     message.Message{message.Text(msg)},
+			Friends: []int64{qq},
+		})
+		//}
+		time.Sleep(2 * time.Second)
 	}
-	return
-}
-
-func isIn(str string, deps string) bool {
-	index := strings.Index(str, deps)
-	if index != -1 {
-		return true
-	} else {
-		return false
-	}
-}
-
-func GetEventFrom(id int64) (event_from EventFrom, e error) {
-	key := fmt.Sprintf("genshin_eventfrom.u%v", id)
-	v, err := proxy.GetLevelDB().Get([]byte(key), nil)
-	if err != nil {
-		e = err
-		return
-	}
-
-	_ = json.Unmarshal(v, &event_from)
-	return
-}
-
-func PutEventFrom(id int64, u EventFrom) error {
-	key := fmt.Sprintf("genshin_eventfrom.u%v", id)
-	value, err := json.Marshal(u)
-	if err != nil {
-		return err
-	}
-	return proxy.GetLevelDB().Put([]byte(key), value, nil)
 }
