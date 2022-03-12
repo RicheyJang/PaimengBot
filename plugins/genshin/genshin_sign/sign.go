@@ -2,8 +2,41 @@ package genshin_sign
 
 import (
 	"fmt"
+
+	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign/sign_client"
 )
+
+var info = manager.PluginInfo{
+	Name: "米游社签到",
+	Usage: `如果你填写了对应的cookie，将会自动在查询对应的信息
+用法：
+	米游社签到：顾 名 思 义
+	米游社定时签到 [打开/关闭]：即可打开/关闭米游社自动定时签到
+	米游社签到查询：看看机器人今天有没有帮你签到
+` + genshin_public.GetInitializaationPrompt(),
+	Classify: "原神相关",
+}
+var proxy *manager.PluginProxy
+
+func init() {
+	proxy = manager.RegisterPlugin(info)
+	if proxy == nil {
+		return
+	}
+	proxy.OnCommands([]string{"米游社签到"}).SetBlock(true).SetPriority(3).Handle(singleSignHandler)
+	proxy.OnCommands([]string{"米游社自动签到", "米游社定时签到"}).SetBlock(true).SetPriority(3).Handle(autoSignHandler)
+	proxy.OnCommands([]string{"米游社查询签到", "查询米游社签到", "米游社签到查询"}).SetBlock(true).SetPriority(3).Handle(querySignHandler)
+	proxy.AddConfig("daily.hour", 9)
+	proxy.AddConfig("daily.min", 0)
+	// 添加定时签到任务
+	task_id, _ = proxy.AddScheduleDailyFunc(
+		int(proxy.GetConfigInt64("daily.hour")),
+		int(proxy.GetConfigInt64("daily.min")),
+		auto_sign)
+	manager.WhenConfigFileChange(configReload)
+}
 
 func Sign(uid string, cookie string) (string, error) {
 

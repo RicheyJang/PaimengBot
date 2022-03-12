@@ -1,30 +1,22 @@
-package genshin_sign_auto
+package genshin_sign
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RicheyJang/PaimengBot/manager"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
+
 	"github.com/fsnotify/fsnotify"
 	"github.com/robfig/cron/v3"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
-	"strconv"
-	"strings"
-	"time"
 )
 
-var info = manager.PluginInfo{
-	Name: "定时签到",
-	Usage: `如果你填写了对应的cookie
-将会自动在查询对应的信息 说 定时签到 打开/关闭 就可以啦
-` + genshin_public.GetInitializaationPrompt(),
-	Classify: "原神相关",
-}
-var proxy *manager.PluginProxy
 var task_id cron.EntryID
 
 type EventFrom struct {
@@ -40,25 +32,6 @@ type UserInfo struct {
 	EventFrom EventFrom
 }
 
-func init() {
-	proxy = manager.RegisterPlugin(info) // [3] 使用插件信息初始化插件代理
-	if proxy == nil {                    // 若初始化失败，请return，失败原因会在日志中打印
-		return
-	}
-	// [4] 此处进行其它初始化操作
-	// 添加定时签到任务
-	//auto_sign()
-	proxy.AddConfig("daily.hour", 9)
-	proxy.AddConfig("daily.min", 0)
-	task_id, _ = proxy.AddScheduleDailyFunc(
-		int(proxy.GetConfigInt64("daily.hour")),
-		int(proxy.GetConfigInt64("daily.min")),
-		auto_sign)
-	proxy.OnCommands([]string{"自动签到", "定时签到"}).SetBlock(true).SetPriority(3).Handle(sign)
-	proxy.OnCommands([]string{"查询签到"}).SetBlock(true).SetPriority(3).Handle(query)
-	manager.WhenConfigFileChange(configReload)
-}
-
 func configReload(event fsnotify.Event) error {
 	proxy.DeleteSchedule(task_id)
 	id, err := proxy.AddScheduleDailyFunc(
@@ -69,7 +42,7 @@ func configReload(event fsnotify.Event) error {
 	return err
 }
 
-func query(ctx *zero.Ctx) {
+func querySignHandler(ctx *zero.Ctx) {
 	event_from, _ := GetEventFrom(ctx.Event.UserID)
 	value, _ := json.Marshal(event_from)
 	ctx.Send(message.Text(fmt.Sprintf(string(value))))
@@ -160,7 +133,7 @@ func auto_sign() {
 			ctx := utils.GetBotCtx()
 			if v.EventFrom.IsFromGroup {
 				// 来自群的定时
-				msg, err := genshin_sign.Sign(v.Uin, v.cookie)
+				msg, err := Sign(v.Uin, v.cookie)
 				if err != nil {
 					msg = "定时任务执行失败\n" + err.Error()
 				} else {
@@ -172,7 +145,7 @@ func auto_sign() {
 			} else {
 				// 来自个人的定时
 				qq_id, _ := strconv.ParseInt(k, 10, 64)
-				msg, err := genshin_sign.Sign(v.Uin, v.cookie)
+				msg, err := Sign(v.Uin, v.cookie)
 				if err != nil {
 					msg = "定时任务执行失败\n" + err.Error()
 				} else {
@@ -186,7 +159,7 @@ func auto_sign() {
 
 }
 
-func sign(ctx *zero.Ctx) {
+func autoSignHandler(ctx *zero.Ctx) {
 	_, _, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
@@ -248,12 +221,6 @@ func sign(ctx *zero.Ctx) {
 		return
 	}
 	return
-	//
-	//msg, err := genshin_sign.Sign(user_uid, user_cookie)
-	//if err != nil {
-	//	ctx.Send(images.GenStringMsg(msg))
-	//}
-	//ctx.Send(message.Text(fmt.Sprintf("签到:%s", msg)))
 }
 
 func isIn(str string, deps string) bool {
@@ -263,7 +230,6 @@ func isIn(str string, deps string) bool {
 	} else {
 		return false
 	}
-	return false
 }
 
 func GetEventFrom(id int64) (event_from EventFrom, e error) {
