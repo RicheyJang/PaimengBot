@@ -16,6 +16,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/basic/invite"
 	_ "github.com/RicheyJang/PaimengBot/basic/limiter"
 	_ "github.com/RicheyJang/PaimengBot/basic/nickname"
+	_ "github.com/RicheyJang/PaimengBot/basic/sc"
 
 	// 普通插件
 	_ "github.com/RicheyJang/PaimengBot/plugins/COVID"
