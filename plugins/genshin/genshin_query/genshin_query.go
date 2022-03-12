@@ -2,49 +2,56 @@ package genshin_query
 
 import (
 	"fmt"
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
 	"strconv"
 	"time"
+
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-func Query(uid string, cookie string, displayType int) (string, *genshin_public.GenshinDailyNote, error) {
-	role, err := genshin_public.GetUserGameRoleByUid(cookie, uid)
+func Query(uid string, cookie string, showLeft bool) (message.Message, *mihoyo.GenshinDailyNote, error) {
+	// 查询角色信息
+	role, err := mihoyo.GetUserGameRoleByUid(cookie, uid)
 	if err != nil {
-		msg := fmt.Sprintf("获取角色信息失败,error:%s", err.Error())
-		return msg, nil, err
+		return message.Message{message.Text("获取角色信息失败")}, nil, err
 	}
-	dailyNote, err := genshin_public.GetGenshinDailyNote(cookie, uid, role.Region)
+	// 查询当前便笺
+	dailyNote, err := mihoyo.GetGenshinDailyNote(cookie, uid, role.Region)
 	if err != nil {
-		msg := fmt.Sprintf("获取角色信息失败,error:%s", err.Error())
-		return msg, nil, err
+		return message.Message{message.Text("获取当前便笺失败")}, nil, err
 	}
+	// 构造消息
 	now := time.Now()
 	msg := fmt.Sprintf(
-		"用户:%s\n[用户树脂:%d/%d]\n[%s]\n[用户洞天宝钱:%d/%d]\n[%s]\n[用户派遣%d/%d]",
-		uid,
-		dailyNote.CurrentResin,
-		dailyNote.MaxResin,
-		displayTime(now, dailyNote.ResinRecoveryTime, displayType),
+		"角色:%s(UID %v)\n[树脂:%d/%d]\n%s[洞天宝钱:%d/%d]\n%s[派遣%d/%d]",
+		role.NickName, uid,
+		dailyNote.CurrentResin, dailyNote.MaxResin,
+		displayTime(now, dailyNote.ResinRecoveryTime, showLeft),
 		dailyNote.CurrentHomeCoin, dailyNote.MaxHomeCoin,
-		displayTime(now, dailyNote.HomeCoinRecoveryTime, displayType),
+		displayTime(now, dailyNote.HomeCoinRecoveryTime, showLeft),
 		dailyNote.CurrentExpeditionNum, dailyNote.MaxExpeditionNum)
-	return msg, dailyNote, err
-}
-func addTime(now time.Time, duration string) string {
-	add, err := strconv.Atoi(duration)
-	if err != nil {
-		after := now.Add(8 * 160 * time.Minute)
-		return fmt.Sprintf("%04d-%02d-%02d %02dH-%02dM", after.Year(), after.Month(), after.Day(), after.Hour(), after.Minute())
-	}
-	after := now.Add(time.Duration(time.Second * time.Duration(int(add))))
-	return fmt.Sprintf("%04d-%02d-%02d %02d小时%02d分", after.Year(), after.Month(), after.Day(), after.Hour(), after.Minute())
+	return message.Message{message.Text(msg)}, dailyNote, err
 }
 
-func CountDownDisplay(duration string) string {
-	add, err := strconv.Atoi(duration)
-	if err != nil {
-		return "无法解析时间"
+// 显示时间
+func displayTime(now time.Time, duration string, showLeft bool) string {
+	add, err := strconv.ParseInt(duration, 10, 64)
+	if err != nil || add <= 0 {
+		return ""
 	}
+	if !showLeft { // 恢复完成时间点
+		return fmt.Sprintf("(将在%v回满)\n", addTime(now, add))
+	} else { // 恢复完成剩余时间
+		return fmt.Sprintf("(离回满剩余: %v)\n", countDownDisplay(add))
+	}
+}
+
+func addTime(now time.Time, seconds int64) string {
+	after := now.Add(time.Second * time.Duration(seconds))
+	return fmt.Sprintf("%d月%d日 %02d时%02d分", after.Month(), after.Day(), after.Hour(), after.Minute())
+}
+
+func countDownDisplay(add int64) string {
 	// 判断是否包含天
 	if add > 86400 {
 		return fmt.Sprintf("%d天%d小时%d分", add/86400, (add%86400)/3600, (add%3600)/60)
@@ -58,20 +65,4 @@ func CountDownDisplay(duration string) string {
 		return fmt.Sprintf("%d分", add/60)
 	}
 	return fmt.Sprintf("%d秒", add)
-}
-
-// 显示时间
-func displayTime(now time.Time, duration string, displayType int) string {
-
-	if displayType == 1 {
-		return "rct:" + addTime(now, duration)
-	} else if displayType == 2 {
-		// use CountDownDisplay
-		return "离回满剩余:" + CountDownDisplay(duration)
-	} else {
-		// default method is 1
-		return "rct:" + addTime(now, duration)
-	}
-	// undefined
-	return "无法解析时间"
 }

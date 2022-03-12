@@ -1,4 +1,4 @@
-package genshin_public
+package mihoyo
 
 import (
 	"encoding/json"

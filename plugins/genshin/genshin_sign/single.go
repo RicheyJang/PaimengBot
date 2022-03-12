@@ -3,7 +3,7 @@ package genshin_sign
 import (
 	"fmt"
 
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
@@ -11,7 +11,7 @@ import (
 )
 
 func singleSignHandler(ctx *zero.Ctx) {
-	user_uid, user_cookie, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	user_uid, user_cookie, cookie_msg, err := mihoyo.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return

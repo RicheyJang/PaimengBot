@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
@@ -160,7 +160,7 @@ func auto_sign() {
 }
 
 func autoSignHandler(ctx *zero.Ctx) {
-	_, _, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	_, _, cookie_msg, err := mihoyo.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
 		ctx.Send(images.GenStringMsg(cookie_msg))
 		return
@@ -213,11 +213,7 @@ func autoSignHandler(ctx *zero.Ctx) {
 		}
 	} else {
 		// 不知道啥情况
-		ctx.Send(`你在做什么？
-	该功能的使用方法是：
-		自动签到 开/关
-		定时签到 开/关
-	这样，机器人每天就会定时帮你签到了，还会在你打开该功能的地方告诉你`)
+		ctx.Send(`？可以看看帮助`)
 		return
 	}
 	return

@@ -3,55 +3,58 @@ package genshin_cookie
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-var info = manager.PluginInfo{
-	Name: "cookie管理",
-	Usage: `存入cookie
-存入uid`,
+var Info = manager.PluginInfo{
+	Name: "米游社管理",
+	Usage: `如何绑定米游社cookie和原神uid：
+	原神绑定cookie [你的cookie]：cookie是重要信息，请务必在私聊中使用
+	原神绑定uid [你的uid]
+如何解绑：
+	使用上述命令，不填参数([你的cookie]和[你的uid])即可`,
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
 
 func init() {
-	proxy = manager.RegisterPlugin(info) // [3] 使用插件信息初始化插件代理
-	if proxy == nil { // 若初始化失败，请return，失败原因会在日志中打印
+	proxy = manager.RegisterPlugin(Info)
+	if proxy == nil {
 		return
 	}
-	// [4] 此处进行其它初始化操作
-	proxy.OnCommands([]string{"存入cookie"}).SetBlock(true).SetPriority(3).Handle(saveCookie)
-	proxy.OnCommands([]string{"存入uid"}).SetBlock(true).SetPriority(3).Handle(saveUid)
+	proxy.OnCommands([]string{"原神绑定cookie", "米游社绑定cookie"}).SetBlock(true).SetPriority(3).Handle(saveCookie)
+	proxy.OnCommands([]string{"原神绑定uid"}).SetBlock(true).SetPriority(3).Handle(saveUid)
 }
-
-// [5] 其它代码实现
 
 func saveCookie(ctx *zero.Ctx) {
-	args := utils.GetArgs(ctx)
-	PutUserCookie(ctx.Event.UserID,args)
-	// 获取用户cookie
-	user_cookie := GetUserCookie(ctx.Event.UserID)
-	if user_cookie == "" {
-		ctx.Send(message.Text(fmt.Sprintf("用户cookie为空 请存入cookie")))
+	if !utils.IsMessagePrimary(ctx) {
+		ctx.Send("请在私聊中存放cookie！快撤回！")
 		return
 	}
-	ctx.Send(message.Text(fmt.Sprintf("用户cookie为:%s",user_cookie)))
-}
-func saveUid(ctx *zero.Ctx) {
-	args := utils.GetArgs(ctx)
-	PutUserUid(ctx.Event.UserID,args)
-	// 获取用户cookie
-	uid := GetUserUid(ctx.Event.UserID)
-	if uid == "" {
-		ctx.Send(message.Text(fmt.Sprintf("用户uid为空 请存入uid")))
+	args := strings.TrimSpace(utils.GetArgs(ctx))
+	if err := PutUserCookie(ctx.Event.UserID, args); err != nil {
+		ctx.Send("失败了...")
+		log.Errorf("PutUserCookie err: %v", err)
 		return
 	}
-	ctx.Send(message.Text(fmt.Sprintf("用户uid为:%s",uid)))
+	ctx.Send("好哒")
 }
 
+func saveUid(ctx *zero.Ctx) {
+	args := strings.TrimSpace(utils.GetArgs(ctx))
+	if err := PutUserUid(ctx.Event.UserID, args); err != nil {
+		ctx.Send("失败了...")
+		log.Errorf("PutUserUid err: %v", err)
+		return
+	}
+	ctx.Send("好哒")
+}
 
 func GetUserCookie(id int64) (u string) {
 	key := fmt.Sprintf("genshin_cookie.u%v", id)

@@ -1,44 +1,47 @@
 package genshin_query
 
 import (
-	"fmt"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/RicheyJang/PaimengBot/manager"
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
-	Name: "查询信息",
-	Usage: `如果你填写了对应的cookie
-将会自动在查询对应的信息 说 查询 就可以啦
-存入方法:
-私聊机器人"存入cookie 自己的cookie"
-"存入uid 自己的uid"`,
+	Name: "原神便笺查询",
+	Usage: `需要预先绑定cookie和uid，参见：帮助 米游社管理
+用法：
+	原神体力：即可查询绑定的原神角色当前树脂、宝钱、派遣等信息
+	原神便笺：同上`,
+	SuperUsage: `config-plugin配置项：
+	genshin_query.left: 体力恢复完成时间展示格式
+		true则显示剩余时间，false则显示时间点`,
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy
 
 func init() {
-	proxy = manager.RegisterPlugin(info) // [3] 使用插件信息初始化插件代理
-	if proxy == nil {                    // 若初始化失败，请return，失败原因会在日志中打印
+	proxy = manager.RegisterPlugin(info)
+	if proxy == nil {
 		return
 	}
-	// 添加配置项
-	proxy.AddConfig("displayType", 1)
-	// [4] 此处进行其它初始化操作
-	proxy.OnCommands([]string{"查询", "体力", "树脂"}).SetBlock(true).SetPriority(3).Handle(queryInfo)
+	proxy.OnFullMatch([]string{"原神体力", "原神便笺", "原神树脂"}).SetBlock(true).SetPriority(3).Handle(queryInfo)
+	proxy.AddConfig("left", false)
 }
 
-// [5] 其它代码实现
-
 func queryInfo(ctx *zero.Ctx) {
-	user_uid, user_cookie, cookie_msg, err := genshin_public.GetUidCookieById(ctx.Event.UserID)
+	// 查询绑定
+	userUid, userCookie, cookieMsg, err := mihoyo.GetUidCookieById(ctx.Event.UserID)
 	if err != nil {
-		ctx.Send(images.GenStringMsg(cookie_msg))
+		ctx.Send(images.GenStringMsg(cookieMsg))
 		return
 	}
-	msg, _, _ := Query(user_uid, user_cookie, int(proxy.GetConfigInt64("displayType")))
-	ctx.Send(message.Text(fmt.Sprintf("查询:%s", msg)))
+	// 请求便笺
+	msg, _, err := Query(userUid, userCookie, proxy.GetConfigBool("left"))
+	if err != nil {
+		log.Errorf("Query err: %v", err)
+	}
+	ctx.Send(msg)
 }

@@ -4,18 +4,19 @@ import (
 	"fmt"
 
 	"github.com/RicheyJang/PaimengBot/manager"
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_public"
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign/sign_client"
 )
 
 var info = manager.PluginInfo{
 	Name: "米游社签到",
-	Usage: `如果你填写了对应的cookie，将会自动在查询对应的信息
+	Usage: `需要预先绑定cookie和uid，参见：帮助 米游社管理
 用法：
 	米游社签到：顾 名 思 义
 	米游社定时签到 [打开/关闭]：即可打开/关闭米游社自动定时签到
-	米游社签到查询：看看机器人今天有没有帮你签到
-` + genshin_public.GetInitializaationPrompt(),
+	米游社签到查询：看看机器人今天有没有帮你签到`,
+	SuperUsage: `config-plugin配置项：
+	genshin_sign.daily.hour: 每天几点自动签到
+	genshin_sign.daily.min: 上述钟点的第几分钟自动签到`,
 	Classify: "原神相关",
 }
 var proxy *manager.PluginProxy

@@ -1,4 +1,4 @@
-package genshin_public
+package mihoyo
 
 import (
 	"crypto/md5"
@@ -23,6 +23,7 @@ type GameRole struct {
 }
 
 func GetUserGameRoles(cookie string) ([]GameRole, error) {
+	// 请求
 	mr := NewMiyoRequest("https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie?game_biz=hk4e_cn")
 	mr.SetHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) miHoYoBBS/2.11.1")
 	mr.SetHeader("Referer", "https://webstatic.mihoyo.com/app/community-game-records/index.html?v=6")
@@ -32,8 +33,12 @@ func GetUserGameRoles(cookie string) ([]GameRole, error) {
 	if err != nil {
 		return nil, err
 	}
+	// 解析
 	roleList := GameRoleList{}
-	json.Unmarshal(data, &roleList)
+	err = json.Unmarshal(data, &roleList)
+	if err != nil {
+		return nil, err
+	}
 	if len(roleList.List) == 0 {
 		return nil, errors.New("没有找到绑定的角色")
 	}
@@ -71,13 +76,14 @@ type GameRoleExpedition struct {
 }
 
 func GetGenshinDailyNote(cookie, uid, server string) (*GenshinDailyNote, error) {
+	// 请求
 	url := fmt.Sprintf("https://api-takumi-record.mihoyo.com/game_record/app/genshin/api/dailyNote?server=%s&role_id=%s", server, uid)
 	mr := NewMiyoRequest(url)
 	mr.SetHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) miHoYoBBS/2.11.1")
 	mr.SetHeader("Referer", "https://webstatic.mihoyo.com/app/community-game-records/index.html?v=6")
 	mr.SetHeader("Cookie", cookie)
 	mr.SetHeader("X-Requested-With", "com.mihoyo.hyperion")
-	appType, appVersion, DS := GetDS(mr.url, "")
+	appType, appVersion, DS := getDS(mr.url, "")
 	mr.SetHeader("x-rpc-client_type", appType)
 	mr.SetHeader("x-rpc-app_version", appVersion)
 	mr.SetHeader("DS", DS)
@@ -85,13 +91,14 @@ func GetGenshinDailyNote(cookie, uid, server string) (*GenshinDailyNote, error) 
 	if err != nil {
 		return nil, err
 	}
+	// 解析
 	dailyNote := GenshinDailyNote{}
-	json.Unmarshal(data, &dailyNote)
-	return &dailyNote, nil
+	err = json.Unmarshal(data, &dailyNote)
+	return &dailyNote, err
 }
 
 /* contributor: https://github.com/Azure99/GenshinPlayerQuery/issues/20 @lulu666lulu */
-func GetDS(url, data string) (t, v, ds string) {
+func getDS(url, data string) (t, v, ds string) {
 	// 5: mobile web
 	const appType = "5"
 	const apiSalt = "xV8v4Qu54lUKrEYFZkJhB8cuOh9Asafs"
