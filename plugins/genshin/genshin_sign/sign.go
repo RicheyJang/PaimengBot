@@ -44,7 +44,7 @@ func init() {
 		int(proxy.GetConfigInt64("daily.hour")),
 		int(proxy.GetConfigInt64("daily.min")),
 		autoSignTask)
-	manager.WhenConfigFileChange(configReload)
+	// manager.WhenConfigFileChange(configReload)
 }
 
 func singleSignHandler(ctx *zero.Ctx) {

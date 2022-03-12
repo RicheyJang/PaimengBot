@@ -19,7 +19,7 @@ type SignState struct {
 	FirstBind    bool   `json:"first_bind"`
 }
 
-func Sign(cookie string, user GameRole) bool {
+func Sign(cookie string, user GameRole) error {
 	data := map[string]string{
 		"act_id": "e202009291139501",
 		"region": user.Region,
@@ -39,14 +39,13 @@ func Sign(cookie string, user GameRole) bool {
 	rsp, err := mr.Post(data)
 	if err != nil {
 		log.Errorf("Miyo Sign Post err: %v", err)
-		return false
+		return err
 	}
 	if rsp.RetCode == 0 || rsp.RetCode == -5003 {
-		log.Infof("Miyo Sign response: %+v", rsp)
-		return true
+		return nil
 	}
 	log.Errorf("Miyo Sign illegal response: %+v", rsp)
-	return false
+	return fmt.Errorf("sign response code=%v, message=%v", rsp.RetCode, rsp.Message)
 }
 
 func GetSignStateInfo(cookie string, user GameRole) (*SignState, error) {
@@ -61,7 +60,6 @@ func GetSignStateInfo(cookie string, user GameRole) (*SignState, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("GetSignStateInfo data=%v", string(data))
 	// 解析
 	signState := SignState{}
 	err = json.Unmarshal(data, &signState)

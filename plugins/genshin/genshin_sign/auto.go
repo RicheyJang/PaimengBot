@@ -100,6 +100,7 @@ func autoSignTask() {
 		msg, err := Sign(user.Uin, user.cookie)
 		if err != nil {
 			log.Warnf("Auto Sign(id=%v, uid=%v) err: %v", user.ID, user.Uin, err)
+			time.Sleep(time.Second)
 			continue
 		}
 		log.Infof("米游社自动签到成功：%v", msg)
