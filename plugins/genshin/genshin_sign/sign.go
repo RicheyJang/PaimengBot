@@ -63,7 +63,7 @@ func singleSignHandler(ctx *zero.Ctx) {
 func autoSignHandler(ctx *zero.Ctx) {
 	// 接收参数 判断是开还是关
 	args := strings.TrimSpace(utils.GetArgs(ctx))
-	if strings.HasPrefix(args, "开") {
+	if strings.HasPrefix(args, "开") || args == "打开" {
 		// 判断是否设置了cookie和uid
 		_, _, cookieMsg, err := mihoyo.GetUidCookieById(ctx.Event.UserID)
 		if err != nil {

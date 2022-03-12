@@ -4,27 +4,28 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_sign/sign_client"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func Sign(uid string, cookie string) (string, error) {
-	g := sign_client.NewGenshinClient()
-	gameRolesList := g.GetUserGameRoles(cookie)
-	for j := 0; j < len(gameRolesList); j++ {
-		//time.Sleep(10 * time.Second)
-		msg := ""
-		if g.Sign(cookie, gameRolesList[j]) {
-			//time.Sleep(10 * time.Second)
-			data := g.GetSignStateInfo(cookie, gameRolesList[j])
-			msg = fmt.Sprintf("UID:%v, 昵称:%v, 连续签到天数:%v. 签到成功.",
-				gameRolesList[j].UID, gameRolesList[j].Name, data.TotalSignDay)
-		} else {
-			msg = fmt.Sprintf("UID:%v, 昵称:%v. 签到失败.",
-				gameRolesList[j].UID, gameRolesList[j].Name)
+	// 获取角色信息
+	gameRole, _ := mihoyo.GetUserGameRoleByUid(cookie, uid)
+	var msg string
+	// 米游社签到
+	if mihoyo.Sign(cookie, *gameRole) {
+		data, err := mihoyo.GetSignStateInfo(cookie, *gameRole)
+		if err != nil {
+			log.Errorf("GetSignStateInfo err: %v", err)
 		}
-		return msg, nil
+		msg = fmt.Sprintf("UID:%v, 昵称:%v: 签到成功, 已连续签到%v天",
+			gameRole.Uid, gameRole.NickName, data.TotalSignDay)
+	} else {
+		msg = fmt.Sprintf("UID:%v, 昵称:%v: 签到失败.",
+			gameRole.Uid, gameRole.NickName)
 	}
-	return "未知错误", nil
+	return msg, nil
 }
 
 type EventFrom struct {
