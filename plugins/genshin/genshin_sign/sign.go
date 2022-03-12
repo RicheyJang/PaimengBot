@@ -11,7 +11,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
-	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -53,11 +52,8 @@ func singleSignHandler(ctx *zero.Ctx) {
 		ctx.Send(images.GenStringMsg(cookieMsg))
 		return
 	}
-	msg, err := Sign(userUid, userCookie)
-	if err != nil {
-		ctx.Send(images.GenStringMsg(msg))
-	}
-	ctx.Send(message.Text(msg))
+	msg, _ := Sign(userUid, userCookie)
+	ctx.Send(msg)
 }
 
 func autoSignHandler(ctx *zero.Ctx) {

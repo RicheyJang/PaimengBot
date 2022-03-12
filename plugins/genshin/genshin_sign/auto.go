@@ -93,7 +93,7 @@ func initEvent(key string, value []byte, users map[string]UserInfo) {
 func autoSignTask() {
 	users := initCornTasks()
 	for k, user := range users {
-		if !user.EventFrom.Auto {
+		if !user.EventFrom.Auto || len(user.Uin) < 5 || len(user.cookie) < 10 {
 			continue
 		}
 		// 执行定时签到
