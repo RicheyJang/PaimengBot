@@ -20,7 +20,8 @@ var info = manager.PluginInfo{
 	Name: "基本事件处理",
 	Usage: `防止被动拉入群聊；捕获好友、群邀请发送给超级用户
 config-plugin配置项：
-	event.notautoleave: 是(true)否(false)关闭被动拉群时自动退群`,
+	event.notautoleave: 是(true)否(false)关闭被动拉群时自动退群
+	event.autoagree: 是(true)否(false)自动同意所有好友请求`,
 	IsPassive:   true,
 	IsSuperOnly: true,
 }
@@ -36,6 +37,7 @@ func init() {
 	}).SetBlock(true).FirstPriority().Handle(preventForcedInviteGroup) // 防止被动拉入群聊
 	proxy.OnNotice(rules.CheckDetailType("group_admin")).FirstPriority().Handle(handleGroupAdmin)
 	proxy.AddConfig("notAutoLeave", false)
+	proxy.AddConfig("autoAgree", false)
 }
 
 // 机器人初入群聊时
@@ -108,8 +110,20 @@ func handleFriendRequest(ctx *zero.Ctx) {
 		ID:   ctx.Event.UserID,
 		Flag: ctx.Event.Flag,
 	}
-	tmpUser := &dao.UserSetting{}
-	if res := proxy.GetDB().Where(&userS, "id", "flag").Find(tmpUser); res.RowsAffected > 0 {
+	str := fmt.Sprintf("收到一条好友请求：\nID: %v\n验证消息：%v", ctx.Event.UserID, ctx.Event.Comment)
+	// 自动同意
+	if proxy.GetConfigBool("autoAgree") {
+		ctx.SetFriendAddRequest(userS.Flag, true, "")
+		userS.Flag = ""
+		str += "\n根据配置，已自动同意"
+	} else {
+		str += fmt.Sprintf("\n若同意请说：同意好友请求 %[1]v\n若拒绝请说：拒绝好友请求 %[1]v\n", ctx.Event.UserID)
+	}
+	// 正常处理
+	if res := proxy.GetDB().Where(&userS, "id", "flag").Take(&dao.UserSetting{}); res.RowsAffected > 0 {
+		if len(userS.Flag) == 0 { // 自动同意消息
+			utils.SendToSuper(message.Text(str))
+		}
 		return
 	}
 	if err := proxy.GetDB().Clauses(clause.OnConflict{
@@ -119,8 +133,6 @@ func handleFriendRequest(ctx *zero.Ctx) {
 		log.Errorf("set user(id=%v) flag error(sql): %v", ctx.Event.UserID, err)
 		utils.SendToSuper(message.Text("处理好友请求时SQL出错，请尽快查看日志处理"))
 	} else {
-		str := fmt.Sprintf("收到一条好友请求：\nID: %v\n验证消息：%v", ctx.Event.UserID, ctx.Event.Comment)
-		str += fmt.Sprintf("\n若同意请说：同意好友请求 %[1]v\n若拒绝请说：拒绝好友请求 %[1]v\n", ctx.Event.UserID)
 		utils.SendToSuper(message.Text(str))
 	}
 }
