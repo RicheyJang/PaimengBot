@@ -2,6 +2,7 @@ package sc
 
 import (
 	"fmt"
+	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -36,10 +37,15 @@ var info = manager.PluginInfo{
 	SuperUsage: `
 	设置好感度 [QQ号] [好感度]：摁设置指定用户的好感度
 	设置财富 [QQ号] [财富]：摁设置指定用户的财富
+注意，财富分为基础金额和真实金额
+	基础金额为所有配置项中所体现的货币金额，用于方便各类配置
+	真实金额为基础金额乘以所配置的倍率所得，用于展示给用户
 config-plugin配置项：
 	sc.onlygroup：是(true)否(false)只允许在群聊中签到
 	sc.coin.unit: 货币单位，例如摩拉、原石
-	sc.coin.rate: 货币倍率，例如若单位为摩拉则建议设置为1000`,
+	sc.coin.rate: 基础金额和实际金额间的倍率，例如若单位为摩拉则建议设置为1000
+	sc.min: 签到获得的好感度或货币(基础金额)最小值
+	sc.max: 签到获得的好感度或货币(基础金额)最大值`,
 }
 var proxy *manager.PluginProxy
 
@@ -56,7 +62,9 @@ func init() {
 	proxy.OnCommands([]string{"设置好感度", "设置财富"}, zero.SuperUserPermission).SetBlock(true).ThirdPriority().Handle(setHandler)
 	proxy.AddConfig("onlygroup", true)
 	proxy.AddConfig("coin.unit", "原石")
-	proxy.AddConfig("coin.rate", 16)
+	proxy.AddConfig("coin.rate", 80)
+	proxy.AddConfig("min", 0.5)
+	proxy.AddConfig("max", 1.9)
 }
 
 func myFavorHandler(ctx *zero.Ctx) {
@@ -82,13 +90,27 @@ func signHandler(ctx *zero.Ctx) {
 		return
 	}
 	defer proxy.UnlockUser(ctx.Event.UserID)
+	// 获取配置
+	min, max := proxy.GetConfigFloat64("min"), proxy.GetConfigFloat64("max")
+	if min < 0 {
+		min = 0.1
+	}
+	if min > max {
+		max = min
+	}
 	// 正式签到
 	skipSend := false
 	si := signInfo{
 		id:       ctx.Event.UserID,
-		addFavor: 1, // TODO 更新数据
-		addCoin:  1,
+		addFavor: randomFloat(min, max),
+		addCoin:  randomFloat(min, max),
 	}
+	if randomFloat(0, 1) > 0.95 { // 双倍
+		si.double = true
+		si.addCoin *= 2
+		si.addFavor *= 2
+	}
+	// 修改数据库并判断是否已签过到
 	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
 		// 获取已有的用户数据
 		var user dao.UserOwn
@@ -212,4 +234,8 @@ func isSameDay(a time.Time, b time.Time) bool {
 	y1, m1, d1 := a.Date()
 	y2, m2, d2 := b.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+func randomFloat(min, max float64) float64 {
+	return min + rand.Float64()*(max-min)
 }

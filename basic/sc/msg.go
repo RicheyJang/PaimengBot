@@ -9,6 +9,7 @@ import (
 
 type signInfo struct {
 	id       int64
+	double   bool
 	orgFavor float64
 	addFavor float64
 	orgCoin  float64
@@ -19,9 +20,17 @@ type signInfo struct {
 
 func (s signInfo) genMessage() message.Message {
 	// TODO 绘图
-	str := fmt.Sprintf("签到成功\n已连续签到%v天\n好感度：%.2f(+%.2f)\n财富：%.0f(+%.0f)%s",
+	return message.Message{message.Text("签到成功\n" + s.String())}
+}
+
+func (s signInfo) String() string {
+	var doubleStr string
+	if s.double {
+		doubleStr = "✪ ω ✪ 双倍！\n"
+	}
+	return fmt.Sprintf("%s已连续签到%v天\n好感度：%.2f(+%.2f)\n财富：%.0f(+%.0f)%s",
+		doubleStr,
 		s.signDays,
 		s.orgFavor+s.addFavor, s.addFavor,
 		RealCoin(s.orgCoin+s.addCoin), RealCoin(s.addCoin), Unit())
-	return message.Message{message.Text(str)}
 }
