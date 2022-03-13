@@ -93,6 +93,8 @@ var snapshotFunctions = []func(filename string) error{
 	getTodayEventByMhyObc,        // 1 通过米游社的观测枢获取今日活动进展图
 }
 
+const resourcePicBGColor = "#f6f2ee"
+
 // 获取今日素材图片文件（会强制替换已有文件）
 func getTodayResource() (filename string, err error) {
 	filename, err = getTodayResourceFilename()
@@ -128,7 +130,7 @@ func getTodayResource() (filename string, err error) {
 	if len(srcFilenames) == 0 {
 		return "", fmt.Errorf("no snapshot success")
 	} else { // 有至少一个截图成功了
-		err = images.MergeImageFile("#f6f2ee", filename, srcFilenames...)
+		err = images.MergeImageFile(resourcePicBGColor, filename, srcFilenames...)
 		if err != nil {
 			log.Errorf("MergeImageFile err: %v", err)
 			return filename, err

@@ -5,11 +5,24 @@ import (
 	"io/ioutil"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils/images"
+
 	"github.com/chromedp/chromedp"
 	log "github.com/sirupsen/logrus"
 )
 
 func getTodayResourceByGenshinPub(file string) (err error) {
+	// 周日特判
+	if time.Now().Weekday() == time.Sunday {
+		str := "今日素材：周日，什么都能打！"
+		img := images.NewImageCtxWithBGColor(1000, 100, resourcePicBGColor)
+		err = img.PasteStringDefault(str, 32, 1.3, 30, 40, 500)
+		if err != nil {
+			return err
+		}
+		return img.SavePNG(file)
+	}
+	// 正常工作日
 	for i := 0; i < 3; i++ { // 最多尝试3次
 		err = tryGetGenshinPubResourceShot(file)
 		if err == nil { // 直到成功
