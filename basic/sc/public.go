@@ -37,11 +37,16 @@ func FavorOf(id int64) float64 {
 // LevelAt 指定好感度对应的好感度等级和升级所需的好感度
 func LevelAt(favor float64) (level int, up float64) {
 	level = int(math.Ceil(favor / 25.0))
-	up = math.Max(25.0*float64(level)-favor, 0)
-	if favor == 0 && level == 0 { // 零级零好感度时单独指定
-		up = 0.01
-	}
+	up = math.Max(SumFavorAt(level)*float64(level)-favor, 0)
 	return
+}
+
+// SumFavorAt 在level级别升级所需的总好感度
+func SumFavorAt(level int) float64 {
+	if level == 0 { // 零级零好感度时单独指定
+		return 0.01
+	}
+	return 25.0
 }
 
 // AddFavor 将指定用户的好感度加add，为负数时则减

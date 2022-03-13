@@ -102,6 +102,7 @@ func signHandler(ctx *zero.Ctx) {
 	skipSend := false
 	si := signInfo{
 		id:       ctx.Event.UserID,
+		name:     ctx.GetStrangerInfo(ctx.Event.UserID, false).Get("nickname").String(),
 		addFavor: randomFloat(min, max),
 		addCoin:  randomFloat(min, max),
 	}
@@ -113,10 +114,10 @@ func signHandler(ctx *zero.Ctx) {
 	// 修改数据库并判断是否已签过到
 	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
 		// 获取已有的用户数据
-		var user dao.UserOwn
-		res := tx.First(&user, si.id)
+		user := dao.UserOwn{ID: si.id}
+		res := tx.Find(&user, si.id)
 		if res.Error != nil {
-			return res.Error
+			return fmt.Errorf("at find | %v", res.Error)
 		}
 		si.orgCoin = user.Wealth
 		si.orgFavor = user.Favor
@@ -124,6 +125,7 @@ func signHandler(ctx *zero.Ctx) {
 			si.signDays = 1
 			si.lastSign = time.Now()
 			return tx.Create(&dao.UserOwn{
+				ID:       si.id,
 				Favor:    si.addFavor,
 				LastSign: si.lastSign,
 				SignDays: si.signDays,
@@ -137,8 +139,11 @@ func signHandler(ctx *zero.Ctx) {
 			return nil
 		}
 		// 更新
-		si.signDays = user.SignDays + 1
 		si.lastSign = time.Now()
+		si.signDays = user.SignDays + 1
+		if !isContinuouslyDay(user.LastSign, time.Now()) { // 不连续签到
+			si.signDays = 1
+		}
 		user.SignDays = si.signDays
 		user.LastSign = si.lastSign
 		user.Favor += si.addFavor
@@ -239,6 +244,10 @@ func isSameDay(a time.Time, b time.Time) bool {
 	y1, m1, d1 := a.Date()
 	y2, m2, d2 := b.Date()
 	return y1 == y2 && m1 == m2 && d1 == d2
+}
+
+func isContinuouslyDay(old time.Time, latest time.Time) bool {
+	return isSameDay(old.AddDate(0, 0, 1), latest)
 }
 
 func randomFloat(min, max float64) float64 {
