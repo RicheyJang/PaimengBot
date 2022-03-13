@@ -158,14 +158,12 @@ func signHandler(ctx *zero.Ctx) {
 
 func rankHandler(ctx *zero.Ctx) {
 	// 判断排行榜类型
-	var key, title string
+	var key string
 	cmd := utils.GetCommand(ctx)
 	if strings.HasPrefix(cmd, "好感") {
 		key = "favor"
-		title = "好感度"
 	} else {
 		key = "wealth"
-		title = "财富"
 	}
 	// 查询
 	var users []dao.UserOwn
@@ -174,20 +172,24 @@ func rankHandler(ctx *zero.Ctx) {
 		log.Errorf("[SQL] get rank error: %v", err)
 		return
 	}
+	// 检查可行性
 	if len(users) == 0 {
 		ctx.Send("暂时还没有人签过到")
 		return
 	}
-	// TODO 绘图
-	str := title + "排行榜："
-	for _, user := range users {
-		if key == "favor" { // 好感度
-			str += "\n" + fmt.Sprintf("%v的%s: %.2f", user.ID, title, user.Favor)
-		} else { // 财富
-			str += "\n" + fmt.Sprintf("%v的%s: %.0f%s", user.ID, title, RealCoin(user.Wealth), Unit())
+	for i, user := range users {
+		if (key == "favor" && user.Favor <= 0) || (key == "wealth" && user.Wealth <= 0) {
+			users = users[:i]
+			break
 		}
 	}
-	ctx.Send(str)
+	if len(users) == 0 {
+		ctx.Send("暂无排名")
+		return
+	}
+	// 绘图 发送
+	msg, _ := genRankMessage(ctx, users, key)
+	ctx.Send(msg)
 }
 
 func setHandler(ctx *zero.Ctx) {
@@ -210,13 +212,16 @@ func setHandler(ctx *zero.Ctx) {
 		return
 	}
 	// 修改数据库
+	var orgStr string
 	cmd := utils.GetCommand(ctx)
 	if strings.HasSuffix(cmd, "好感度") {
+		orgStr = fmt.Sprintf("%d的原好感度为%.2f，现修改为%v", id, FavorOf(id), args[1])
 		err = proxy.GetDB().Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"favor"}),
 		}).Create(&dao.UserOwn{ID: id, Favor: value}).Error
 	} else { // 财富
+		orgStr = fmt.Sprintf("%d的原基础货币金额为%.1f，现修改为%v(即%.1f%s)", id, BaseCoinOf(id), args[1], RealCoin(value), Unit())
 		err = proxy.GetDB().Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"wealth"}),
@@ -227,7 +232,7 @@ func setHandler(ctx *zero.Ctx) {
 		ctx.Send("失败了...")
 		return
 	}
-	ctx.Send("好哒")
+	ctx.Send("好哒，" + orgStr)
 }
 
 func isSameDay(a time.Time, b time.Time) bool {
