@@ -26,6 +26,7 @@
 - [x] 帮助 (help)
 - [x] 功能CD限流 (limiter)
 - [x] 用户昵称系统 (nickname)
+- [x] 签到与财富 (sc)
 
 ### 一般功能
 - [x] 聊天\自定义问答 (chat)
@@ -39,6 +40,9 @@
 ### 原神相关
 - [x] 今日可肝素材查询 (genshin_resource)
 - [x] 模拟原神抽卡 (genshin_draw)
+- [x] 米游社管理 (genshin_cookie)
+- [x] 米游社签到 (genshin_sign)
+- [x] 原神便笺查询 (genshin_query)
 
 ### 实用工具
 - [x] B站订阅、自动推送 (bilibili)
@@ -54,10 +58,12 @@
 - [x] 群管理:快捷禁言/踢人 (admin)
 - [x] 撤回消息 (withdraw)
 - [x] 设置入群欢迎 (welcome)
+- [x] 关键词撤回 (keyword)
 
 ### 小游戏
 - [x] 看图猜成语 (idioms)
 - [ ] 谁是卧底
+- [ ] 文字RPG
 
 ### 好康的
 - [x] 涩图 (pixiv)
