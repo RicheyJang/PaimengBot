@@ -93,7 +93,11 @@ func checkLiveStatus(sub Subscription) (msg []message.Message) {
 	if l.IsOpen() != sub.LiveStatus { // 直播间状态改变
 		if l.IsOpen() { // 开播
 			// 生成消息
-			str := fmt.Sprintf("%v的直播间(%v)开播了！\n标题：%v", l.Anchor.Name, l.ShortID, l.Title)
+			id := l.ShortID
+			if id <= 0 { // 没有直播间短ID
+				id = sub.BID
+			}
+			str := fmt.Sprintf("%v的直播间(%v)开播了！\n标题：%v", l.Anchor.Name, id, l.Title)
 			link := fmt.Sprintf("\n快去围观：https://live.bilibili.com/%v", l.ID)
 			if proxy.GetConfigBool("link") {
 				str += link

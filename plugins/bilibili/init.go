@@ -369,7 +369,7 @@ func subscribeLive(ctx *zero.Ctx, arg string, userID string) {
 		return
 	}
 	// 确定订阅
-	if isConfirm(ctx, fmt.Sprintf("是否订阅%v的直播间(%v)", l.Anchor.Name, l.ShortID)) {
+	if isConfirm(ctx, fmt.Sprintf("是否订阅%v的直播间(%v)", l.Anchor.Name, id)) {
 		err := AddSubscription(Subscription{
 			SubType:    SubTypeLive,
 			SubUsers:   userID,
