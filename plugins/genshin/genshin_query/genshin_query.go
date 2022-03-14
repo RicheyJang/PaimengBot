@@ -15,10 +15,10 @@ func Query(uid string, cookie string, showLeft bool) (message.Message, *mihoyo.G
 	if err != nil {
 		return message.Message{message.Text("获取角色信息失败")}, nil, err
 	}
-	// 查询当前便笺
+	// 查询当前便签
 	dailyNote, err := mihoyo.GetGenshinDailyNote(cookie, uid, role.Region)
 	if err != nil {
-		return message.Message{message.Text("获取当前便笺失败")}, nil, err
+		return message.Message{message.Text("获取当前便签失败")}, nil, err
 	}
 	// 构造消息
 	now := time.Now()
