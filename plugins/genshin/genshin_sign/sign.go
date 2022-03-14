@@ -22,6 +22,7 @@ var info = manager.PluginInfo{
 	米游社定时签到 [打开/关闭]：即可打开/关闭米游社自动定时签到，仅限好友私聊
 	米游社信息：看看你有没有设置cookie和uid、有没有打开自动定时签到`,
 	SuperUsage: `config-plugin配置项：
+	genshin_sign.group: 是(true)否(false)允许在群聊中开启米游社自动签到，并向群聊中推送签到信息
 	genshin_sign.daily.hour: 每天几点自动签到
 	genshin_sign.daily.min: 上述钟点的第几分钟自动签到`,
 	Classify: "原神相关",
@@ -35,8 +36,8 @@ func init() {
 	}
 	proxy.OnFullMatch([]string{"米游社签到"}).SetBlock(true).SetPriority(3).Handle(singleSignHandler)
 	proxy.OnFullMatch([]string{"米游社信息", "米游社info"}).SetBlock(true).SetPriority(3).Handle(queryAutoHandler)
-	// 防止群消息乱飞，目前仅允许私聊使用自动签到
-	proxy.OnCommands([]string{"米游社定时签到", "米游社自动签到"}, zero.OnlyPrivate).SetBlock(true).SetPriority(3).Handle(autoSignHandler)
+	proxy.OnCommands([]string{"米游社定时签到", "米游社自动签到"}, checkCouldGroup).SetBlock(true).SetPriority(3).Handle(autoSignHandler)
+	proxy.AddConfig("group", false)
 	proxy.AddConfig("daily.hour", 9)
 	proxy.AddConfig("daily.min", 0)
 	// 添加定时签到任务
@@ -55,6 +56,13 @@ func singleSignHandler(ctx *zero.Ctx) {
 	}
 	msg, _ := Sign(userUid, userCookie)
 	ctx.Send(msg)
+}
+
+func checkCouldGroup(ctx *zero.Ctx) bool {
+	if utils.IsMessagePrimary(ctx) {
+		return true
+	}
+	return proxy.GetConfigBool("group")
 }
 
 func autoSignHandler(ctx *zero.Ctx) {

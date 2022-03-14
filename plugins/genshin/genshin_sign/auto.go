@@ -93,7 +93,7 @@ func initEvent(key string, value []byte, users map[string]UserInfo) {
 func autoSignTask() {
 	users := initCornTasks()
 	for k, user := range users {
-		if !user.EventFrom.Auto || len(user.Uin) < 5 || len(user.cookie) < 10 {
+		if !user.EventFrom.Auto || len(user.Uin) <= 5 || len(user.cookie) <= 10 {
 			continue
 		}
 		// 执行定时签到
@@ -104,21 +104,21 @@ func autoSignTask() {
 			continue
 		}
 		log.Infof("米游社自动签到成功：%v", msg)
-		// 推送消息 目前仅推送给个人
-		//if user.EventFrom.IsFromGroup { // 来自群的定时签到
-		//	groupID, _ := strconv.ParseInt(user.EventFrom.FromId, 10, 64)
-		//	qq, _ := strconv.ParseInt(k, 10, 64)
-		//	push.Send(push.Target{
-		//		Msg:    message.Message{message.At(qq), message.Text(msg)},
-		//		Groups: []int64{groupID},
-		//	})
-		//} else { // 来自个人的定时签到
-		qq, _ := strconv.ParseInt(k, 10, 64)
-		push.Send(push.Target{
-			Msg:     message.Message{message.Text(msg)},
-			Friends: []int64{qq},
-		})
-		//}
+		// 推送消息
+		if user.EventFrom.IsFromGroup && proxy.GetConfigBool("group") { // 来自群的定时签到 且允许推送
+			groupID, _ := strconv.ParseInt(user.EventFrom.FromId, 10, 64)
+			qq, _ := strconv.ParseInt(k, 10, 64)
+			push.Send(push.Target{
+				Msg:    message.Message{message.At(qq), message.Text(msg)},
+				Groups: []int64{groupID},
+			})
+		} else if !user.EventFrom.IsFromGroup { // 来自个人的定时签到
+			qq, _ := strconv.ParseInt(k, 10, 64)
+			push.Send(push.Target{
+				Msg:     message.Message{message.Text(msg)},
+				Friends: []int64{qq},
+			})
+		}
 		time.Sleep(2 * time.Second)
 	}
 }
