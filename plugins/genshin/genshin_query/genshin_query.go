@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/RicheyJang/PaimengBot/plugins/genshin/mihoyo"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
@@ -25,6 +27,7 @@ func Query(uid string, cookie string, showLeft bool) (message.Message, *mihoyo.G
 	// 构造消息
 	msg, err := genNotePicMessage(role, dailyNote, showLeft)
 	if err != nil { // 图片生成失败，使用文字
+		log.Warnf("genNotePicMessage failed: %v", err)
 		now := time.Now()
 		str := fmt.Sprintf(
 			"角色:%s(UID %v)\n[树脂:%d/%d]\n(%s)\n[洞天宝钱:%d/%d]\n(%s)\n[派遣%d/%d]",
