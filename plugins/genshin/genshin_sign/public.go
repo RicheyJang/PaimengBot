@@ -11,9 +11,12 @@ import (
 
 func Sign(uid string, cookie string) (string, error) {
 	// 获取角色信息
-	gameRole, _ := mihoyo.GetUserGameRoleByUid(cookie, uid)
+	gameRole, err := mihoyo.GetUserGameRoleByUid(cookie, uid)
+	if err != nil {
+		return "获取原神角色失败", err
+	}
 	// 米游社签到
-	if err := mihoyo.Sign(cookie, *gameRole); err != nil { // 签到失败
+	if err = mihoyo.Sign(cookie, *gameRole); err != nil { // 签到失败
 		msg := fmt.Sprintf("UID:%v, 昵称:%v: 米游社签到失败",
 			gameRole.Uid, gameRole.NickName)
 		return msg, err
@@ -23,14 +26,14 @@ func Sign(uid string, cookie string) (string, error) {
 	// 查询签到信息
 	data, err := mihoyo.GetSignStateInfo(cookie, *gameRole)
 	if err != nil {
-		log.Errorf("GetSignStateInfo err: %v", err)
+		log.Warnf("GetSignStateInfo err: %v", err)
 		return msg, nil
 	}
 	msg += fmt.Sprintf(", 已连续签到%v天", data.TotalSignDay)
 	// 查询奖励信息
 	awards, err := mihoyo.GetSignAwardsList()
 	if err != nil {
-		log.Errorf("GetSignStateInfo err: %v", err)
+		log.Warnf("GetSignAwardsList err: %v", err)
 		return msg, nil
 	}
 	if len(awards.Awards) >= data.TotalSignDay {

@@ -54,7 +54,10 @@ func singleSignHandler(ctx *zero.Ctx) {
 		ctx.Send(images.GenStringMsg(cookieMsg))
 		return
 	}
-	msg, _ := Sign(userUid, userCookie)
+	msg, err := Sign(userUid, userCookie)
+	if err != nil {
+		log.Errorf("Sign(uid=%v) err: %v", userUid, err)
+	}
 	ctx.Send(msg)
 }
 
