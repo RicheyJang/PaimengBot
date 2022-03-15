@@ -33,6 +33,15 @@ func (img *ImageCtx) PasteLine(x1, y1, x2, y2, lineWidth float64, colorStr strin
 	img.Stroke()
 }
 
+// PasteRectangle 画矩形
+func (img *ImageCtx) PasteRectangle(x, y, w, h float64, colorStr string) {
+	img.Push()
+	defer img.Pop()
+	img.SetColorAuto(colorStr)
+	img.DrawRectangle(x, y, w, h)
+	img.Fill()
+}
+
 type Point struct {
 	X, Y float64
 }

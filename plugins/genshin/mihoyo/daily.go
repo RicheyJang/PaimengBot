@@ -12,20 +12,25 @@ import (
 )
 
 type GenshinDailyNote struct {
-	CurrentResin         int                  `json:"current_resin"`
-	MaxResin             int                  `json:"max_resin"`
-	ResinRecoveryTime    string               `json:"resin_recovery_time"`
-	CurrentExpeditionNum int                  `json:"current_expedition_num"`
-	MaxExpeditionNum     int                  `json:"max_expedition_num"`
-	Expeditions          []GameRoleExpedition `json:"expeditions"`
-	CurrentHomeCoin      int                  `json:"current_home_coin"`
-	MaxHomeCoin          int                  `json:"max_home_coin"`
-	HomeCoinRecoveryTime string               `json:"home_coin_recovery_time"`
+	CurrentResin           int                  `json:"current_resin"`                 // 当前树脂
+	MaxResin               int                  `json:"max_resin"`                     // 最大树脂
+	ResinRecoveryTime      string               `json:"resin_recovery_time"`           // 树脂恢复剩余时间
+	FinishedTaskNum        int                  `json:"finished_task_num"`             // 委托完成数
+	TotalTaskNum           int                  `json:"total_task_num"`                // 最大委托数
+	GetTaskExReward        bool                 `json:"is_extra_task_reward_received"` // 是否已打扰凯瑟琳
+	RemainResinDiscountNum int                  `json:"remain_resin_discount_num"`     // 周本体力减半剩余次数
+	ResinDiscountNumLimit  int                  `json:"resin_discount_num_limit"`      // 周本体力减半总次数
+	CurrentExpeditionNum   int                  `json:"current_expedition_num"`        // 当前派遣数
+	MaxExpeditionNum       int                  `json:"max_expedition_num"`            // 最大派遣数
+	Expeditions            []GameRoleExpedition `json:"expeditions"`                   // 派遣角色详情
+	CurrentHomeCoin        int                  `json:"current_home_coin"`             // 当前洞天宝钱数
+	MaxHomeCoin            int                  `json:"max_home_coin"`                 // 最大洞天宝钱数
+	HomeCoinRecoveryTime   string               `json:"home_coin_recovery_time"`       // 洞天宝钱恢复剩余时间
 }
 type GameRoleExpedition struct {
-	AvatarSideIconLink string `json:"avatar_side_icon"`
-	Status             string `json:"status"`
-	RemainedTime       string `json:"remained_time"`
+	AvatarSideIconLink string `json:"avatar_side_icon"` // 派遣中角色侧头像
+	Status             string `json:"status"`           // 派遣状态：Finished为完成
+	RemainedTime       string `json:"remained_time"`    // 派遣完成剩余时间
 }
 
 func GetGenshinDailyNote(cookie, uid, server string) (*GenshinDailyNote, error) {
