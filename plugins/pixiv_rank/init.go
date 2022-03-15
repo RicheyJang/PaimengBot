@@ -11,6 +11,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -61,6 +62,10 @@ func getRankPictures(ctx *zero.Ctx) {
 	defer proxy.UnlockUser(ctx.Event.UserID)
 
 	rankType, num, date := analysisArgs(utils.GetArgs(ctx))
+	if !cast.ToBool(proxy.GetPluginConfig("pixiv", "r18")) && strings.Contains(rankType, "r18") {
+		ctx.Send("不可以涩涩！")
+		return
+	}
 	if !utils.IsMessagePrimary(ctx) && strings.Contains(rankType, "r18") {
 		ctx.Send("滚滚滚去私聊")
 		return
@@ -91,7 +96,7 @@ func getRankPictures(ctx *zero.Ctx) {
 		msg, err := pic.GenSinglePicMsg()
 		if err != nil { // 下载图片失败
 			log.Warnf("GenSinglePicMsg failed: pid=%v, err=%v", pic.PID, err)
-			msg = message.Message{message.Text(pic.Title + "\n图片下载失败\n" + pic.GetDescribe())}
+			msg = message.Message{message.Text(pic.Title + "\n图片下载失败或无效图片\n" + pic.GetDescribe())}
 		}
 		ctx.Send(msg)
 	}

@@ -105,13 +105,18 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	}
 }
 
+// CheckNoSESE 不可以涩涩检查，为true时才可以进行下一步
+func (pic PictureInfo) CheckNoSESE() bool {
+	return proxy.GetConfigBool("r18") || !utils.StringSliceContain(pic.Tags, "R-18")
+}
+
 // GenSinglePicMsg 生成单条Pixiv消息
 func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 	// 初始化
 	if pic == nil {
 		return nil, fmt.Errorf("pic is nil")
 	}
-	if !proxy.GetConfigBool("r18") && utils.StringSliceContain(pic.Tags, "R-18") {
+	if !pic.CheckNoSESE() {
 		return nil, fmt.Errorf("不可以涩涩！")
 	}
 	if len(pic.URL) == 0 {
@@ -143,6 +148,9 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 
 // GetDescribe 获取图片说明
 func (pic *PictureInfo) GetDescribe() string {
+	if !pic.CheckNoSESE() {
+		return "不可以涩涩！"
+	}
 	var tags []string
 	for _, tag := range pic.Tags {
 		if isCNOrEn(tag) {
