@@ -239,14 +239,16 @@ func BytesToUInt32(b []byte) uint32 {
 
 func drawGraph(title string, mp map[string]uint32) message.MessageSegment {
 	// 初始化
+	var sum float64
 	var values []chart.Value
 	text := title + "\n"
 	for k, v := range mp {
 		values = append(values, chart.Value{
-			Label: fmt.Sprintf("%v(%v次)\n", k, v),
+			Label: fmt.Sprintf("%v(%v次)", k, v),
 			Value: float64(v),
 		})
 		text += fmt.Sprintf("%v: %v次\n", k, v)
+		sum += float64(v)
 	}
 	text = strings.TrimSpace(text)
 	// 排序
@@ -256,8 +258,28 @@ func drawGraph(title string, mp map[string]uint32) message.MessageSegment {
 		}
 		return values[i].Value > values[j].Value
 	})
+	if len(values) >= 10 { // 筛选总量小于10%的
+		var part float64
+		for i := len(values) - 1; i >= 0; i-- {
+			part += values[i].Value
+			if part/sum >= 0.1 { // 占比总量超过10%
+				if i < len(values)-2 { // 至少已包含两项
+					values = values[:i+1]
+					values = append(values, chart.Value{
+						Label: fmt.Sprintf("其它(共%v次)", int(part)),
+						Value: part,
+					})
+				}
+				break
+			}
+		}
+	}
 	// 画图
-	img := images.NewImageCtx(512, 512)
+	Size := 550
+	if len(values) > 6 { // 依据条数，动态调整大小
+		Size += len(values) * 35
+	}
+	img := images.NewImageCtxWithBGColor(Size, Size, "white")
 	if err := img.FillDonutChartDefault(title, values); err != nil {
 		log.Warnf("FillDonutChartDefault err: %v", err)
 		return message.Text(text)
