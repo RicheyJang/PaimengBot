@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
@@ -52,7 +53,7 @@ func init() {
 const AllPluginKey = "all"
 
 func checkPluginStatus(condition *manager.PluginCondition, ctx *zero.Ctx) error {
-	if ctx.Event == nil {
+	if !utils.IsMessage(ctx) { //仅处理消息类型事件
 		return nil
 	}
 	// 群ban

@@ -93,7 +93,7 @@ func handleGroupAdmin(ctx *zero.Ctx) {
 	}
 }
 
-// 收到邀请入群、加好友请求时
+// 收到加群、邀请入群、加好友请求时
 func handleInvite(ctx *zero.Ctx) {
 	switch ctx.Event.RequestType {
 	case "friend":
@@ -101,11 +101,21 @@ func handleInvite(ctx *zero.Ctx) {
 	case "group":
 		if ctx.Event.SubType == "invite" {
 			handleGroupInvite(ctx)
+		} else if ctx.Event.SubType == "add" {
+			handleGroupAdd(ctx)
 		}
 	}
 }
 
 func handleFriendRequest(ctx *zero.Ctx) {
+	// 处理拉黑用户的加好友请求：自动拒绝
+	var pbUser dao.UserSetting
+	if rows := proxy.GetDB().Take(&pbUser, ctx.Event.UserID).RowsAffected; rows > 0 && pbUser.IsPullBlack {
+		ctx.SetFriendAddRequest(ctx.Event.Flag, false, "")
+		log.Infof("已自动拒绝被拉黑用户%d的加好友请求", ctx.Event.UserID)
+		return
+	}
+	// 正常用户
 	userS := dao.UserSetting{
 		ID:   ctx.Event.UserID,
 		Flag: ctx.Event.Flag,
@@ -149,8 +159,21 @@ func handleGroupInvite(ctx *zero.Ctx) {
 		log.Errorf("set group(id=%v) flag error(sql): %v", ctx.Event.GroupID, err)
 		utils.SendToSuper(message.Text("处理群邀请请求时SQL出错，请尽快查看日志处理"))
 	} else {
-		str := fmt.Sprintf("收到一条群邀请：\n群ID: %v\n邀请者ID：%v", ctx.Event.GroupID, ctx.Event.UserID)
+		str := fmt.Sprintf("收到一条群邀请：\n群ID: %v", ctx.Event.GroupID)
+		if ctx.Event.UserID != 0 {
+			str += fmt.Sprintf("\n邀请者ID：%v", ctx.Event.UserID)
+		}
 		str += fmt.Sprintf("\n若同意请说：同意群邀请 %[1]v\n若拒绝请说：拒绝群邀请 %[1]v", ctx.Event.GroupID)
 		utils.SendToSuper(message.Text(str))
+	}
+}
+
+func handleGroupAdd(ctx *zero.Ctx) {
+	// 处理拉黑用户的加群请求：自动拒绝
+	var user dao.UserSetting
+	if rows := proxy.GetDB().Take(&user, ctx.Event.UserID).RowsAffected; rows > 0 && user.IsPullBlack {
+		ctx.SetGroupAddRequest(ctx.Event.Flag, "add", false, "你已被拉黑")
+		log.Infof("已自动拒绝被拉黑用户%d的加群(%d)请求", ctx.Event.UserID, ctx.Event.GroupID)
+		return
 	}
 }

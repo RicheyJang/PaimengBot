@@ -15,6 +15,7 @@ type UserSetting struct {
 	Nickname     string  // 昵称
 	Likeability  float64 // 好感度（无用，抱歉...）
 	Flag         string  // 非空时代表该用户尚未成为好友，是他的好友请求flag
+	IsPullBlack  bool    // 是否被拉黑：拒绝好友请求、拒绝加群请求
 }
 
 type GroupSetting struct {

@@ -19,19 +19,28 @@ import (
 var info = manager.PluginInfo{
 	Name:     "群管理",
 	Classify: "群功能",
-	Usage: `用法：（需要设为管理员）
+	Usage: `用法：（需要将{bot}设为群管理员）
 	踢了 [QQ号或@]：并在后续询问中答复"是"，则将指定QQ号或@的人踢出本群
 	禁言 [QQ号或@] [时长]：将指定QQ号或@的人指定时长（时长为0则解除禁言; QQ号为0则全体禁言）
+	拉黑 [QQ号或@]：并在后续询问中答复"是"，则将指定QQ号或@的人拉黑
+	取消拉黑 [QQ号或@]：将指定QQ号或@的人取消拉黑
 另外，回复某条消息"禁言 [时长]"，则可以将原消息发送者禁言指定时长
+拉黑指：踢出并自动拒绝该用户加入任何{bot}作为管理员的群聊，删除并禁止其加{bot}为好友，封禁该用户的所有功能使用权
+此拉黑与"功能开关"插件中的封禁、黑名单等功能没有任何联系，请注意区别！
 示例：
 	禁言 123456 30m：将123456禁言30分钟
 	禁言 @XXX 1d12h：将XXX禁言1天12小时
 	禁言 123456 0：将123456解除禁言`,
+	SuperUsage: `
+	当前拉黑：显示当前被拉黑的用户列表
+PS: 超级用户可以在私聊中调用"拉黑"和"取消拉黑"功能
+PPS: 踢了、禁言、拉黑不会对机器人本身及超级用户生效`,
 	AdminLevel: 5,
 }
 var proxy *manager.PluginProxy
 
 func init() {
+	info.Usage = strings.ReplaceAll(info.Usage, "{bot}", utils.GetBotNickname())
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
 		return
@@ -39,6 +48,10 @@ func init() {
 	proxy.OnCommands([]string{"踢了"}, zero.OnlyGroup).SetBlock(true).ThirdPriority().Handle(kickSomeone)
 	proxy.OnCommands([]string{"禁言"}, zero.OnlyGroup).SetBlock(true).ThirdPriority().Handle(muteSomeone)
 	proxy.OnMessage(zero.OnlyGroup, rules.ReplyAndCommands("禁言")).SetBlock(true).ThirdPriority().Handle(muteReply)
+	// 拉黑相关
+	proxy.OnCommands([]string{"拉黑"}).SetBlock(true).ThirdPriority().Handle(blackSomeone)
+	proxy.OnCommands([]string{"取消拉黑"}).SetBlock(true).ThirdPriority().Handle(unBlackSomeone)
+	proxy.OnFullMatch([]string{"当前拉黑"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(blackList)
 }
 
 func kickSomeone(ctx *zero.Ctx) {
@@ -49,6 +62,11 @@ func kickSomeone(ctx *zero.Ctx) {
 	}
 	if id <= 0 {
 		ctx.Send("请指定踢出的QQ号或@")
+		return
+	}
+	// 禁止踢出机器人自身和超级用户
+	if id == ctx.Event.SelfID || utils.IsSuperUser(id) {
+		ctx.Send("？")
 		return
 	}
 	// 获取确认
@@ -79,6 +97,11 @@ func muteSomeone(ctx *zero.Ctx) {
 	}
 	if duration != 0 && duration <= time.Minute { // 至少禁言1分钟
 		duration = time.Minute
+	}
+	// 禁止禁言机器人自身和超级用户
+	if duration != 0 && (id == ctx.Event.SelfID || utils.IsSuperUser(id)) {
+		ctx.Send("？")
+		return
 	}
 	// 禁言
 	if id == 0 {
@@ -118,6 +141,11 @@ func muteReply(ctx *zero.Ctx) {
 	if duration != 0 && duration <= time.Minute { // 至少禁言1分钟
 		duration = time.Minute
 	}
+	// 禁止禁言机器人自身和超级用户
+	if duration != 0 && (msg.Sender.ID == ctx.Event.SelfID || utils.IsSuperUser(msg.Sender.ID)) {
+		ctx.Send("？")
+		return
+	}
 	// 禁言
 	// WARNING Go-Cqhttp并没有提供AnonymousFlag字段，因此无法支持禁言匿名用户
 	ctx.SetGroupBan(ctx.Event.GroupID, msg.Sender.ID, int64(duration/time.Second))
@@ -129,8 +157,12 @@ func analysisArgs(ctx *zero.Ctx, parseTime bool) (ID int64, seconds time.Duratio
 	// @
 	for _, msg := range ctx.Event.Message {
 		if msg.Type == "at" {
+			ID, err = strconv.ParseInt(msg.Data["qq"], 10, 64)
+			if err != nil || ID == ctx.Event.SelfID {
+				ID = 0
+				continue
+			}
 			parseID = false
-			ID, _ = strconv.ParseInt(msg.Data["qq"], 10, 64)
 			if !parseTime {
 				return
 			}
