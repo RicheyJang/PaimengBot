@@ -17,19 +17,19 @@ func Sign(uid string, cookie string) (string, error) {
 	}
 	// 米游社签到
 	if err = mihoyo.Sign(cookie, *gameRole); err != nil { // 签到失败
-		msg := fmt.Sprintf("UID:%v, 昵称:%v: 米游社签到失败",
+		msg := fmt.Sprintf("UID:%v, 昵称:%v\n米游社签到失败",
 			gameRole.Uid, gameRole.NickName)
 		return msg, err
 	}
 	// 签到成功
-	msg := fmt.Sprintf("UID:%v, 昵称:%v: 米游社签到成功", gameRole.Uid, gameRole.NickName)
+	msg := fmt.Sprintf("UID:%v, 昵称:%v\n米游社签到成功", gameRole.Uid, gameRole.NickName)
 	// 查询签到信息
 	data, err := mihoyo.GetSignStateInfo(cookie, *gameRole)
 	if err != nil {
 		log.Warnf("GetSignStateInfo err: %v", err)
 		return msg, nil
 	}
-	msg += fmt.Sprintf(", 已连续签到%v天", data.TotalSignDay)
+	msg += fmt.Sprintf("\n已连续签到%v天", data.TotalSignDay)
 	// 查询奖励信息
 	awards, err := mihoyo.GetSignAwardsList()
 	if err != nil {
@@ -38,7 +38,7 @@ func Sign(uid string, cookie string) (string, error) {
 	}
 	if len(awards.Awards) >= data.TotalSignDay {
 		item := awards.Awards[data.TotalSignDay-1]
-		msg += fmt.Sprintf(", 今天获得%d个%v", item.Count, item.Name)
+		msg += fmt.Sprintf("\n今天获得%d个%v", item.Count, item.Name)
 	}
 	return msg, nil
 }

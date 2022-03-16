@@ -58,7 +58,7 @@ func singleSignHandler(ctx *zero.Ctx) {
 	if err != nil {
 		log.Errorf("Sign(uid=%v) err: %v", userUid, err)
 	}
-	ctx.Send(msg)
+	ctx.Send(images.GenStringMsg(msg))
 }
 
 func checkCouldGroup(ctx *zero.Ctx) bool {

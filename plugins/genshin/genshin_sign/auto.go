@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils/images"
 	"github.com/RicheyJang/PaimengBot/utils/push"
 
 	"github.com/fsnotify/fsnotify"
@@ -109,13 +110,13 @@ func autoSignTask() {
 			groupID, _ := strconv.ParseInt(user.EventFrom.FromId, 10, 64)
 			qq, _ := strconv.ParseInt(k, 10, 64)
 			push.Send(push.Target{
-				Msg:    message.Message{message.At(qq), message.Text(msg)},
+				Msg:    message.Message{message.At(qq), images.GenStringMsg(msg)},
 				Groups: []int64{groupID},
 			})
 		} else if !user.EventFrom.IsFromGroup { // 来自个人的定时签到
 			qq, _ := strconv.ParseInt(k, 10, 64)
 			push.Send(push.Target{
-				Msg:     message.Message{message.Text(msg)},
+				Msg:     message.Message{images.GenStringMsg(msg)},
 				Friends: []int64{qq},
 			})
 		}
