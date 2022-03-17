@@ -24,7 +24,9 @@ func configReload(fsnotify.Event) error {
 		int(proxy.GetConfigInt64("daily.hour")),
 		int(proxy.GetConfigInt64("daily.min")),
 		autoSignTask)
-	taskID = id
+	if err == nil {
+		taskID = id
+	}
 	return err
 }
 

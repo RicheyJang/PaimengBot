@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
@@ -35,6 +36,7 @@ type PluginManager struct {
 	db       *gorm.DB     // DB
 	dbConfig DBConfig     // 数据库配置
 	leveldb  *leveldb.DB  // LevelDB实例
+	configMX sync.Mutex   // 配置更新时互斥锁
 
 	plugins     map[string]*PluginProxy // plugin.key -> pluginContext
 	preHooks    []PluginHook            // 插件Pre Hook
@@ -118,6 +120,8 @@ func (manager *PluginManager) FlushConfig(configPath string, configFileName stri
 }
 
 func (manager *PluginManager) callAllConfigChangeHooks(in fsnotify.Event) {
+	manager.configMX.Lock()
+	defer manager.configMX.Unlock()
 	manager.FlushAllAdminLevelFromConfig()     // 单独调用
 	for _, hook := range manager.configHooks { // 执行配置文件更改时的各个Hook
 		err := hook(in)

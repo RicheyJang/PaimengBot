@@ -41,11 +41,7 @@ func init() {
 	proxy.AddConfig("daily.hour", 9)
 	proxy.AddConfig("daily.min", 0)
 	// 添加定时签到任务
-	taskID, _ = proxy.AddScheduleDailyFunc(
-		int(proxy.GetConfigInt64("daily.hour")),
-		int(proxy.GetConfigInt64("daily.min")),
-		autoSignTask)
-	// manager.WhenConfigFileChange(configReload)
+	manager.WhenConfigFileChange(configReload)
 }
 
 func singleSignHandler(ctx *zero.Ctx) {
