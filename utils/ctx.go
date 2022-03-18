@@ -233,6 +233,14 @@ func GetBotNickname() string {
 	return nick[0]
 }
 
+// GetBotID 获取机器人的登录ID
+func GetBotID() int64 {
+	if len(zero.BotConfig.Driver) == 0 {
+		return 0
+	}
+	return zero.BotConfig.Driver[0].SelfID()
+}
+
 // IsSuperUser userID是否为超级用户
 func IsSuperUser(userID int64) bool {
 	uid := strconv.FormatInt(userID, 10)

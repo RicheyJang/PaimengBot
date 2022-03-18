@@ -45,17 +45,23 @@ func checkSubscriptionStatus() {
 			msgs = checkLiveStatus(sub)
 		}
 		// 推送
-		for _, msg := range msgs {
-			if len(msg) == 0 {
-				continue
+		if len(msgs) > 0 {
+			if proxy.GetConfigBool("atAll") {
+				msgs[0] = append(message.Message{message.At(0)}, msgs[0]...)
 			}
 			f, g := sub.GetFriendsGroups()
-			push.Send(push.Target{
-				Msg:     msg,
-				Friends: f,
-				Groups:  g,
-			})
+			for _, msg := range msgs {
+				if len(msg) == 0 {
+					continue
+				}
+				push.Send(push.Target{
+					Msg:     msg,
+					Friends: f,
+					Groups:  g,
+				})
+			}
 		}
+
 	}
 }
 

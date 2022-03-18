@@ -59,9 +59,11 @@ func (t *Target) Send() {
 		log.Infof("开始推送消息，目标私聊：%v，目标群聊：%v", t.Friends, t.Groups)
 	}
 	for _, friend := range t.Friends {
-		ctx.SendPrivateMessage(friend, t.Msg)
+		fMsg := t.preprocessPrimaryMsg(friend, t.Msg)
+		ctx.SendPrivateMessage(friend, fMsg)
 	}
 	for _, group := range t.Groups {
-		ctx.SendGroupMessage(group, t.Msg)
+		gMsg := t.preprocessGroupMsg(group, t.Msg)
+		ctx.SendGroupMessage(group, gMsg)
 	}
 }

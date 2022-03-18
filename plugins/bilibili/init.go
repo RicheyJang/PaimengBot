@@ -33,7 +33,8 @@ var info = manager.PluginInfo{
 config-plugin配置项：
 	bilibili.maxsearch: 最大搜索结果条数
 	bilibili.group: 搜索结果以多少条为一组进行发送
-	bilibili.link: 订阅内容更新时是(true)否(false)在消息中附加链接`,
+	bilibili.link: 订阅内容更新时是(true)否(false)在消息中附加链接
+	bilibili.atall: 群订阅内容更新时是(true)否(false)@全体成员`,
 	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy
@@ -51,6 +52,7 @@ func init() {
 	proxy.AddConfig("maxsearch", 8)
 	proxy.AddConfig("group", 4)
 	proxy.AddConfig("link", true)
+	proxy.AddConfig("atAll", false)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")
