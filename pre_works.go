@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -57,6 +58,7 @@ func init() {
 
 // DoPreWorks 进行全局初始化工作
 func DoPreWorks() {
+	fixCurrentDir()
 	// 读取主配置
 	err := flushMainConfig(consts.DefaultConfigDir, consts.MainConfigFileName)
 	if err != nil {
@@ -71,6 +73,29 @@ func DoPreWorks() {
 	}
 	// 检查是否以服务模式启动
 	CheckDaemon()
+}
+
+// 尝试修正当前路径
+func fixCurrentDir() {
+	runDir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Errorf("无法获取当前绝对路径: %v", err)
+		return
+	}
+	wd, _ := os.Getwd()
+	if wd != runDir {
+		err = os.Chdir(runDir)
+		if err != nil {
+			log.Errorf("无法修改当前工作路径: %v", err)
+			return
+		}
+		wd, err = os.Getwd()
+		if err != nil {
+			log.Errorf("can not get wd, err=%v", err)
+			return
+		}
+		log.Infof("修正当前路径为%v", wd)
+	}
 }
 
 // 设置日志
