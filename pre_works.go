@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -37,12 +38,17 @@ func init() {
 	_ = viper.BindPFlag("log.level", pflag.Lookup("log"))
 	viper.SetDefault("log.date", 30)
 	// 数据库配置
-	viper.SetDefault("db.type", "postgresql")
+	if strings.ToLower(runtime.GOOS) == "windows" { // Windows默认数据库设为SQLite
+		viper.SetDefault("db.type", "sqlite")
+		viper.SetDefault("db.name", `./data/sqlite.db`)
+	} else { // 其它系统默认为Postgres
+		viper.SetDefault("db.type", "postgresql")
+		viper.SetDefault("db.name", "database")
+	}
 	viper.SetDefault("db.host", "localhost")
 	viper.SetDefault("db.port", 5432)
 	viper.SetDefault("db.user", "username")
 	viper.SetDefault("db.passwd", "password")
-	viper.SetDefault("db.name", "database")
 	// 其它配置
 	viper.SetDefault("tmp.maxcount", 1000)        // 同种类临时文件同时存在的最大数量
 	viper.SetDefault(consts.AlwaysCallKey, false) // 是否可以自由调用（完全去除onlytome），不支持热更新
@@ -124,7 +130,11 @@ func flushMainConfig(configPath string, configFileName string) error {
 			return err
 		}
 		log.SetFormatter(&utils.SimpleFormatter{})
-		log.Fatalf("初始化配置文件%v完成，请对该配置文件进行配置后，重启本程序", configFileName)
+		log.Infof("初始化配置文件%v完成，请对该文件进行配置后，重新运行本程序", configFileName)
+		log.Infof("安装、配置教程：https://richeyjang.github.io/PaimengBot/install/")
+		log.Infof("本程序将在10秒后自动结束运行")
+		time.Sleep(10 * time.Second)
+		os.Exit(0)
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) { // 配置文件发生变更之后会调用的回调函数
