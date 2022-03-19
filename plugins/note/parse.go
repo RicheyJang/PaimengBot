@@ -27,20 +27,20 @@ func (task *RemindTask) ParseSpecTime(spec string, isOnce bool) error {
 }
 
 var patches = []*regexp.Regexp{
-	regexp.MustCompile(`^(\d{1,2})[点:](\d{0,2})分?$`),
-	regexp.MustCompile(`^每(\d{1,6})分钟$`),
+	regexp.MustCompile(`^(?:今天)?([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^([1-9]\d{0,5})分钟后$`),
+	regexp.MustCompile(`^每([1-9]\d{0,5})分钟$`),
 
-	regexp.MustCompile(`^每天(\d{1,2})[点:](\d{0,2})分?$`),
-	regexp.MustCompile(`^(明天|后天|大后天)(\d{1,2})[点:](\d{0,2})分?$`),
-	regexp.MustCompile(`^(\d{1,3})天后(\d{1,2})[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^每天([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^(明天|后天|大后天)([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^([1-9]\d{0,2})天后([1-9]\d?)[点:](\d{0,2})分?$`),
 
-	regexp.MustCompile(`^每个?(?:周|星期|礼拜)[1-7一二三四五六日天](\d{1,2})[点:](\d{0,2})分?$`),
-	regexp.MustCompile(`^(?:周|星期|礼拜)[1-7一二三四五六日天](\d{1,2})[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^每个?(?:周|星期|礼拜)[1-7一二三四五六日天]([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^(?:周|星期|礼拜)[1-7一二三四五六日天]([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^每个月([1-9]\d?)[号|日]([1-9]\d?)[点:](\d{0,2})分?$`),
 
-	regexp.MustCompile(`^每个月(\d{1,2})[号|日](\d{1,2})[点:](\d{0,2})分?$`),
-
-	regexp.MustCompile(`^每[个|年](\d{1,2})月(\d{1,2})[号|日](\d{1,2})[点:](\d{0,2})分?$`),
-	regexp.MustCompile(`^(\d{1,2})月(\d{1,2})[号|日](\d{1,2})[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^每[个|年]([1-9]\d?)月([1-9]\d?)[号|日]([1-9]\d?)[点:](\d{0,2})分?$`),
+	regexp.MustCompile(`^([1-9]\d?)月([1-9]\d?)[号|日]([1-9]\d?)[点:](\d{0,2})分?$`),
 }
 
 // ParseCNTime 解析中文时间表达str，填充IsOnce\Spec\RunAt
@@ -58,11 +58,15 @@ func (task *RemindTask) ParseCNTime(str string) (err error) {
 		}
 	}
 	// TODO 补全Task
+	now := time.Now()
 	switch index {
 	case 0:
 		task.IsOnce = true
-		//task.RunAt =
+		task.RunAt = time.Date(now.Year(), now.Month(), now.Day(), mustParseInt(subs[1]), mustParseInt(subs[2]), 0, 0, time.Local)
 	case 1:
+		task.IsOnce = true
+		task.RunAt = now.Add(time.Duration(mustParseInt(subs[1])) * time.Minute)
+	case 2:
 		task.IsOnce = false
 		task.Spec = fmt.Sprintf("@every %s", time.Duration(mustParseInt(subs[1]))*time.Minute)
 	default:
