@@ -136,6 +136,14 @@ func (p *PluginProxy) AddScheduleFunc(spec string, fn func()) (id cron.EntryID, 
 	return
 }
 
+// AddSchedule 添加自定义Schedule的定时任务
+func (p *PluginProxy) AddSchedule(s cron.Schedule, fn func()) (id cron.EntryID, err error) {
+	p.c.InitialCron()
+	id = p.c.schedule.Schedule(s, cron.FuncJob(fn))
+	log.Infof("<%v>成功添加定时任务 spec: %#v,id: %v", p.key, s, id)
+	return
+}
+
 // AddScheduleEveryFunc 便携添加定时任务，固定时间间隔执行，duration符合time.ParseDuration
 func (p *PluginProxy) AddScheduleEveryFunc(duration string, fn func()) (id cron.EntryID, err error) {
 	spec := fmt.Sprintf("@every %s", duration)
@@ -185,6 +193,14 @@ func (p *PluginProxy) DeleteSchedule(id cron.EntryID) {
 		return
 	}
 	p.c.schedule.Remove(id)
+}
+
+// GetScheduleEntry 获取指定ID的cron.Entry，可通过entry.Valid()获取有效性、entry.Schedule.Next()获取下一次执行时间
+func (p *PluginProxy) GetScheduleEntry(id cron.EntryID) cron.Entry {
+	if p.c.schedule == nil {
+		return cron.Entry{}
+	}
+	return p.c.schedule.Entry(id)
 }
 
 // ---- 配置 ----
