@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/RicheyJang/PaimengBot/manager"
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
@@ -20,6 +21,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
+	initAllTasks()
 }
 
 func noteHandler(ctx *zero.Ctx) {}
@@ -27,3 +29,20 @@ func noteHandler(ctx *zero.Ctx) {}
 func cancelNoteHandler(ctx *zero.Ctx) {}
 
 func listNoteHandler(ctx *zero.Ctx) {}
+
+// 初始化所有已有任务
+func initAllTasks() {
+	cleanIllegalTasks()
+	var tasks []RemindTask
+	proxy.GetDB().Find(&tasks)
+	for _, task := range tasks {
+		s, err := genSchedule(task)
+		if err != nil {
+			continue
+		}
+		err = task.addJob(s)
+		if err != nil {
+			log.Warnf("新增定时提醒任务失败：%v", err)
+		}
+	}
+}

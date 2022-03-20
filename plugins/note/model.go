@@ -76,13 +76,12 @@ func (task *RemindTask) addJob(scheduler cron.Schedule) (err error) {
 
 // 清除超时的数据库任务
 func cleanIllegalTasks() {
-	now := time.Now().Add(time.Millisecond) // 加1毫秒，确保任务超时
 	var tasks []RemindTask
 	proxy.GetDB().Find(&tasks)
 	for _, task := range tasks {
-		if task.IsOnce && task.RunAt.Before(now) {
-			err := proxy.GetDB().Delete(&task)
-			if err != nil {
+		if _, err := genSchedule(task); err != nil {
+			log.Infof("删除无效的提醒任务，ID=%v, 原因=%v", task.ID, err)
+			if proxy.GetDB().Delete(&task).Error != nil {
 				log.Errorf("[SQL] 无法删除超时的提醒任务，ID=%v", task.ID)
 			}
 		}
