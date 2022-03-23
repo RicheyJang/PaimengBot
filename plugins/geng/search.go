@@ -50,6 +50,7 @@ func searchGeng(ctx *zero.Ctx) {
 	c := client.NewHttpClient(nil)
 	rsp, err := c.GetGJson(url)
 	if err != nil {
+		log.Errorf("call API Error: err=%v", err)
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("失败了..."))
 		return
 	}
