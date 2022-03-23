@@ -30,7 +30,13 @@ var info = manager.PluginInfo{
 用法：
 	自检：展示程序与环境状态
 	清理临时数据：清空临时文件夹，并统计大小
-`,
+
+config-plugin配置项：
+可以通过heartbeat系列配置项添加心跳检测并将心跳消息定期发送给监听人
+若长时间没有收到心跳检测消息(且在监听时间段内)，说明机器人出现问题；但，非专业勿动：
+	inspection.heartbeat.receiver: 心跳检测监听人ID列表
+	inspection.heartbeat.interval: 心跳检测时间间隔
+	inspection.heartbeat.period: 24小时制监听时间段，仅在该时间段内发送心跳消息`,
 	IsSuperOnly: true,
 }
 
@@ -39,8 +45,12 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).SecondPriority().Handle(selfCheck)
+	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).SecondPriority().Handle(selfCheckHandler)
 	proxy.OnCommands([]string{"清理临时数据"}).SetBlock(true).SecondPriority().Handle(cleanTemp)
+	proxy.AddConfig("heartbeat.receiver", []int64{})
+	proxy.AddConfig("heartbeat.interval", "1h")
+	proxy.AddConfig("heartbeat.period", "9-22")
+	manager.WhenConfigFileChange(heartbeatConfigHook)
 }
 
 func cleanTemp(ctx *zero.Ctx) {
@@ -54,8 +64,16 @@ func cleanTemp(ctx *zero.Ctx) {
 	}
 }
 
-func selfCheck(ctx *zero.Ctx) {
-	env, self := "环境信息：\n", fmt.Sprintf("%v进程信息：\n", utils.GetBotNickname())
+func selfCheckHandler(ctx *zero.Ctx) {
+	msg := formResponse(CheckEnvironment(),
+		CheckSelf(utils.IsSuperUser(ctx.Event.UserID) && ctx.Event.SubType == "friend"),
+		CheckOnebot(false))
+	ctx.SendChain(msg)
+}
+
+// CheckEnvironment 生成主机环境信息
+func CheckEnvironment() string {
+	env := "环境信息：\n"
 	// cpu相关信息
 	cpuCount, err := cpu.Counts(false)
 	if err != nil {
@@ -127,8 +145,14 @@ func selfCheck(ctx *zero.Ctx) {
 	//for _, counter := range IOCounters {
 	//	env += fmt.Sprintf("网卡 %v send:%v recv:%v\n", counter.Name, counter.BytesSent, counter.BytesRecv)
 	//}
+	return env
+}
 
-	//显示当前进程信息
+// CheckSelf 生成机器人自身信息
+func CheckSelf(showNet bool) string {
+	self := fmt.Sprintf("%v进程信息：\n", utils.GetBotNickname())
+
+	// 当前进程信息
 	pid, err := process.NewProcess(int32(os.Getpid()))
 	if err != nil {
 		log.Warn("process err: ", err)
@@ -141,8 +165,10 @@ func selfCheck(ctx *zero.Ctx) {
 	self += fmt.Sprintf("进程名：%v\nCPU占用：%v\n内存占用：%v\nGoroutine: %v\n启动时间：%v\n", pidName,
 		formatPercent(pidPercent), formatPercent(float64(pidMem)), runtime.NumGoroutine(), formatTime(uint64(pidTime/1000)))
 	self += fmt.Sprintf("网络连接：共%v条连接\n", len(pidConn))
+
+	// 生成网络信息内容
 	maxShowNum := 4
-	if !utils.IsSuperUser(ctx.Event.UserID) || ctx.Event.SubType != "friend" { // 非超级用户好友私聊，保护网络连接信息，不展示
+	if !showNet { // 非超级用户好友私聊，保护网络连接信息，不展示
 		maxShowNum = 0
 	}
 	for i, conn := range pidConn {
@@ -153,10 +179,50 @@ func selfCheck(ctx *zero.Ctx) {
 		self += fmt.Sprintf("\t%v:%v->%v:%v\n",
 			conn.Laddr.IP, conn.Laddr.Port, conn.Raddr.IP, conn.Raddr.Port)
 	}
+	return self
+}
 
-	// 发送消息
-	msg := formResponse(env, self)
-	ctx.SendChain(msg)
+// CheckOnebot 机器人前端状态
+func CheckOnebot(brief bool) string {
+	// 登录状态
+	ctx := utils.GetBotCtx()
+	if ctx == nil {
+		return "登陆号异常: 无法获取CTX"
+	}
+
+	rsp := ctx.CallAction("get_status", zero.Params{}).Data
+	ok := rsp.Get("online").Bool() && rsp.Get("good").Bool()
+	if brief {
+		if ok {
+			return "登录号状态正常"
+		} else {
+			return "登陆号异常！"
+		}
+	}
+
+	bot := "登录号状态："
+	// 版本信息
+	version := ctx.GetVersionInfo()
+	bot += "\n" + version.Get("app_name").String() + "状态"
+	if ok {
+		bot += "正常"
+	} else {
+		bot += "异常"
+	}
+	bot += "\n" + version.Get("app_name").String() + "版本：" + version.Get("app_version").String()
+	if version.Get("app_name").String() != "go-cqhttp" {
+		return bot
+	}
+
+	// 统计信息
+	bot += fmt.Sprintf("\n收到的数据包总数: %s", rsp.Get("stat.PacketReceived").String())
+	bot += fmt.Sprintf("\n发送的数据包总数: %s", rsp.Get("stat.PacketSent").String())
+	bot += fmt.Sprintf("\n数据包丢失总数: %s", rsp.Get("stat.PacketLost").String())
+	bot += fmt.Sprintf("\n接收消息总数: %s", rsp.Get("stat.MessageReceived").String())
+	bot += fmt.Sprintf("\n发送消息总数: %s", rsp.Get("stat.MessageSent").String())
+	bot += fmt.Sprintf("\n链接断开次数: %s", rsp.Get("stat.DisconnectTimes").String())
+	bot += fmt.Sprintf("\n账号掉线次数: %s", rsp.Get("stat.LostTimes").String())
+	return bot
 }
 
 func formatTime(sec uint64) string {
@@ -179,26 +245,33 @@ func formatBytesSize(size uint64) string {
 	return strconv.FormatUint(size, 10)
 }
 
-func formResponse(env, self string) message.MessageSegment {
-	defaultInfo := env + "--------------------\n" + self
+func formResponse(texts ...string) message.MessageSegment {
+	var defaultInfo string
+	for i, str := range texts {
+		if i != 0 {
+			defaultInfo += "--------------------\n"
+		}
+		defaultInfo += str
+	}
+	// 初始化
 	fontSize := 20.0
 	w, h := images.MeasureStringDefault(defaultInfo, fontSize, 1.3)
-	w, h = w+20, h+40
+	w, h = w+20, h+float64(len(texts))*22
 	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
-	// 贴环境状态描述文字
-	err := img.PasteStringDefault(env, fontSize, 1.3, 10, 15, w-10)
-	if err != nil {
-		log.Warnf("PasteStringDefault err: %v", err)
-		return message.Text(defaultInfo)
-	}
-	// 画线
-	_, envHeight := images.MeasureStringDefault(env, fontSize, 1.3)
-	img.PasteLine(5, 15+envHeight+4, w-5, 15+envHeight+4, 2, "gray")
-	// 贴本进程状态描述文字
-	err = img.PasteStringDefault(self, fontSize, 1.3, 10, 15+envHeight+20, w-10)
-	if err != nil {
-		log.Warnf("PasteStringDefault err: %v", err)
-		return message.Text(defaultInfo)
+	height := 15.0
+	// 贴文字
+	for i, str := range texts {
+		if i != 0 { // 画线
+			img.PasteLine(5, height, w-5, height, 2, "gray")
+			height += 10
+		}
+		err := img.PasteStringDefault(str, fontSize, 1.3, 10, height, w-10)
+		if err != nil {
+			log.Warnf("PasteStringDefault err: %v", err)
+			return message.Text(defaultInfo)
+		}
+		_, subHeight := images.MeasureStringDefault(str, fontSize, 1.3)
+		height += subHeight + 10
 	}
 	// 生成图片文件
 	msg, err := img.GenMessageAuto()
