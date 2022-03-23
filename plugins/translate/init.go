@@ -1,7 +1,6 @@
 package translate
 
 import (
-	"regexp"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils/consts"
@@ -36,10 +35,10 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"翻译 "}).SetBlock(true).ThirdPriority().Handle(genTranslateHandler("auto", "zh"))
-	proxy.OnCommands([]string{"英语"}).SetBlock(true).ThirdPriority().Handle(genTranslateHandler("auto", "en"))
-	proxy.OnCommands([]string{"日语"}).SetBlock(true).ThirdPriority().Handle(genTranslateHandler("auto", "jp"))
-	proxy.OnRegex("(.*)翻译成?(\\S+)\\s+(.*)", zero.OnlyToMe).SetBlock(true).SetPriority(4).Handle(regexHandler)
+	proxy.OnCommands([]string{"翻译 "}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "zh"))
+	proxy.OnCommands([]string{"英语"}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "en"))
+	proxy.OnCommands([]string{"日语"}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "jp"))
+	proxy.OnRegex("^(\\S{0,5})翻译成?(\\S{0,5})\\s*(.+)").SetBlock(true).SetPriority(3).Handle(regexHandler)
 	_, _ = proxy.AddScheduleDailyFunc(0, 1, initialBaiduDailyCount)
 	proxy.AddConfig(consts.PluginConfigCDKey, "3s")
 	proxy.AddConfig("max", 150) // 单次翻译语句最大长度
@@ -64,9 +63,7 @@ func genTranslateHandler(from, to string) func(*zero.Ctx) {
 }
 
 func regexHandler(ctx *zero.Ctx) {
-	arg := strings.TrimSpace(ctx.ExtractPlainText())
-	reg := regexp.MustCompile("(\\S*)翻译成?(\\S+)\\s+(.*)")
-	subs := reg.FindStringSubmatch(arg)
+	subs := utils.GetRegexpMatched(ctx)
 	if len(subs) < 4 {
 		ctx.Send("翻译什么？")
 		return
@@ -90,5 +87,6 @@ func Translate(str, from, to string) (string, error) {
 		return baidu, nil
 	}
 	// 失败了则尝试有道
+	log.Warnf("BaiduTranslate failed: %v", err)
 	return FreeTranslate(str, from, to)
 }

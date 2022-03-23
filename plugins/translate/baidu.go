@@ -39,17 +39,17 @@ func BaiduCheckLangSupport(lang string, isFrom bool) (res string) {
 func BaiduTranslate(str, from, to string) (string, error) {
 	// 检查
 	if len(proxy.GetConfigString("baidu.appid")) == 0 || len(proxy.GetConfigString("baidu.key")) == 0 {
-		return "我也不知道...", fmt.Errorf("no baidu appid or key config")
+		return "我也不知道...", fmt.Errorf(`尚未配置百度API的APPID或KEY，可以看看"帮助 翻译"来增强翻译能力`)
 	}
 	realLen := utils.StringRealLength(str)
 	// 当日使用上限
 	if checkBaiduOverLimit(realLen) {
-		return "超出今日使用字符限制", fmt.Errorf("over upper limit")
+		return "超出今日使用字符限制", fmt.Errorf("百度API超出今日使用字符限制")
 	}
 	// 语种
 	from, to = BaiduCheckLangSupport(from, true), BaiduCheckLangSupport(to, false)
 	if len(from) == 0 || len(to) == 0 {
-		return "不支持该语种翻译", fmt.Errorf("not support language")
+		return "不支持该语种翻译", fmt.Errorf("百度API不支持该语种翻译")
 	}
 	// 调用API
 	ans, err := callBaiduTransAPI(str, from, to)
