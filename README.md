@@ -30,6 +30,7 @@
 
 ### 一般功能
 - [x] 聊天\自定义问答 (chat)
+- [x] 定期提醒 (note)
 - [x] 联系管理员 (contact)
 - [x] 复读 (echo)
 - [x] 自检 (inspection)
@@ -68,7 +69,7 @@
 ### 好康的
 - [x] 涩图 (pixiv)
 - [x] Pixiv排行榜 (pixiv_rank)
-- [ ] 查看Pixiv插图所有分P
+- [x] Pixiv搜索 (pixiv_query)
 - [ ] coser
 
 </details>
