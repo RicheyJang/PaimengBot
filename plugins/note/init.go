@@ -24,7 +24,16 @@ var info = manager.PluginInfo{
 	定时提醒：私聊中，查看你所设置的所有定时提醒；群聊中，查看该群的所有定时提醒（需为管理员）
 	取消提醒 [事件ID]：事件ID为"定时提醒"中所展示的
 示例：
-	每10分钟提醒我快去学习`, // TODO 示例
+	今天18:30提醒我看前瞻直播
+	120分钟后提醒我已经过去俩钟头啦
+	每10分钟提醒我快去学习
+	每天23点提醒本群该睡觉啦：会在每天23点给当前群聊发消息"该睡觉啦"，若把"本群"替换为"我"就变成给你自己发了
+	后天8点20提醒群123456该起床啦：给群号为123456的群设置定时提醒
+	周六14点提醒本群一起打周本
+	每周日20点提醒我赶紧清周本
+	每月16号20:30提醒我看看官方有没有更新
+	4月1号10点提醒群456789今天是愚人节
+	0,30 18-23 * * *提醒我站起来休息一会：支持CRON表达式，这句表示每天18点到23点的每隔半个小时`,
 	SuperUsage: `config-plugin配置项：
 	note.max: 单个用户的定时提醒配额上限`,
 }
@@ -114,7 +123,7 @@ func noteHandler(ctx *zero.Ctx) {
 	// 内容
 	content := ctx.Event.Message.String() // 使用消息的全部剩余部分
 	index := strings.Index(content, "提醒"+subs[2])
-	task.Content = content[index+len("提醒"+subs[2]):]
+	task.Content = strings.TrimSpace(content[index+len("提醒"+subs[2]):])
 	if len(task.Content) == 0 {
 		ctx.Send("提醒内容是什么？直接说即可")
 		e := utils.WaitNextMessage(ctx)
@@ -138,13 +147,13 @@ func cancelNoteHandler(ctx *zero.Ctx) {
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	id, err := strconv.ParseInt(arg, 10, 64)
 	if err != nil {
-		ctx.Send(`事件ID格式不对，请以"定时提醒"中的事件ID为准`)
+		ctx.Send("事件ID格式不对哦")
 		return
 	}
 	// 获取任务
 	var task RemindTask
 	if proxy.GetDB().First(&task, id).RowsAffected == 0 {
-		ctx.Send("不存在该事件ID")
+		ctx.Send("不存在该事件ID，请以\"定时提醒\"中的事件ID为准")
 		return
 	}
 	// 鉴权
@@ -193,7 +202,7 @@ func listNoteHandler(ctx *zero.Ctx) {
 		return
 	}
 	if len(tasks) == 0 {
-		ctx.Send("你暂时没有设置过定时提醒")
+		ctx.Send("暂时没有进行中的定时提醒")
 		return
 	}
 	// 生成消息
@@ -232,9 +241,9 @@ func genBriefTime(t time.Time) string {
 	str := t.Format("15:04")
 	now := time.Now()
 	if now.Year() != t.Year() {
-		str = t.Format("2006年01月02日") + str
+		str = t.Format("2006年1月2日") + str
 	} else if now.Month() != t.Month() || now.Day() != t.Day() {
-		str = t.Format("01月02日") + str
+		str = t.Format("1月2日") + str
 	}
 	return str
 }
@@ -244,8 +253,8 @@ func genBriefMessage(msg message.Message) string {
 	str := msg.ExtractPlainText()
 	if len(str) > 0 {
 		runeOfStr := []rune(str)
-		if len(runeOfStr) > 10 {
-			str = string(runeOfStr[10:]) + "..."
+		if len(runeOfStr) > 10 { // 至多10个字
+			str = string(runeOfStr[:10]) + "..."
 		}
 		return str
 	}
