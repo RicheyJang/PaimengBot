@@ -155,6 +155,7 @@ func (pic *PictureInfo) GetPicture() (path string, err error) {
 			return "", fmt.Errorf("GetURLByPID failed: %v", err)
 		}
 	}
+	pic.ReplaceURLToProxy() // 反代
 	// 下载图片
 	path, err = images.GetNewTempSavePath("pixiv")
 	if err != nil {
@@ -198,7 +199,7 @@ func (pic *PictureInfo) GetDescribe() string {
 
 // GetURLByPID 通过PID获取图片下载URL
 func (pic *PictureInfo) GetURLByPID() (err error) {
-	if pic.PID == 0 {
+	if pic == nil || pic.PID == 0 {
 		return fmt.Errorf("pid is 0")
 	}
 	// 整理API URL

@@ -34,6 +34,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
 	_ "github.com/RicheyJang/PaimengBot/plugins/note"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
+	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_query"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_rank"
 	_ "github.com/RicheyJang/PaimengBot/plugins/random"
 	_ "github.com/RicheyJang/PaimengBot/plugins/short_url"
