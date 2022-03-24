@@ -126,13 +126,7 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 		}
 	}
 	// 下载图片
-	path, err := images.GetNewTempSavePath("pixiv")
-	if err != nil {
-		return nil, err
-	}
-	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2, Timeout: getTimeout()})
-	c.SetUserAgent()
-	err = c.DownloadToFile(path, pic.URL)
+	path, err := pic.GetPicture()
 	if err != nil {
 		return nil, err
 	}
@@ -144,6 +138,35 @@ func (pic *PictureInfo) GenSinglePicMsg() (message.Message, error) {
 	// 文字
 	tip := pic.GetDescribe()
 	return message.Message{message.Text(pic.Title), picMsg, message.Text(tip)}, nil
+}
+
+// GetPicture 下载图片，返回图片保存路径
+func (pic *PictureInfo) GetPicture() (path string, err error) {
+	// 初始化
+	if pic == nil {
+		return "", fmt.Errorf("pic is nil")
+	}
+	if !pic.CheckNoSESE() {
+		return "", fmt.Errorf("不可以涩涩！")
+	}
+	if len(pic.URL) == 0 {
+		err = pic.GetURLByPID()
+		if err != nil {
+			return "", fmt.Errorf("GetURLByPID failed: %v", err)
+		}
+	}
+	// 下载图片
+	path, err = images.GetNewTempSavePath("pixiv")
+	if err != nil {
+		return "", fmt.Errorf("GetNewTempSavePath err: %v", err)
+	}
+	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2, Timeout: getTimeout()})
+	c.SetUserAgent()
+	err = c.DownloadToFile(path, pic.URL)
+	if err != nil {
+		return "", err
+	}
+	return
 }
 
 // GetDescribe 获取图片说明

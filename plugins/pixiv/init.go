@@ -35,13 +35,16 @@ var proxy *manager.PluginProxy
 
 type PictureInfo struct {
 	Title string // 标题
-	URL   string // 图片链接
 
+	// 下载所需
+	URL string // 图片链接
+	PID int64  // 下载图片时要么有URL；要么有PID及P
+	P   int    // 分P
+
+	// 描述所需
 	Tags   []string // 标签
-	PID    int64
-	P      int    // 分P
-	Author string // 作者
-	UID    int64  // 作者UID
+	Author string   // 作者
+	UID    int64    // 作者UID
 
 	Src string // 无需填写，来源图库
 }
