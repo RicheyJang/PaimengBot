@@ -32,6 +32,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
 	_ "github.com/RicheyJang/PaimengBot/plugins/keyword"
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
+	_ "github.com/RicheyJang/PaimengBot/plugins/note"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_rank"
 	_ "github.com/RicheyJang/PaimengBot/plugins/random"

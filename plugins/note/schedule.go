@@ -8,8 +8,8 @@ import (
 )
 
 // 依据task生成Schedule
-func genSchedule(task RemindTask) (scheduler cron.Schedule, err error) {
-	startAt := time.Now()
+func (task RemindTask) genSchedule() (scheduler cron.Schedule, err error) {
+	startAt := time.Time{}
 	if !task.CreatedAt.IsZero() {
 		startAt = task.CreatedAt
 	}
@@ -27,10 +27,13 @@ func genSchedule(task RemindTask) (scheduler cron.Schedule, err error) {
 			if err != nil {
 				return nil, err
 			}
+			if period < time.Minute {
+				period = time.Minute
+			}
 			// 使用自定义的ConstantEverySchedule
 			return ConstantEverySchedule{
-				StartAt: startAt,
-				Delay:   period,
+				StartAt: startAt.Add(-time.Duration(startAt.Nanosecond()) * time.Nanosecond),
+				Delay:   period - time.Duration(period.Nanoseconds())%time.Second,
 			}, nil
 		}
 		// 其它Cron
@@ -45,8 +48,9 @@ type ConstantEverySchedule struct {
 }
 
 func (schedule ConstantEverySchedule) Next(t time.Time) time.Time {
-	if schedule.StartAt.Add(schedule.Delay).After(t) {
-		t = schedule.StartAt
+	nextFromStart := schedule.StartAt.Add(schedule.Delay - time.Duration(schedule.StartAt.Nanosecond())*time.Nanosecond)
+	if nextFromStart.After(t) {
+		return nextFromStart
 	}
 	return t.Add(schedule.Delay - time.Duration(t.Nanosecond())*time.Nanosecond)
 }
@@ -56,6 +60,9 @@ type StickTimeSchedule struct {
 	At time.Time
 }
 
-func (schedule StickTimeSchedule) Next(_ time.Time) time.Time {
+func (schedule StickTimeSchedule) Next(t time.Time) time.Time {
+	if t.After(schedule.At) {
+		return time.Time{}
+	}
 	return schedule.At
 }
