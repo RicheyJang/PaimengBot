@@ -108,9 +108,11 @@
 
 #### 编译
 
-本项目使用纯Go语言实现，编译基于go1.17+
+本项目使用纯Go语言实现，编译基于[go1.17+](https://golang.google.cn/dl/)
 
 ```bash
+go get ./...
+
 go build ./cmd/main.go
 ```
 
