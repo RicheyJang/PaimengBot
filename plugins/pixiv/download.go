@@ -20,9 +20,10 @@ import (
 )
 
 type downloader struct {
-	has  bool
-	pics []PictureInfo
-	cap  int
+	has       bool
+	pics      []PictureInfo
+	cap       int
+	excessive bool
 
 	tags  []string
 	num   int
@@ -36,9 +37,16 @@ func newDownloader(tags []string, num int, isR18 bool) *downloader {
 			realTags = append(realTags, tag)
 		}
 	}
+	// 请求数量检查
+	excessive := false
+	if num > 10 { // 请求过多
+		excessive = true
+		num = rand.Intn(10) + 1
+	}
 	return &downloader{
-		has: false,
-		cap: (num + 10) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
+		has:       false,
+		cap:       (num + 10) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
+		excessive: excessive,
 
 		tags:  realTags,
 		num:   num,
@@ -87,6 +95,10 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	if len(d.pics) == 0 {
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("没图了..."))
 		return
+	}
+	// 请求过多
+	if d.excessive {
+		ctx.SendChain(message.At(ctx.Event.UserID), message.Text(fmt.Sprintf("太多啦，只发你%d张好了", d.num)))
 	}
 	// 下载图片
 	var i, num int
