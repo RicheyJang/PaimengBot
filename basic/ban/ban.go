@@ -40,6 +40,7 @@ func dealBanArgs(ctx *zero.Ctx) (userID int64, plugin *manager.PluginCondition, 
 		period, err = time.ParseDuration(args[len(args)-1])
 		if err != nil {
 			period = 0
+			err = nil
 		} else {
 			args = args[:len(args)-1]
 		}
