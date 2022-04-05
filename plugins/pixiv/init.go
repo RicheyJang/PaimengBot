@@ -27,6 +27,7 @@ config-plugin配置项：
 	pixiv.proxy： Pixiv反代网站，默认为i.pixiv.re，令外可选i.pixiv.cat
 	pixiv.scale：从各个图库取图的比例，导入Omega图库后，将pixiv.scale.omega设为非0值才可使其生效
 	pixiv.r18：是否允许18+，设为false则开启强力不可以涩涩模式
+	pixiv.groupr18：是(true)否(false)允许在群聊中发送18+，默认为false
 	pixiv.omega.setu：在请求非R18图片时，是(true)否(false)从Omega图库中拿取nsfw=1(setu)的图片
 另外，Omega图库是指从https://github.com/Ailitonia/omega-miya/raw/master/archive_data/db_pixiv.7z手动导入数据库`,
 	Classify: "好康的",
@@ -73,6 +74,7 @@ func init() {
 	proxy.AddAPIConfig(consts.APIOfHibiAPIKey, "api.obfs.dev")
 	proxy.AddConfig("timeout", "10s") // 下载图片超时时长 格式要求time.ParseDuration 至少为1s
 	proxy.AddConfig("proxy", "i.pixiv.re")
+	proxy.AddConfig("groupr18", false)
 	proxy.AddConfig("r18", true)
 	for k, v := range getterScale { // 各个图库取图比例配置
 		proxy.AddConfig(fmt.Sprintf("scale.%s", k), v)
@@ -86,7 +88,7 @@ func getPictures(ctx *zero.Ctx) {
 	isR := false
 	cmd := utils.GetCommand(ctx)
 	if strings.HasSuffix(cmd, "r") || strings.HasSuffix(cmd, "R") {
-		if !utils.IsMessagePrimary(ctx) {
+		if !utils.IsMessagePrimary(ctx) && !proxy.GetConfigBool("groupr18") {
 			ctx.Send("滚滚滚")
 			return
 		}
@@ -115,7 +117,7 @@ func getPicturesWithRegex(ctx *zero.Ctx) {
 	tags = utils.MergeStringSlices(tags)
 	isR := false
 	if len(subs[3]) > 0 {
-		if !utils.IsMessagePrimary(ctx) {
+		if !utils.IsMessagePrimary(ctx) && !proxy.GetConfigBool("groupr18") {
 			ctx.Send("滚滚滚")
 			return
 		}
