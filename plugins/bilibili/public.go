@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils/client"
+	"github.com/wdvxdr1123/ZeroBot/message"
 
 	"github.com/tidwall/gjson"
 )
@@ -27,13 +28,14 @@ const (
 	SearchTypeBangumi  = "media_bangumi"
 	SearchTypeFT       = "media_ft"
 	SearchTypeUser     = "bili_user"
-	DynamicTypeShare   = 1 // 转发
-	DynamicTypePic     = 2 // 图片动态
-	DynamicTypeText    = 4 // 文字动态
-	DynamicTypeVideo   = 8 // 视频动态
-	LiveStatusClose    = 0 // 直播间关闭
-	LiveStatusOpen     = 1 // 直播中
-	LiveStatusCarousel = 2 // 直播间轮播中
+	DynamicTypeShare   = 1  // 转发
+	DynamicTypePic     = 2  // 图片动态
+	DynamicTypeText    = 4  // 文字动态
+	DynamicTypeVideo   = 8  // 视频动态
+	DynamicTypeRead    = 64 // 专栏动态
+	LiveStatusClose    = 0  // 直播间关闭
+	LiveStatusOpen     = 1  // 直播中
+	LiveStatusCarousel = 2  // 直播间轮播中
 )
 
 type UserInfo struct {
@@ -101,10 +103,6 @@ type LiveRoomInfo struct {
 	Status   int      `json:"live_status"`
 	CoverURL string   `json:"cover"`
 	Anchor   UserInfo `json:"anchor_info"`
-}
-
-func (d DynamicInfo) IsVideo() bool {
-	return d.Type == DynamicTypeVideo
 }
 
 func (d DynamicInfo) VideoTitle() string {
@@ -394,4 +392,31 @@ func (l *LiveRoom) Info() (LiveRoomInfo, error) {
 			Silence:  false,
 		},
 	}, nil
+}
+
+func DynamicTypeShareMessage(d DynamicInfo, m []message.MessageSegment) []message.MessageSegment {
+	//简单的分享处理
+	r := gjson.Parse(string(d.Card))
+	shareUrl := "https://t.bilibili.com/" + r.Get("item.orig_dy_id").String()
+	m = append(m, message.Text(r.Get("item.content").String(), "\n引用消息:", shareUrl))
+	return m
+}
+func DynamicTypePicMessage(d DynamicInfo, m []message.MessageSegment) []message.MessageSegment {
+	r := gjson.Parse(string(d.Card))
+	m = append(m, message.Text(r.Get("item.description").String()))
+	for _, r := range r.Get("item.pictures.#.img_src").Array() {
+		m = append(m, message.Image(r.String()))
+	}
+	return m
+}
+func DynamicTypeTextMessage(d DynamicInfo, m []message.MessageSegment) []message.MessageSegment {
+	r := gjson.Parse(string(d.Card))
+	return append(m, message.Text(r.Get("item.content").String()))
+}
+
+func DynamicTypeReadMessage(d DynamicInfo, m []message.MessageSegment) []message.MessageSegment {
+	r := gjson.Parse(string(d.Card))
+	return append(m, message.Text("标题："+r.Get("item.description").String()+
+		"\n概要："+r.Get("item.description").String()+
+		"\n全文请查看："+"https://www.bilibili.com/read/cv"+r.Get("id").String()))
 }

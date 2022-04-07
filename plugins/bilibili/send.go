@@ -134,7 +134,32 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 	d := ds[0]
 	if d.Time.After(sub.DynamicLastTime) { // 更新了新动态
 		var str, link string
-		if d.IsVideo() { // 新视频
+		var m []message.MessageSegment
+
+		switch d.Type {
+		case DynamicTypeShare: //处理分享动态
+			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
+			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
+			if proxy.GetConfigBool("link") {
+				str += link
+			}
+			m = DynamicTypeShareMessage(d, append(m, message.Text(str)))
+		case DynamicTypePic: //
+			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
+			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
+			if proxy.GetConfigBool("link") {
+				str += link
+			}
+			m = DynamicTypePicMessage(d, append(m, message.Text(str)))
+		case DynamicTypeText:
+			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
+			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
+			if proxy.GetConfigBool("link") {
+				str += link
+			}
+			m = DynamicTypeTextMessage(d, append(m, message.Text(str)))
+
+		case DynamicTypeVideo: //处理视频动态
 			str = fmt.Sprintf("UP主「%v」发布了新视频！", d.Uname)
 			title := d.VideoTitle()
 			if len(title) > 0 {
@@ -143,14 +168,21 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 			if len(d.BVID) > 0 {
 				link = fmt.Sprintf("\n直链：https://www.bilibili.com/video/%v", d.BVID)
 			}
-		} else { // 普通动态
-			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
-			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic", sub.BID)
+			if proxy.GetConfigBool("link") {
+				str += link
+			}
+			m = append(m, message.Text(str))
+		case DynamicTypeRead:
+			str = fmt.Sprintf("UP主「%v」发表了新专栏！", d.Uname)
+			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
+			if proxy.GetConfigBool("link") {
+				str += link
+			}
+			m = DynamicTypeReadMessage(d, append(m, message.Text(str)))
 		}
-		if proxy.GetConfigBool("link") {
-			str += link
-		}
-		msg = []message.Message{{message.Text(str)}}
+
+		msg = []message.Message{m}
+
 		// 更新状态
 		sub.DynamicLastTime = d.Time
 		err = UpdateSubsStatus(sub)
