@@ -161,11 +161,11 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 		}
 
 		// 组合推送消息
-		if proxy.GetConfigBool("link") {
-			str += link
-		}
 		if len(appendMsg) > 0 {
-			str += "\n"
+			str += "动态内容：\n"
+		}
+		if proxy.GetConfigBool("link") {
+			appendMsg = append(appendMsg, message.Text(link))
 		}
 		msg = []message.Message{append([]message.MessageSegment{message.Text(str)}, appendMsg...)}
 

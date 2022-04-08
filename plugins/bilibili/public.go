@@ -401,18 +401,24 @@ func DynamicTypeShareMessage(d DynamicInfo) (m []message.MessageSegment) {
 	shareUrl := "https://t.bilibili.com/" + r.Get("item.orig_dy_id").String()
 	m = append(m, message.Text(
 		utils.StringLimit(r.Get("item.content").String(), getContentLimit()),
-		"\n引用消息:", shareUrl))
+		"\n转发动态：", shareUrl))
 	return m
 }
 
 func DynamicTypePicMessage(d DynamicInfo) (m []message.MessageSegment) {
 	r := gjson.Parse(d.Card)
 	m = append(m, message.Text(utils.StringLimit(r.Get("item.description").String(), getContentLimit())))
-	if !proxy.GetConfigBool("picture") {
-		m = append(m, message.Text(fmt.Sprintf("图片：共%d张", r.Get("item.pictures.#").Int())))
+	if proxy.GetConfigInt64("picture") == 0 {
+		m = append(m, message.Text(fmt.Sprintf("\n图片：共%d张", r.Get("item.pictures.#").Int())))
 	} else {
-		for _, r := range r.Get("item.pictures.#.img_src").Array() {
-			m = append(m, message.Image(r.String()))
+		pics := r.Get("item.pictures.#.img_src").Array()
+		maxNum := int(proxy.GetConfigInt64("picture"))
+		for i, pic := range pics {
+			if i >= maxNum { // 最多发送picture张
+				m = append(m, message.Text(fmt.Sprintf("...共%d张图片", len(pics))))
+				break
+			}
+			m = append(m, message.Image(pic.String()))
 		}
 	}
 	return m
@@ -425,7 +431,7 @@ func DynamicTypeTextMessage(d DynamicInfo) (m []message.MessageSegment) {
 
 func DynamicTypeReadMessage(d DynamicInfo) (m []message.MessageSegment) {
 	r := gjson.Parse(d.Card)
-	return append(m, message.Text("标题："+r.Get("item.description").String()+
-		"\n概要："+utils.StringLimit(r.Get("item.description").String(), getContentLimit())+
+	return append(m, message.Text("标题："+r.Get("title").String()+
+		"\n概要："+utils.StringLimit(r.Get("summary").String(), getContentLimit())+
 		"\n全文链接："+"https://www.bilibili.com/read/cv"+r.Get("id").String()))
 }

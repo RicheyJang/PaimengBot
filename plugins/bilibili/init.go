@@ -34,7 +34,7 @@ config-plugin配置项：
 	bilibili.maxsearch: 最大搜索结果条数
 	bilibili.group: 搜索结果以多少条为一组进行发送
 	bilibili.limit: 动态更新推送时，动态内容最多展示多少字
-	bilibili.picture: 动态更新推送时，是否发送图片动态中的图片
+	bilibili.picture: 动态更新推送时，图片动态最多发送多少张图片
 	bilibili.link: 订阅内容更新时是(true)否(false)在消息中附加链接
 	bilibili.atall: 群订阅内容更新时是(true)否(false)@全体成员`,
 	Classify: "实用工具",
@@ -56,7 +56,7 @@ func init() {
 	proxy.AddConfig("link", true)
 	proxy.AddConfig("atAll", false)
 	proxy.AddConfig("limit", 80)
-	proxy.AddConfig("picture", false)
+	proxy.AddConfig("picture", 0)
 	SetAPIDefault("search.type", "https://api.bilibili.com/x/web-interface/search/type")
 	SetAPIDefault("bangumi.mdid", "https://api.bilibili.com/pgc/review/user")
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")
