@@ -2,11 +2,13 @@ package chat
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 
+	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -107,10 +109,18 @@ func PluginName(ctx *zero.Ctx, question string) message.Message {
 
 // IDoNotKnow Dealer: XX不知道
 func IDoNotKnow(ctx *zero.Ctx, question string) message.Message {
-	str := proxy.GetConfigString("default.donotknow")
-	if len(str) == 0 {
-		return nil
+	var a []string
+	c := proxy.GetConfig("default.donotknow")
+	switch c.(type) {
+	case string:
+		a = []string{cast.ToString(c)}
+	case []string, []interface{}:
+		a = cast.ToStringSlice(c)
 	}
+	if len(a) == 0 {
+		a = []string{"{nickname}不知道哦"}
+	}
+	str := a[rand.Intn(len(a))]
 	str = strings.ReplaceAll(str, "{nickname}", utils.GetBotNickname())
 	return message.Message{message.Text(str)}
 }

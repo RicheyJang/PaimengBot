@@ -43,7 +43,7 @@ txt格式文件特有：
 
 config-plugin文件配置项：
 	chat.default.self 自我介绍内容
-	chat.default.donotknow 无法处理某消息时的回答内容，留空则不回答；{nickname}代表机器人昵称
+	chat.default.donotknow 无法处理某消息时的回答内容，留空则不回答;可以为数组格式来随机回复;{nickname}代表机器人昵称
 	chat.diylevel 自定义问答功能所需的最低管理员权限等级，默认为5，设为0则非群管理员用户也可自定义
 	chat.at 在群聊中，机器人的回复是(true)否(false)@提问者`,
 }
