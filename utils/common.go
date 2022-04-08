@@ -46,6 +46,15 @@ func JsonString(v interface{}) string {
 	return string(res)
 }
 
+// StringLimit 限制字符串长度，若超出limit，返回前limit个码点+"..."
+func StringLimit(s string, limit int) string {
+	runeSlice := []rune(s)
+	if len(runeSlice) <= limit {
+		return s
+	}
+	return string(runeSlice[:limit]) + "..."
+}
+
 // MergeStringSlices 合并多个字符串切片并去重、去除空字符串
 func MergeStringSlices(slices ...[]string) (res []string) {
 	mp := FormSetByStrings(slices...)

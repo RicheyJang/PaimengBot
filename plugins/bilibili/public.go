@@ -5,10 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
-	"github.com/wdvxdr1123/ZeroBot/message"
 
 	"github.com/tidwall/gjson"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var apiMap = make(map[string]string)
@@ -396,29 +397,35 @@ func (l *LiveRoom) Info() (LiveRoomInfo, error) {
 
 func DynamicTypeShareMessage(d DynamicInfo) (m []message.MessageSegment) {
 	//简单的分享处理
-	r := gjson.Parse(string(d.Card))
+	r := gjson.Parse(d.Card)
 	shareUrl := "https://t.bilibili.com/" + r.Get("item.orig_dy_id").String()
-	m = append(m, message.Text(r.Get("item.content").String(), "\n引用消息:", shareUrl))
+	m = append(m, message.Text(
+		utils.StringLimit(r.Get("item.content").String(), getContentLimit()),
+		"\n引用消息:", shareUrl))
 	return m
 }
 
 func DynamicTypePicMessage(d DynamicInfo) (m []message.MessageSegment) {
-	r := gjson.Parse(string(d.Card))
-	m = append(m, message.Text(r.Get("item.description").String()))
-	for _, r := range r.Get("item.pictures.#.img_src").Array() {
-		m = append(m, message.Image(r.String()))
+	r := gjson.Parse(d.Card)
+	m = append(m, message.Text(utils.StringLimit(r.Get("item.description").String(), getContentLimit())))
+	if !proxy.GetConfigBool("picture") {
+		m = append(m, message.Text(fmt.Sprintf("图片：共%d张", r.Get("item.pictures.#").Int())))
+	} else {
+		for _, r := range r.Get("item.pictures.#.img_src").Array() {
+			m = append(m, message.Image(r.String()))
+		}
 	}
 	return m
 }
 
 func DynamicTypeTextMessage(d DynamicInfo) (m []message.MessageSegment) {
-	r := gjson.Parse(string(d.Card))
-	return append(m, message.Text(r.Get("item.content").String()))
+	r := gjson.Parse(d.Card)
+	return append(m, message.Text(utils.StringLimit(r.Get("item.content").String(), getContentLimit())))
 }
 
 func DynamicTypeReadMessage(d DynamicInfo) (m []message.MessageSegment) {
 	r := gjson.Parse(d.Card)
 	return append(m, message.Text("标题："+r.Get("item.description").String()+
-		"\n概要："+r.Get("item.description").String()+
-		"\n全文请查看："+"https://www.bilibili.com/read/cv"+r.Get("id").String()))
+		"\n概要："+utils.StringLimit(r.Get("item.description").String(), getContentLimit())+
+		"\n全文链接："+"https://www.bilibili.com/read/cv"+r.Get("id").String()))
 }
