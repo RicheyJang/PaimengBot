@@ -106,6 +106,7 @@ func muteSomeone(ctx *zero.Ctx) {
 	// 禁言
 	if id == 0 {
 		ctx.SetGroupWholeBan(ctx.Event.GroupID, duration != 0)
+		_, _ = proxy.AddScheduleOnceFunc(duration, getCancelWholeBanFunc(ctx.Event.GroupID))
 	} else {
 		ctx.SetGroupBan(ctx.Event.GroupID, id, int64(duration/time.Second))
 	}
@@ -114,6 +115,19 @@ func muteSomeone(ctx *zero.Ctx) {
 		log.Infof("将用户%v解除禁言", id)
 	} else {
 		log.Infof("将用户%v禁言%v", id, duration)
+	}
+}
+
+func getCancelWholeBanFunc(groupID int64) func() {
+	return func() {
+		zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
+			if ctx != nil {
+				ctx.SetGroupWholeBan(groupID, false)
+				log.Infof("自动解除群%v的全体禁言", groupID)
+				return false
+			}
+			return true
+		})
 	}
 }
 
