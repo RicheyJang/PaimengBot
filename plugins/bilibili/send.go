@@ -133,33 +133,20 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 	// 取最新的一条
 	d := ds[0]
 	if d.Time.After(sub.DynamicLastTime) { // 更新了新动态
-		var str, link string
-		var m []message.MessageSegment
+		// 基础推送内容
+		str := fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
+		link := fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic", sub.BID)
 
+		// 按动态类型附加内容
+		var appendMsg []message.MessageSegment
 		switch d.Type {
-		case DynamicTypeShare: //处理分享动态
-			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
-			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
-			if proxy.GetConfigBool("link") {
-				str += link
-			}
-			m = DynamicTypeShareMessage(d, append(m, message.Text(str)))
-		case DynamicTypePic: //
-			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
-			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
-			if proxy.GetConfigBool("link") {
-				str += link
-			}
-			m = DynamicTypePicMessage(d, append(m, message.Text(str)))
-		case DynamicTypeText:
-			str = fmt.Sprintf("UP主「%v」发表了新动态！", d.Uname)
-			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
-			if proxy.GetConfigBool("link") {
-				str += link
-			}
-			m = DynamicTypeTextMessage(d, append(m, message.Text(str)))
-
-		case DynamicTypeVideo: //处理视频动态
+		case DynamicTypeShare: // 分享动态
+			appendMsg = DynamicTypeShareMessage(d)
+		case DynamicTypePic: // 图片动态
+			appendMsg = DynamicTypePicMessage(d)
+		case DynamicTypeText: // 文本动态
+			appendMsg = DynamicTypeTextMessage(d)
+		case DynamicTypeVideo: // 视频动态
 			str = fmt.Sprintf("UP主「%v」发布了新视频！", d.Uname)
 			title := d.VideoTitle()
 			if len(title) > 0 {
@@ -168,20 +155,19 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 			if len(d.BVID) > 0 {
 				link = fmt.Sprintf("\n直链：https://www.bilibili.com/video/%v", d.BVID)
 			}
-			if proxy.GetConfigBool("link") {
-				str += link
-			}
-			m = append(m, message.Text(str))
-		case DynamicTypeRead:
+		case DynamicTypeRead: // 新专栏
 			str = fmt.Sprintf("UP主「%v」发表了新专栏！", d.Uname)
-			link = fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic\n", sub.BID)
-			if proxy.GetConfigBool("link") {
-				str += link
-			}
-			m = DynamicTypeReadMessage(d, append(m, message.Text(str)))
+			appendMsg = DynamicTypeReadMessage(d)
 		}
 
-		msg = []message.Message{m}
+		// 组合推送消息
+		if proxy.GetConfigBool("link") {
+			str += link
+		}
+		if len(appendMsg) > 0 {
+			str += "\n"
+		}
+		msg = []message.Message{append([]message.MessageSegment{message.Text(str)}, appendMsg...)}
 
 		// 更新状态
 		sub.DynamicLastTime = d.Time
