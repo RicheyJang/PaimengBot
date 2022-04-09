@@ -9,6 +9,7 @@ import (
 	"github.com/RicheyJang/PaimengBot/utils"
 
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var proxy *manager.PluginProxy
@@ -24,8 +25,7 @@ var info = manager.PluginInfo{
 示例：
 	封禁123456：封禁用户ID为123456的所有功能
 	封禁123456 25m：封禁用户ID为123456的所有功能25分钟
-	封禁123456 翻译 1h30m：封禁用户ID123456的翻译功能1小时零30分钟
-`,
+	封禁123456 翻译 1h30m：封禁用户ID123456的翻译功能1小时零30分钟`,
 	SuperUsage: `
 用法：
 	在私聊中：
@@ -33,7 +33,8 @@ var info = manager.PluginInfo{
 		还可通过 开启\关闭[群ID] [功能] [时长]? 来开启\关闭指定群的指定功能
 		黑名单：获取所有被封禁用户、群的被封禁功能列表
 	在群聊中，等同于最高权限群管理员执行命令
-`,
+config-plugin配置项：
+	ban.tip: 调用某项被禁用的功能时，是(true)否(false)提示"该功能已被禁用"，但不会提示个人封禁`,
 	AdminLevel: 1,
 }
 
@@ -47,10 +48,12 @@ func init() {
 	proxy.OnCommands([]string{"封禁", "ban", "Ban"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(banUser)
 	proxy.OnCommands([]string{"解封", "unban", "Unban"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(unbanUser)
 	proxy.OnCommands([]string{"黑名单"}, zero.OnlyToMe).SetBlock(true).FirstPriority().Handle(showBlack)
+	proxy.AddConfig("tip", false)
 	manager.AddPreHook(checkPluginStatus)
 }
 
 const AllPluginKey = "all"
+const TipContent = "该功能已被禁用"
 
 func checkPluginStatus(condition *manager.PluginCondition, ctx *zero.Ctx) error {
 	if !utils.IsMessage(ctx) { //仅处理消息类型事件
@@ -58,14 +61,21 @@ func checkPluginStatus(condition *manager.PluginCondition, ctx *zero.Ctx) error 
 	}
 	// 群ban
 	if ctx.Event.GroupID != 0 && !GetGroupPluginStatus(ctx.Event.GroupID, condition) {
+		if proxy.GetConfigBool("tip") {
+			ctx.SendChain(message.At(ctx.Event.UserID), message.Text(TipContent))
+		}
 		return fmt.Errorf("此插件<%v>在此群(%v)已被关闭", condition.Key, ctx.Event.GroupID)
 	}
 	// 个人ban
 	if ctx.Event.UserID != 0 && !GetUserPluginStatus(ctx.Event.UserID, condition) {
+		// 不去理会被封禁的个人，因此不提示已被封禁
 		return fmt.Errorf("此插件<%v>对此用户(%v)已被禁用", condition.Key, ctx.Event.UserID)
 	}
 	// 全局ban
 	if !GetUserPluginStatus(0, condition) {
+		if proxy.GetConfigBool("tip") {
+			ctx.Send(message.Text(TipContent))
+		}
 		return fmt.Errorf("此插件<%v>已全局禁用", condition.Key)
 	}
 	return nil
@@ -98,8 +108,7 @@ func dealGroupPluginStatus(ctx *zero.Ctx, status bool, groupID int64, plugin *ma
 }
 
 func hasPluginKey(org, key string) bool {
-	name := fmt.Sprintf("|%s|", key)
-	return strings.Contains(org, name)
+	return strings.Contains(org, "|"+key+"|")
 }
 
 func addPluginKey(org, key string) string {
