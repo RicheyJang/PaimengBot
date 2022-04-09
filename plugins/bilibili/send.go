@@ -71,7 +71,7 @@ func checkBangumiStatus(sub Subscription) (msg []message.Message) {
 		log.Warnf("获取B站番剧(%v)信息失败：%v", sub.BID, err)
 		return nil
 	}
-	if b.NewEP.Name != sub.BangumiLastIndex { // 更新了
+	if len(b.NewEP.Name) > 0 && b.NewEP.Name != sub.BangumiLastIndex { // 更新了
 		// 生成消息
 		str := fmt.Sprintf("番剧「%v」更新了！\n最新一集：%v", b.Title, b.NewEP.Name)
 		link := fmt.Sprintf("\n快去看：https://bilibili.com/bangumi/play/ep%v", b.NewEP.ID)
