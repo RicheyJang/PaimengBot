@@ -52,7 +52,7 @@ func needCheck(ctx *zero.Ctx) bool {
 
 // 检查：是否包含关键词
 func needDeal(ctx *zero.Ctx) bool {
-	str := ctx.Event.Message.ExtractPlainText()
+	str := ctx.MessageString()
 	// 检查是否需要撤回
 	withdrawList := getWithdrawKeywords()
 	for _, v := range withdrawList {

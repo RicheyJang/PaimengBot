@@ -38,7 +38,7 @@ func init() {
 	proxy.OnCommands([]string{"翻译 "}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "zh"))
 	proxy.OnCommands([]string{"英语"}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "en"))
 	proxy.OnCommands([]string{"日语"}).SetBlock(true).SetPriority(4).Handle(genTranslateHandler("auto", "jp"))
-	proxy.OnRegex("^(\\S{0,5})翻译成?(\\S{0,5})\\s*(.+)").SetBlock(true).SetPriority(3).Handle(regexHandler)
+	proxy.OnRegex("^(\\S{0,5})翻译成?(\\S{1,5})\\s*(.+)").SetBlock(true).SetPriority(3).Handle(regexHandler)
 	_, _ = proxy.AddScheduleDailyFunc(0, 1, initialBaiduDailyCount)
 	proxy.AddConfig(consts.PluginConfigCDKey, "3s")
 	proxy.AddConfig("max", 150) // 单次翻译语句最大长度
