@@ -32,7 +32,7 @@ func init() {
 type Subscription struct {
 	ID       int
 	SubUsers string // 格式：若为私人，则直接是ID；若为群订阅，则为 群ID:发起用户ID；多个User用,分隔
-	SubType  string `gorm:"uniqueIndex:idx_sub_item"`
+	SubType  string `gorm:"uniqueIndex:idx_sub_item;size:64"`
 	BID      int64  `gorm:"uniqueIndex:idx_sub_item"` // UP主ID、番剧ID、直播间ID
 	// 状态相关：
 	BangumiLastIndex string    // 番剧：最后一集Index
