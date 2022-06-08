@@ -82,11 +82,11 @@ func guessIdioms(ctx *zero.Ctx) {
 				return
 			}
 			guess := strings.TrimSpace(e.Message.ExtractPlainText())
-			if e.UserID == ctx.Event.UserID && utils.StringSliceContain(cancelMessage, guess) { // 由发起者表示取消，结束游戏
-				ctx.SendChain(message.At(e.UserID), message.Text(fmt.Sprintf("那算啦，其实正确答案是%v哦", key)))
-				return
-			} else if guess == key { // 猜对，结束游戏
+			if guess == key { // 猜对，结束游戏
 				ctx.SendChain(message.At(e.UserID), message.Text("猜对啦"))
+				return
+			} else if utils.StringSliceContain(cancelMessage, guess) { // 取消，结束游戏
+				ctx.SendChain(message.At(e.UserID), message.Text(fmt.Sprintf("那算啦，其实正确答案是%v哦", key)))
 				return
 			} else { // 猜错，继续游戏
 				if ctx.Event.GroupID == 0 { // 只有私聊提示
