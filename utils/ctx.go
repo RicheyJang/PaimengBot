@@ -151,6 +151,14 @@ func IsGroupAnonymous(ctx *zero.Ctx) bool {
 	return ctx.Event.SubType == "anonymous"
 }
 
+// IsGroupAdmin 是否为群管消息
+func IsGroupAdmin(ctx *zero.Ctx) bool {
+	if !IsMessageGroup(ctx) || ctx.Event.Sender == nil {
+		return false
+	}
+	return ctx.Event.Sender.Role == "owner" || ctx.Event.Sender.Role == "admin"
+}
+
 // GetQQAvatar 快捷获取QQ头像
 func GetQQAvatar(qq int64, size int) (io.ReadCloser, error) {
 	c := client.NewHttpClient(&client.HttpOptions{

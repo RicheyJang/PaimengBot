@@ -64,8 +64,8 @@ func guessIdioms(ctx *zero.Ctx) {
 			return ctx.Event.GroupID == 0 && ctx.Event.UserID == futureCtx.Event.UserID
 		} else if ctx.Event.GroupID == futureCtx.Event.GroupID { // 同一个群的群消息
 			guess := futureCtx.Event.Message.ExtractPlainText()
-			if (futureCtx.Event.UserID == ctx.Event.UserID && utils.StringSliceContain(cancelMessage, guess)) ||
-				guess == key { // 发起人取消 或 有人猜对了答案，处理
+			if ((futureCtx.Event.UserID == ctx.Event.UserID || utils.IsGroupAdmin(futureCtx)) && utils.StringSliceContain(cancelMessage, guess)) ||
+				guess == key { // 发起人或群管取消 或 有人猜对了答案，处理
 				return true
 			}
 		}
