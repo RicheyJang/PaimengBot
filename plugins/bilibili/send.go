@@ -152,6 +152,9 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 			if len(title) > 0 {
 				str += "\n标题：" + title
 			}
+			if proxy.GetConfigInt64("picture") > 0 {
+				appendMsg = append(appendMsg, message.Image(d.VideoCoverURL()))
+			}
 			if len(d.BVID) > 0 {
 				link = fmt.Sprintf("\n直链：https://www.bilibili.com/video/%v", d.BVID)
 			}
@@ -161,9 +164,6 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 		}
 
 		// 组合推送消息
-		if len(appendMsg) > 0 {
-			str += "动态内容：\n"
-		}
 		if proxy.GetConfigBool("link") {
 			appendMsg = append(appendMsg, message.Text(link))
 		}

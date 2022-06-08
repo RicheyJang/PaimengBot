@@ -110,6 +110,10 @@ func (d DynamicInfo) VideoTitle() string {
 	return gjson.Get(d.Card, "title").String()
 }
 
+func (d DynamicInfo) VideoCoverURL() string {
+	return gjson.Get(d.Card, "pic").String()
+}
+
 func (l LiveRoomInfo) IsOpen() bool {
 	return l.Status == LiveStatusOpen
 }
