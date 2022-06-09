@@ -33,21 +33,20 @@ func init() {
 }
 
 func handleMixMsg(ctx *zero.Ctx) {
-	if len(ctx.Event.Message) == 2 {
-		getMixAndSend(ctx, ctx.Event.Message)
-	} else {
-		return
-	}
+	log.Infof(ctx.Event.Message.String())
+	log.Infof(ctx.Event.RawMessage)
+	getMixAndSend(ctx, ctx.Event.Message)
 }
 
 func getMixAndSend(ctx *zero.Ctx, msg message.Message) {
-	var r1 = face2emoji(msg[0])
-	var r2 = face2emoji(msg[1])
-	log.Debugln("[emojimix] match:", msg)
+	r := ctx.State["emojimix"].([]rune)
+	var r1 = r[0]
+	var r2 = r[1]
+	log.Debugln("<emojimix> match:", msg)
 	u1 := fmt.Sprintf(bed, emojis[r1], r1, r1, r2)
 	u2 := fmt.Sprintf(bed, emojis[r2], r2, r2, r1)
-	log.Debugln("[emojimix] u1:", u1)
-	log.Debugln("[emojimix] u2:", u2)
+	log.Debugln("<emojimix> u1:", u1)
+	log.Debugln("<emojimix> u2:", u2)
 	resp1, err := http.Head(u1)
 	if err == nil {
 		err := resp1.Body.Close()
@@ -75,9 +74,11 @@ func getMixAndSend(ctx *zero.Ctx, msg message.Message) {
 const bed = "https://www.gstatic.com/android/keyboard/emojikitchen/%d/u%x/u%x_u%x.png"
 
 //copy from zeroBot
+//match 判断十分为可以混合的表情 并将emoji索引保存到State
 func match(ctx *zero.Ctx) bool {
-	log.Debugln("[emojimix] msg:", ctx.Event.Message)
-	if len(ctx.Event.Message) == 2 {
+	log.Debugln("<emojimix> msg:", ctx.Event.Message)
+
+	if len(ctx.Event.Message) == 2 { //两个qq表情或者qq emoji混合表情
 		r1 := face2emoji(ctx.Event.Message[0])
 		if _, ok := emojis[r1]; !ok {
 			return false
@@ -91,8 +92,8 @@ func match(ctx *zero.Ctx) bool {
 	}
 
 	r := []rune(ctx.Event.RawMessage)
-	log.Debugln("[emojimix] raw msg:", ctx.Event.RawMessage)
-	if len(r) == 2 {
+	log.Debugln("<emojimix> raw msg:", ctx.Event.RawMessage)
+	if len(r) == 2 { //纯emoji
 		if _, ok := emojis[r[0]]; !ok {
 			return false
 		}
@@ -105,8 +106,10 @@ func match(ctx *zero.Ctx) bool {
 	return false
 }
 
+//获取qq表情 或emoji对应的索引
 func face2emoji(face message.MessageSegment) rune {
 	if face.Type == "face" {
+		log.Debugln("faceId ", face.Data["id"])
 		id, err := strconv.Atoi(face.Data["id"])
 		if err != nil {
 			return 0
@@ -116,10 +119,9 @@ func face2emoji(face message.MessageSegment) rune {
 		}
 	}
 	if face.Type == "text" {
-		var id, _ = utf8.DecodeRuneInString(strings.Split(face.Data["text"], "")[1])
-		if r, ok := qqface[int(id)]; ok {
-			return r
-		}
+		log.Debugln("faceText ", face.Data["text"])
+		var id, _ = utf8.DecodeRuneInString(strings.Split(face.Data["text"], "")[0])
+		return id
 	}
 
 	return 0
