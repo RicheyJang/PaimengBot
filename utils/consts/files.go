@@ -13,6 +13,7 @@ const GenshinDataDir = "./data/genshin"
 const GenshinImageDir = GenshinDataDir + "/img"
 const IdiomsImageDir = DefaultImageDir + "/idioms"
 const DIYDialogueDir = "./data/dialogue"
+const JokesDir = "./data/jokes"
 
 const TempRootDir = "./data/tmp"
 const TempImageDir = TempRootDir + "/img"
