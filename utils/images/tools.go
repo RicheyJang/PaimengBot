@@ -1,11 +1,13 @@
 package images
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"io"
 	"io/ioutil"
 	"math"
+	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
@@ -190,6 +192,37 @@ func GenQQListMsgWithAva(data map[int64]string, w float64, isUser bool) (msg mes
 	if err != nil {
 		log.Warnf("生成图片失败, err: %v", err)
 		return msg, err
+	}
+	return imgMsg, nil
+}
+
+// GenQQRankMsgWithValue 生成默认样式用户排行榜，users中可不填nickname，无需任何其它操作
+func GenQQRankMsgWithValue(title string, users []UserValue, unit string) (msg message.MessageSegment, err error) {
+	defer func() {
+		if err != nil { // 生成图片失败时，生成文字消息
+			log.Warnf("GenQQRankMsgWithValue err: %v", err)
+			str := title + "："
+			for _, user := range users {
+				str += "\n" + fmt.Sprintf("%v：%.2f%s", user.ID, user.Value, unit)
+			}
+			msg = message.Text(str)
+		}
+	}()
+	ctx := utils.GetBotCtx()
+	img := NewImageCtxWithBGColor(730, len(users)*(120)+65, "white")
+	for i, user := range users {
+		if len(user.Nickname) == 0 {
+			userInfo := ctx.GetStrangerInfo(user.ID, false)
+			users[i].Nickname = strings.TrimSpace(userInfo.Get("nickname").String())
+		}
+	}
+	err = img.FillUserRankDefault(title, users, unit)
+	if err != nil {
+		return
+	}
+	imgMsg, err := img.GenMessageAuto()
+	if err != nil {
+		return
 	}
 	return imgMsg, nil
 }

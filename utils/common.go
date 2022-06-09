@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"regexp"
@@ -137,4 +138,19 @@ func SplitOnSpace(x string) []string {
 	}
 	result = append(result, x[pi:])
 	return result
+}
+
+// UInt32ToBytes uint32转换为bytes
+func UInt32ToBytes(n uint32) []byte {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, n)
+	return b
+}
+
+// BytesToUInt32 bytes转换为uint32
+func BytesToUInt32(b []byte) uint32 {
+	for len(b) < 4 {
+		b = append(b, byte(0))
+	}
+	return binary.LittleEndian.Uint32(b)
 }

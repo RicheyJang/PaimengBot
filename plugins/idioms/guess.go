@@ -35,6 +35,7 @@ func init() {
 		return
 	}
 	proxy.OnFullMatch([]string{"猜成语"}).SetBlock(true).SetPriority(9).Handle(guessIdioms)
+	proxy.OnFullMatch([]string{"猜成语排行榜", "猜成语总排行榜"}).SetBlock(true).SetPriority(4).Handle(rankHandler)
 	proxy.AddConfig("localFirst", false) // 优先使用本地词库IdiomsImageDir, 文件名：某个成语.png/jpg
 	_, _ = utils.MakeDir(consts.IdiomsImageDir)
 }
@@ -84,6 +85,7 @@ func guessIdioms(ctx *zero.Ctx) {
 			guess := strings.TrimSpace(e.Message.ExtractPlainText())
 			if guess == key { // 猜对，结束游戏
 				ctx.SendChain(message.At(e.UserID), message.Text("猜对啦"))
+				addSuccess(e.GroupID, e.UserID)
 				return
 			} else if utils.StringSliceContain(cancelMessage, guess) { // 取消，结束游戏
 				ctx.SendChain(message.At(e.UserID), message.Text(fmt.Sprintf("那算啦，其实正确答案是%v哦", key)))
