@@ -31,7 +31,6 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
-	_ "github.com/RicheyJang/PaimengBot/plugins/jokes"
 	_ "github.com/RicheyJang/PaimengBot/plugins/keyword"
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
 	_ "github.com/RicheyJang/PaimengBot/plugins/netease"
