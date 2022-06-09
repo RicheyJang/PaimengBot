@@ -1,4 +1,4 @@
-package hanapi_wyy_comments
+package netease
 
 import (
 	"github.com/RicheyJang/PaimengBot/manager"
