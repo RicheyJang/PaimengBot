@@ -74,7 +74,7 @@ func getMixAndSend(ctx *zero.Ctx, msg message.Message) {
 const bed = "https://www.gstatic.com/android/keyboard/emojikitchen/%d/u%x/u%x_u%x.png"
 
 //copy from zeroBot
-//match 判断十分为可以混合的表情 并将emoji索引保存到State
+//match 判断是否为可以混合的表情 并将emoji索引保存到State
 func match(ctx *zero.Ctx) bool {
 	log.Debugln("<emojimix> msg:", ctx.Event.Message)
 
