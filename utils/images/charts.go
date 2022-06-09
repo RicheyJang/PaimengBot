@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/png"
 	"strconv"
-	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 
@@ -62,9 +61,11 @@ func (img *ImageCtx) FillDonutChartDefault(title string, values []chart.Value) e
 }
 
 type UserValue struct {
-	ID       int64
-	Nickname string
-	Value    float64
+	ID       int64   // QQ号
+	Nickname string  // 昵称
+	Value    float64 // 数值
+
+	FmtPrec int // 展示小数点后几位
 }
 
 // FillUserRankDefault 生成默认用户排名图，图片宽度请设为730，排行高度 = len(users)*(120)+65
@@ -110,10 +111,7 @@ func (img *ImageCtx) FillUserRankDefault(title string, users []UserValue, unit s
 		}
 		// 画线
 		length := user.Value / maxValue
-		value := strconv.FormatFloat(user.Value, 'f', 2, 64)
-		if strings.HasSuffix(value, ".00") {
-			value = value[:len(value)-3]
-		}
+		value := strconv.FormatFloat(user.Value, 'f', user.FmtPrec, 64)
 		value += unit
 		lineY := (float64(avaSize) - lineHeight) / 2.0
 		img.SetHexColor("#74c0fc")
