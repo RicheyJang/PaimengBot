@@ -29,7 +29,7 @@ func init() {
 func getComment(ctx *zero.Ctx) {
 	var c = client.NewHttpClient(nil)
 	json, err := c.GetGJson("https://api.vvhan.com/api/reping")
-	if err != nil || json.Get("success").Bool() {
+	if err != nil || !json.Get("success").Bool() {
 		log.Warnf("reping err: user=%v,url=%v,err=%v", ctx.Event.UserID, err)
 	}
 	ctx.Send(message.Text(json.Get("data").Get("content")))
