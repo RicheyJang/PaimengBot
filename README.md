@@ -35,6 +35,7 @@
 - [x] 复读 (echo)
 - [x] 自检 (inspection)
 - [x] 功能使用统计(可分人分日) (statistic)
+- [x] 网易云评论 (netease)
 - [x] 点歌 (music)
 - [x] 随机\随机数 (random)
 
@@ -52,6 +53,7 @@
 - [x] 搜梗 (geng)
 - [x] 识图搜番 (whatanime)
 - [x] 疫情查询 (COVID)
+- [x] 混合表情 (emoji_mix)
 - [x] 短链接还原 (short_url)
 - [ ] ~~短链接生成~~(防止滥用，暂不提供)
 
