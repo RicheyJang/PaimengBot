@@ -120,6 +120,11 @@ func face2emoji(face message.MessageSegment) rune {
 	}
 	if face.Type == "text" {
 		log.Debugln("faceText ", face.Data["text"])
+		//防止qq表情和一堆emoji也被识别
+		if len([]rune(face.Data["text"])) > 1 {
+			return 0
+		}
+
 		var id, _ = utf8.DecodeRuneInString(strings.Split(face.Data["text"], "")[0])
 		return id
 	}
