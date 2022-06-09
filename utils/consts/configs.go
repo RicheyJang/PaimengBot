@@ -6,6 +6,7 @@ const AlwaysCallKey = "plugins-always-call" // 配置无需onlytome的插件时�
 
 const PluginConfigCDKey = "cd"                 // 配置各插件CD限流时长时，所用的配置项Key
 const PluginConfigAdminLevelKey = "adminlevel" // 配置各插件管理员权限等级时，所用的配置项Key
+const PluginConfigCostKey = "cost"             // 配置各插件花费基础金额数，所用的配置项Key
 
 const APIOfTraceMoeKey = "tracemoe"
 const APIOfHibiAPIKey = "hibiapi"

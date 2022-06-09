@@ -23,14 +23,14 @@ func Unit() string {
 // BaseCoinOf 获取指定用户的基础货币数
 func BaseCoinOf(id int64) float64 {
 	var user dao.UserOwn
-	proxy.GetDB().First(&user, id)
+	proxy.GetDB().Find(&user, id)
 	return user.Wealth
 }
 
 // FavorOf 获取指定用户的好感度
 func FavorOf(id int64) float64 {
 	var user dao.UserOwn
-	proxy.GetDB().First(&user, id)
+	proxy.GetDB().Find(&user, id)
 	return user.Favor
 }
 
@@ -56,19 +56,27 @@ func AddFavor(id int64, add float64) (left float64, ok bool) {
 	}
 	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
 		var user dao.UserOwn
-		err := tx.First(&user, id).Error
-		if err != nil {
-			return err
+		res := tx.Find(&user, id)
+		if res.Error != nil {
+			return res.Error
 		}
 		// 检查是否会变为负数
 		left = user.Favor
 		if left+add < 0 {
 			return nil
 		}
-		// 更新
 		left += add
-		err = tx.Model(&dao.UserOwn{ID: id}).Update("favor", left).Error
-		if err != nil {
+		// 若不存在，则创建
+		if res.RowsAffected == 0 {
+			if err := tx.Create(&dao.UserOwn{ID: id, Favor: left}).Error; err != nil {
+				left = 0
+				return err
+			}
+			ok = true
+			return nil
+		}
+		// 更新
+		if err := tx.Model(&dao.UserOwn{ID: id}).Update("favor", left).Error; err != nil {
 			left = user.Favor
 			return err
 		}
@@ -88,19 +96,27 @@ func AddBaseCoin(id int64, add float64) (left float64, ok bool) {
 	}
 	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
 		var user dao.UserOwn
-		err := tx.First(&user, id).Error
-		if err != nil {
-			return err
+		res := tx.Find(&user, id)
+		if res.Error != nil {
+			return res.Error
 		}
 		// 检查是否会变为负数
 		left = user.Wealth
 		if left+add < 0 {
 			return nil
 		}
-		// 更新
 		left += add
-		err = tx.Model(&dao.UserOwn{ID: id}).Update("wealth", left).Error
-		if err != nil {
+		// 若不存在，则创建
+		if res.RowsAffected == 0 {
+			if err := tx.Create(&dao.UserOwn{ID: id, Wealth: left}).Error; err != nil {
+				left = 0
+				return err
+			}
+			ok = true
+			return nil
+		}
+		// 更新
+		if err := tx.Model(&dao.UserOwn{ID: id}).Update("wealth", left).Error; err != nil {
 			left = user.Favor
 			return err
 		}
