@@ -1,6 +1,8 @@
 package idioms
 
 import (
+	"strings"
+
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 	log "github.com/sirupsen/logrus"
@@ -30,6 +32,33 @@ func rankHandler(ctx *zero.Ctx) {
 		})
 	}
 	msg, _ := images.GenQQRankMsgWithValue("猜成语总排行榜", values, "个")
+	ctx.Send(msg)
+}
+
+func groupRankHandler(ctx *zero.Ctx) {
+	// 查询
+	var users []GuessIdiomsModel
+	if err := proxy.GetDB().Model(&GuessIdiomsModel{}).Where("group_id = ?", ctx.Event.GroupID).
+		Order("success desc").Limit(10).Find(&users).Error; err != nil {
+		log.Errorf("查询失败：%v", err)
+		ctx.Send("失败了...")
+		return
+	}
+	if len(users) == 0 {
+		ctx.Send("本群暂时没人猜对过成语")
+		return
+	}
+	// 画图
+	var values []images.UserValue
+	for _, user := range users {
+		userInfo := ctx.GetGroupMemberInfo(ctx.Event.GroupID, user.ID, false)
+		values = append(values, images.UserValue{
+			ID:       user.ID,
+			Nickname: strings.TrimSpace(userInfo.Get("card").String()),
+			Value:    float64(user.Success),
+		})
+	}
+	msg, _ := images.GenQQRankMsgWithValue("猜成语本群排行榜", values, "个")
 	ctx.Send(msg)
 }
 

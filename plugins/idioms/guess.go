@@ -21,7 +21,10 @@ var info = manager.PluginInfo{
 	Name: "猜成语",
 	Usage: `用法：
 	猜成语：扔给你一张图片，猜出来是什么成语吧
-	猜不出来的话，发送"算了"或"不知道"结束游戏`,
+	猜不出来的话，发送"算了"或"不知道"结束游戏
+	
+	猜成语排行榜：按成功猜出成语个数排名的用户总排行榜
+	猜成语群排行榜：按成功猜出成语个数排名的本群排行榜`,
 	SuperUsage: `
 config-plugin文件配置项：
 	idioms.localfirst: 是(true)否(false)优先使用本地成语图片，图片放于data/img/idioms目录即可，文件名为答案`,
@@ -36,6 +39,7 @@ func init() {
 	}
 	proxy.OnFullMatch([]string{"猜成语"}).SetBlock(true).SetPriority(9).Handle(guessIdioms)
 	proxy.OnFullMatch([]string{"猜成语排行榜", "猜成语总排行榜"}).SetBlock(true).SetPriority(4).Handle(rankHandler)
+	proxy.OnFullMatch([]string{"猜成语群排行榜"}, zero.OnlyGroup).SetBlock(true).SetPriority(4).Handle(groupRankHandler)
 	proxy.AddConfig("localFirst", false) // 优先使用本地词库IdiomsImageDir, 文件名：某个成语.png/jpg
 	_, _ = utils.MakeDir(consts.IdiomsImageDir)
 }
