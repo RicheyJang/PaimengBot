@@ -105,9 +105,12 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	for i, num = 0, 0; i < len(d.pics) && num < d.num; i++ {
 		msg, err := d.pics[i].GenSinglePicMsg() // 生成图片消息
 		if err == nil {                         // 成功
-			ctx.Send(msg)
+			msgID := ctx.Send(msg)
 			log.Infof("发送Pixiv图片成功 pid=%v, 来源：%v", d.pics[i].PID, d.pics[i].Src)
 			num += 1
+			if utils.IsMessageGroup(ctx) { // 群消息，需要处理撤回
+				dealWithdraw(msgID)
+			}
 		} else { // 失败
 			log.Infof("生成Pixiv消息失败 url=%v, 来源=%v, err=%v", d.pics[i].URL, d.pics[i].Src, err)
 		}
@@ -115,6 +118,26 @@ func (d *downloader) send(ctx *zero.Ctx) {
 	if num == 0 {
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text("失败了..."))
 	}
+}
+
+// 处理图片消息的撤回
+func dealWithdraw(msgID int64) {
+	withdraw := proxy.GetConfigString("withdraw")
+	if len(withdraw) == 0 || withdraw == "0" {
+		return
+	}
+	period, err := time.ParseDuration(withdraw)
+	if err != nil {
+		log.Warnf("撤回时长配置项格式错误：%v", err)
+		return
+	}
+	if period < 2*time.Second { // 至少两秒
+		period = 2 * time.Second
+	}
+	_, _ = proxy.AddScheduleOnceFunc(period, func() {
+		ctx := utils.GetBotCtx()
+		ctx.DeleteMessage(msgID)
+	})
 }
 
 // CheckNoSESE 不可以涩涩检查，为true时才可以进行下一步
