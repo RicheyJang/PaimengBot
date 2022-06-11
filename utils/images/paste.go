@@ -42,6 +42,24 @@ func (img *ImageCtx) PasteRectangle(x, y, w, h float64, colorStr string) {
 	img.Fill()
 }
 
+// PasteCircle 画圆
+func (img *ImageCtx) PasteCircle(x, y, r float64, colorStr string) {
+	img.Push()
+	defer img.Pop()
+	img.SetColorAuto(colorStr)
+	img.DrawCircle(x, y, r)
+	img.Fill()
+}
+
+// PasteRoundedRectangle 画圆角矩形
+func (img *ImageCtx) PasteRoundedRectangle(x, y, w, h, r float64, colorStr string) {
+	img.Push()
+	defer img.Pop()
+	img.SetColorAuto(colorStr)
+	img.DrawRoundedRectangle(x, y, w, h, r)
+	img.Fill()
+}
+
 type Point struct {
 	X, Y float64
 }
