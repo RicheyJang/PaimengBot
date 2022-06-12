@@ -25,8 +25,6 @@ var info = manager.PluginInfo{
 	`,
 }
 
-//   /api/get_user_recent
-
 var proxy *manager.PluginProxy // 声明插件代理变量
 
 func init() {
@@ -82,10 +80,6 @@ func RecentPlay(ctx *zero.Ctx) {
 		//recent.Count50 = Recentplay[0]["count50"]
 		//recent.CountMiss = Recentplay[0]["countmiss"]
 		recent.Date = Recentplay[0]["date"]
-
-		//comma := strings.Index(recent.Date, " ")
-
-		//recent.Date = recent.Date[:comma]
 
 		Image, _ := ToImageRecent(recent, Model, UserInfo.OSUid)
 
@@ -148,38 +142,3 @@ func ToImageRecent(recent Recent, Model string, OsuId string) (message.MessageSe
 	return dc.GenMessageAuto()
 
 }
-
-/*[
-	{
-		"beatmap_id":"1480628",
-
-		"score":"681257",
-
-		"maxcombo":"353",
-
-		"count50":"1",
-
-		"count100":"23",
-
-		"count300":"385",
-
-		"countmiss":"17",
-
-		"countkatu":"129",
-
-		"countgeki":"436",
-
-		"perfect":"0",
-
-		"enabled_mods":"0",
-
-		"user_id":"18141351",
-
-		"date":"2022-06-11 07:11:21",
-
-		"rank":"A",
-
-		"score_id":"496087202"
-	}
-]
-*/

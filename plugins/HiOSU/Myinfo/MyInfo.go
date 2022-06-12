@@ -146,36 +146,3 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { ////
 
 	return dc.GenMessageAuto()
 }
-
-/*[
-  	{
-  		"user_id":"18141351",  //数字ID  0
-  		"username":"DUNKEL233",   //名称 1
-  		"join_date":"2020-08-17 23:02:42",  //加入时间  2
-
-  		"count300":"167210",  3
-  		"count100":"52889",  4
-  		"count50":"1676",  5
-
-  		"playcount":"392",  6
-  		"ranked_score":"62309556",// 所有Ranked，Approved，Loved谱面中的最高分计数  7
-  		"total_score":"130903735",  8
-
-  		"pp_rank":"180525",//国际PP排名  9
-  		"level":"27.2272",  10
-  		"pp_raw":"822.3",  11
-  		"accuracy":"93.36895751953125",  12
-
-  		"count_rank_ss":"0",  // 获得的SS S A的歌曲数目  13
-  		"count_rank_ssh":"0",  14
-  		"count_rank_s":"8",  15
-  		"count_rank_sh":"0",  16
-  		"count_rank_a":"44",  17
-
-  		"country":"CN",  //国家   18
-  		"total_seconds_played":"30243",  19
-  		"pp_country_rank":"8427", // 国内的PP排名  20
-  		"events":[]
-  	}
-  ]
-*/
