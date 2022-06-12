@@ -17,8 +17,8 @@ import (
 var info = manager.PluginInfo{
 	Name: "OSU账号绑定",
 	Usage: `
-		"账号绑定OSU [ID] : 
-			绑定OSU账号,后面输入自己的纯数字ID或者你的OSU用户名,不填则取消绑定"
+		账号绑定OSU [ID] : 
+			绑定OSU账号,后面输入自己的纯数字ID或者你的OSU用户名,不填则取消绑定
 		OSU账号查看 :
 				查看该账号绑定的ID
 	`,

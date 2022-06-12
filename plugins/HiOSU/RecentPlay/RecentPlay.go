@@ -113,7 +113,7 @@ func ToImageRecent(recent Recent, Model string, OsuId string) (message.MessageSe
 	var dc = images.NewImageCtx(int(windth), int(height))
 
 	dc.SetHexColor("#FFFFF0") // 设置画笔颜色为绿色
-	dc.Clear()                // 使用当前颜色（绿）填满画布，即设置背景色
+	dc.Clear()                // 使用当前颜色象牙白填满画布，即设置背景色
 
 	if err := dc.LoadFontFace("./ttf/zh-cn.ttf", 30); err != nil { // 从本地加载字体文件
 		panic(err)

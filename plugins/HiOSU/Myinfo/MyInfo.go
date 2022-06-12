@@ -73,7 +73,7 @@ func MineInfo(ctx *zero.Ctx) {
 		} else {
 
 			//去除时间后面的小时,分钟,秒
-			//2020-08-17 23:02:42 ---->  2020-08-17
+			//2020-08-17 23:02:42 --->  2020-08-17
 			comma := strings.Index(USER.JoinDate, " ")
 
 			USER.JoinDate = USER.JoinDate[:comma]
