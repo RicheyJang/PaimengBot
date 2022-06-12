@@ -30,6 +30,8 @@ var info = manager.PluginInfo{
 	b站全部订阅：（仅限私聊）展示所有用户、所有群的订阅
 	b站取消订阅 [订阅ID] [QQ号]：取消指定用户的指定订阅；若QQ号为0，则取消该订阅ID下的所有订阅
 	b站取消订阅 [订阅ID] 群[群号]：取消指定群的指定订阅
+	b站cookie [你的b站cookie]：（仅限私聊）设置一个全局Cookie，全部cookie或仅SESSDATA皆可
+即使不设置全局cookie，上述所有功能也可以正常使用，但设置后可以减小被b站限流的可能性；获取方法请自行百度
 config-plugin配置项：
 	bilibili.maxsearch: 最大搜索结果条数
 	bilibili.group: 搜索结果以多少条为一组进行发送
@@ -51,6 +53,8 @@ func init() {
 	proxy.OnCommands([]string{"b站取消订阅"}).SetBlock(true).SetPriority(3).Handle(unsubscribeHandler)
 	proxy.OnFullMatch([]string{"b站全部订阅"}, zero.SuperUserPermission, zero.OnlyPrivate).
 		SetBlock(true).SetPriority(3).Handle(allSubscribeHandler)
+	proxy.OnCommands([]string{"b站cookie"}, zero.SuperUserPermission, zero.OnlyPrivate).
+		SetBlock(true).SetPriority(3).Handle(cookieHandler)
 	proxy.AddConfig("maxsearch", 8)
 	proxy.AddConfig("group", 4)
 	proxy.AddConfig("link", true)
@@ -62,6 +66,10 @@ func init() {
 	SetAPIDefault("user.info", "https://api.bilibili.com/x/space/acc/info")
 	SetAPIDefault("user.dynamic", "https://api.vc.bilibili.com/dynamic_svr/v1/dynamic_svr/space_history")
 	SetAPIDefault("live.info", "https://api.live.bilibili.com/xlive/web-room/v1/index/getInfoByRoom")
+	// 初始化
+	if cookie, err := proxy.GetLevelDB().Get([]byte("bilibili.cookie.global"), nil); err == nil && len(cookie) > 0 {
+		SetGlobalCookie(string(cookie))
+	}
 	if len(AllSubscription()) > 0 {
 		startPolling()
 	}
@@ -209,6 +217,34 @@ func unsubscribeHandler(ctx *zero.Ctx) {
 		ctx.Send("失败了...")
 		return
 	}
+	ctx.Send("好哒")
+}
+
+// 设置全局cookie处理
+func cookieHandler(ctx *zero.Ctx) {
+	arg := strings.TrimSpace(utils.GetArgs(ctx))
+	if len(arg) > 0 { // 测试cookie可用性
+		c := NewClient()
+		c.SetCookie(regularBilibiliCookie(arg))
+		res, err := c.GetGJson("https://api.bilibili.com/x/space/upstat?mid=456664753")
+		if err != nil {
+			log.Errorf("check error: %v", err)
+			ctx.Send("失败了...")
+			return
+		}
+		if res.Get("code").Int() != 0 || !res.Get("data.likes").Exists() {
+			log.Errorf("check response code=%d, message=%s", res.Get("code").Int(), res.Get("message").String())
+			ctx.Send("此cookie无效")
+			return
+		}
+	}
+	// 设置
+	if err := proxy.GetLevelDB().Put([]byte("bilibili.cookie.global"), []byte(arg), nil); err != nil {
+		log.Errorf("leveldb save error: %v", err)
+		ctx.Send("失败了...")
+		return
+	}
+	SetGlobalCookie(arg)
 	ctx.Send("好哒")
 }
 

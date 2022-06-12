@@ -13,6 +13,7 @@ import (
 )
 
 var apiMap = make(map[string]string)
+var globalCookie string
 
 // SetAPIDefault 设置默认API地址
 func SetAPIDefault(api string, value string) {
@@ -22,6 +23,25 @@ func SetAPIDefault(api string, value string) {
 // GetAPI 获取API地址
 func GetAPI(api string) (url string) {
 	return apiMap[api]
+}
+
+// SetGlobalCookie 设置全局cookie
+func SetGlobalCookie(cookie string) {
+	if len(cookie) == 0 {
+		return
+	}
+	globalCookie = regularBilibiliCookie(cookie)
+}
+
+func regularBilibiliCookie(cookie string) string {
+	if !strings.ContainsRune(cookie, '=') { // 无=，大概率为一个SESSDATA
+		if strings.ContainsRune(cookie, ';') { // 去除无用的;或空格
+			cookie = strings.ReplaceAll(cookie, ";", "")
+			cookie = strings.TrimSpace(cookie)
+		}
+		cookie = "SESSDATA=" + cookie
+	}
+	return cookie
 }
 
 // 一些预定义
@@ -127,9 +147,17 @@ func NewClient() *Client {
 	c := client.NewHttpClient(nil)
 	c.SetUserAgent()
 	c.SetHeader("Referer", "https://www.bilibili.com/")
-	return &Client{
+	cli := &Client{
 		HttpClient: c,
 	}
+	if len(globalCookie) > 0 {
+		cli.SetCookie(globalCookie)
+	}
+	return cli
+}
+
+func (c *Client) SetCookie(cookie string) {
+	c.SetHeader("Cookie", cookie)
 }
 
 // Search Bilibili搜索相关
@@ -138,7 +166,11 @@ type Search struct {
 }
 
 func NewSearch() *Search {
-	return &Search{c: NewClient()}
+	return NewClient().NewSearch()
+}
+
+func (c *Client) NewSearch() *Search {
+	return &Search{c: c}
 }
 
 func (s *Search) Type(searchType string, keyword string, additionalKV ...string) (gjson.Result, error) {
@@ -233,7 +265,11 @@ type Bangumi struct {
 }
 
 func NewBangumi() *Bangumi {
-	return &Bangumi{c: NewClient()}
+	return NewClient().NewBangumi()
+}
+
+func (c *Client) NewBangumi() *Bangumi {
+	return &Bangumi{c: c}
 }
 
 func (b *Bangumi) ByMDID(mediaID int64) (BangumiLatestInfo, error) {
@@ -274,7 +310,11 @@ type User struct {
 }
 
 func NewUser(ID int64) *User {
-	return &User{c: NewClient(), id: ID}
+	return NewClient().NewUser(ID)
+}
+
+func (c *Client) NewUser(ID int64) *User {
+	return &User{c: c, id: ID}
 }
 
 func (u *User) Info() (UserInfo, error) {
@@ -359,10 +399,11 @@ type LiveRoom struct {
 }
 
 func NewLiveRoom(id int64) *LiveRoom {
-	return &LiveRoom{
-		c:  NewClient(),
-		id: id,
-	}
+	return NewClient().NewLiveRoom(id)
+}
+
+func (c *Client) NewLiveRoom(id int64) *LiveRoom {
+	return &LiveRoom{c: c, id: id}
 }
 
 func (l *LiveRoom) Info() (LiveRoomInfo, error) {
