@@ -33,8 +33,8 @@ func init() {
 		return // 若初始化失败，请return，失败原因会在日志中打印
 	}
 
-	proxy.OnCommands([]string{"账号绑定OSU", "账号绑定osu", "账号绑定Osu"}).SetBlock(true).Handle(GetOSUid) //绑定账号
-	proxy.OnCommands([]string{"OSU账号查看"}).SetBlock(true).Handle(ReferOSUid)                     //账号查看
+	proxy.OnCommands([]string{"账号绑定OSU", "账号绑定osu", "账号绑定Osu", "账号绑定OSu"}).SetBlock(true).Handle(GetOSUid) //绑定账号
+	proxy.OnCommands([]string{"OSU账号查看", "账号查看"}).SetBlock(true).Handle(ReferOSUid)                        //账号查看
 
 }
 
