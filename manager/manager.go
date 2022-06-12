@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -29,6 +30,22 @@ import (
 type PluginHook func(condition *PluginCondition, ctx *zero.Ctx) error
 type FileHook func(event fsnotify.Event) error
 
+// HookMatcher Hook匹配器
+type HookMatcher struct {
+	m        *PluginManager
+	fn       PluginHook
+	priority int
+}
+
+// SetPriority 设置Hook的优先级
+func (hm *HookMatcher) SetPriority(p int) *HookMatcher {
+	hm.m.hookMX.Lock()
+	defer hm.m.hookMX.Unlock()
+	hm.priority = p
+	hm.m.sortHooks()
+	return hm
+}
+
 // PluginManager 插件管理器结构
 type PluginManager struct {
 	engine   *zero.Engine // zeroBot引擎
@@ -39,8 +56,9 @@ type PluginManager struct {
 	configMX sync.Mutex   // 配置更新时互斥锁
 
 	plugins     map[string]*PluginProxy // plugin.key -> pluginContext
-	preHooks    []PluginHook            // 插件Pre Hook
-	postHooks   []PluginHook            // 插件Post Hook
+	preHooks    []*HookMatcher          // 插件Pre Hook
+	postHooks   []*HookMatcher          // 插件Post Hook
+	hookMX      sync.Mutex              // 添加或修改插件Hook时的互斥锁（与Hook执行无关）
 	configHooks []FileHook              // 配置文件更改 Hook
 }
 
@@ -246,13 +264,31 @@ func (manager *PluginManager) GetPluginConditionByKey(key string) *PluginConditi
 }
 
 // AddPreHook 添加前置hook
-func (manager *PluginManager) AddPreHook(hook ...PluginHook) {
-	manager.preHooks = append(manager.preHooks, hook...)
+func (manager *PluginManager) AddPreHook(hook PluginHook) *HookMatcher {
+	manager.hookMX.Lock()
+	defer manager.hookMX.Unlock()
+	matcher := &HookMatcher{
+		m:        manager,
+		fn:       hook,
+		priority: 1,
+	}
+	manager.preHooks = append(manager.preHooks, matcher)
+	manager.sortHooks()
+	return matcher
 }
 
 // AddPostHook 添加后置hook
-func (manager *PluginManager) AddPostHook(hook ...PluginHook) {
-	manager.postHooks = append(manager.postHooks, hook...)
+func (manager *PluginManager) AddPostHook(hook PluginHook) *HookMatcher {
+	manager.hookMX.Lock()
+	defer manager.hookMX.Unlock()
+	matcher := &HookMatcher{
+		m:        manager,
+		fn:       hook,
+		priority: 1,
+	}
+	manager.postHooks = append(manager.postHooks, matcher)
+	manager.sortHooks()
+	return matcher
 }
 
 // WhenConfigFileChange 添加配置文件变更时的hook
@@ -306,7 +342,7 @@ func (manager *PluginManager) preHandlerWithHook(ctx *zero.Ctx) bool {
 	log.Infof("[Start] 事件即将被 <%s> 插件处理", proxy.key)
 	// 调用所有前置hook
 	for _, hook := range manager.preHooks {
-		err := hook(&proxy.c, ctx)
+		err := hook.fn(&proxy.c, ctx)
 		if err != nil {
 			log.Infof("[End] <%s> 插件处理被 pre hook 取消，原因: %v", proxy.key, err)
 			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
@@ -331,7 +367,7 @@ func (manager *PluginManager) postHandlerWithHook(ctx *zero.Ctx) {
 	log.Infof("[End] 事件被 <%s> 插件处理完毕\n", proxy.key)
 	// 调用所有后置hook
 	for _, hook := range manager.postHooks {
-		err := hook(&proxy.c, ctx)
+		err := hook.fn(&proxy.c, ctx)
 		if err != nil {
 			log.Infof("[Tip] other matchers has been blocked by post hook reason: %v", err)
 			panic(consts.AbortLogIgnoreSymbol + err.Error()) // TODO 由于暂时没有Abort机制，只能使用panic来阻断执行
@@ -353,4 +389,14 @@ func (manager *PluginManager) getConfig(prefix string, key string) interface{} {
 		key = fmt.Sprintf("%s.%s", prefix, key)
 	}
 	return manager.configs.Get(key)
+}
+
+// 将Hook进行排序
+func (manager *PluginManager) sortHooks() {
+	sort.SliceStable(manager.preHooks, func(i, j int) bool { // 按优先级排序
+		return manager.preHooks[i].priority < manager.preHooks[j].priority
+	})
+	sort.SliceStable(manager.postHooks, func(i, j int) bool { // 按优先级排序
+		return manager.postHooks[i].priority < manager.postHooks[j].priority
+	})
 }

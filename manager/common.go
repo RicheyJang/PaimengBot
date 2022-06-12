@@ -82,13 +82,13 @@ func GetPluginConditionByKey(key string) *PluginCondition {
 }
 
 // AddPreHook 添加前置hook
-func AddPreHook(hook ...PluginHook) {
-	defaultManager.AddPreHook(hook...)
+func AddPreHook(hook PluginHook) *HookMatcher {
+	return defaultManager.AddPreHook(hook)
 }
 
 // AddPostHook 添加后置hook
-func AddPostHook(hook ...PluginHook) {
-	defaultManager.AddPostHook(hook...)
+func AddPostHook(hook PluginHook) *HookMatcher {
+	return defaultManager.AddPostHook(hook)
 }
 
 // WhenConfigFileChange 增加配置文件变更时的处理函数

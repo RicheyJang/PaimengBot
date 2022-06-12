@@ -61,7 +61,7 @@ func init() {
 	proxy.OnFullMatch([]string{"好感度排行", "财富排行", "好感度排行榜", "财富排行榜"}).SetBlock(true).ThirdPriority().Handle(rankHandler)
 	proxy.OnCommands([]string{"设置好感度", "设置财富"}, zero.SuperUserPermission).SetBlock(true).ThirdPriority().Handle(setHandler)
 	proxy.OnCommands([]string{"增加好感度", "增加财富"}, zero.SuperUserPermission).SetBlock(true).ThirdPriority().Handle(addHandler)
-	manager.AddPreHook(costHook)
+	manager.AddPreHook(costHook).SetPriority(10)
 	proxy.AddConfig("onlygroup", true)
 	proxy.AddConfig("coin.unit", "原石")
 	proxy.AddConfig("coin.rate", 80)
