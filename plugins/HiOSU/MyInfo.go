@@ -23,6 +23,11 @@ type User struct {
 }
 
 func MineInfoHandler(ctx *zero.Ctx) {
+	key := proxy.GetConfigString("key")
+	if len(key) == 0 {
+		ctx.Send("管理员尚未配置API KEY，快去催他！")
+		return
+	}
 	//查询数据表中用户绑定信息
 	OSUid := GetOsuid(ctx.Event.UserID)
 	if len(OSUid) == 0 {
@@ -37,7 +42,7 @@ func MineInfoHandler(ctx *zero.Ctx) {
 	Model := GetModel(model)
 
 	//OSU获取用户资料API,其中 k 是 API的key , u 是 查询用户的纯数字ID 或者  ID ， model 是 查询的模式
-	OsuAPI := "https://osu.ppy.sh/api/get_user?k=51b88dd53687332618935b74d5a3bf22c8326826&u=" + OSUid + "&m=" + model
+	OsuAPI := "https://osu.ppy.sh/api/get_user?k=" + key + "&u=" + OSUid + "&m=" + model
 	USER, err := GetMyInfo(OsuAPI)
 	if err != nil {
 		log.Errorf("GetMyInfo err: %v", err)

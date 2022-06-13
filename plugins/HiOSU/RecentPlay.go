@@ -27,6 +27,11 @@ type Recent struct {
 }
 
 func RecentPlayHandler(ctx *zero.Ctx) {
+	key := proxy.GetConfigString("key")
+	if len(key) == 0 {
+		ctx.Send("管理员尚未配置API KEY，快去催他！")
+		return
+	}
 	//查询数据表中用户绑定信息
 	OSUid := GetOsuid(ctx.Event.UserID)
 	if len(OSUid) == 0 {
@@ -41,7 +46,7 @@ func RecentPlayHandler(ctx *zero.Ctx) {
 	Model := GetModel(model) //获取游玩模式
 
 	//获取最近游玩成绩API + 其中 k 是 API的key , u 是 查询用户的纯数字ID 或者  ID ， model 是 查询的模式 , limit 是返回的成绩个数
-	OsuAPI := "https://osu.ppy.sh/api/get_user_recent?k=51b88dd53687332618935b74d5a3bf22c8326826&u=" + OSUid + "&m=" + model + "&limit=1"
+	OsuAPI := "https://osu.ppy.sh/api/get_user_recent?k=" + key + "&u=" + OSUid + "&m=" + model + "&limit=1"
 	recent, err := GetRecentPlay(OsuAPI)
 	if err != nil {
 		ctx.Send("最近没有玩过" + Model + "这个模式哦")
