@@ -3,7 +3,10 @@ package HiOSU
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/fogleman/gg"
+	"io"
 	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
@@ -20,6 +23,8 @@ type User struct {
 	Country     string `json:"country"`         //国家   18
 	GlobalRank  string `json:"pp_rank"`         //国际PP排名  9
 	CountryRank string `json:"pp_country_rank"` // 国内的PP排名  20
+	PP          string `json:"pp_raw"`          //PP总数
+	Accuracy    string `json:"accuracy"`        //准确率
 }
 
 func MineInfoHandler(ctx *zero.Ctx) {
@@ -57,7 +62,8 @@ func MineInfoHandler(ctx *zero.Ctx) {
 		//2020-08-17 23:02:42 --->  2020-08-17
 		comma := strings.Index(USER.JoinDate, " ")
 		USER.JoinDate = USER.JoinDate[:comma]
-		ctx.Send(ToImageUser(USER, Model))
+		Image, _ := ToImageUser(USER, Model)
+		ctx.Send(Image)
 	}
 }
 
@@ -68,7 +74,12 @@ func GetMyInfo(API string) (User, error) {
 	if err != nil {
 		return User{}, err
 	}
-	defer r.Close()
+	defer func(r io.ReadCloser) {
+		err := r.Close()
+		if err != nil {
+			return
+		}
+	}(r)
 	// 解析
 	d := json.NewDecoder(r)
 	var users []User
@@ -94,13 +105,63 @@ func GetModel(ModelNumber string) string {
 	}
 }
 
-func ToImageUser(user User, Model string) message.MessageSegment { //生成图片(需要修改)
-	str := "用户名: " + user.UserName +
-		"\nID: " + user.UserID +
-		"\n模式: " + Model +
-		"\n注册时间: " + user.JoinDate +
-		"\n国内排名: " + user.CountryRank +
-		"\n国际排名: " + user.GlobalRank +
-		"\n国家/地区:" + user.Country
-	return images.GenStringMsg(str)
+func ToImageUser(user User, Model string) (message.MessageSegment, error) { //生成图片(需要修改)
+	width := float64(465)
+	height := float64(240)
+	var dc = images.NewImageCtx(int(width), int(height))
+
+	Image, _ := gg.LoadImage("./data/img/HiOSU/Logo/Logo_96x97.png") //OSU图标路径
+	ModelImage, _ := gg.LoadImage("./modes/mania_20x20.png")
+
+	dc.SetHexColor("#000000") // 设置画笔颜色为绿色
+	dc.Clear()                // 使用当前颜色（绿）填满画布，即设置背景色
+
+	err := dc.LoadFontFace("./ttf/zh-cn.ttf", 20)
+	if err != nil {
+		return message.MessageSegment{}, err
+	}
+	dc.SetRGB(1, 1, 1) // 设置画笔颜色为黑色
+
+	dc.DrawImage(Image, 10, 10) //贴OSU图标
+
+	dc.DrawString("Country :"+user.Country, 130, 40)
+	err = dc.LoadFontFace("./ttf/zh-cn.ttf", 40) //字体设置大一些
+	if err != nil {
+		return message.MessageSegment{}, err
+	}
+	dc.DrawString(user.UserName, 130, 80) //显示UserName
+	err = dc.LoadFontFace("./ttf/zh-cn.ttf", 20)
+	if err != nil {
+		return message.MessageSegment{}, err
+	}
+	dc.DrawString("Join Date: "+user.JoinDate, 130, 100)
+	dc.DrawString("-----------------------------------------------", 0, 123)
+	switch Model {
+
+	case "Osu!Mania":
+		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/mania_20x20.png") //各种模式的图片
+	case "Taiko":
+		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/taiko_20x20.png")
+	case "CtB":
+		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/catch_20x20.png")
+	default:
+		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/std_20x20.png")
+
+	}
+
+	dc.DrawImage(ModelImage, 10, 130)
+	dc.DrawString(Model, 35, 147)
+	UpdateTime := time.Now().String()
+	comma := strings.Index(UpdateTime, " ")
+	UpdateTime = UpdateTime[:comma]
+	dc.DrawString("Update Time :"+UpdateTime, 190, 147)
+	dc.DrawString("Global Rank :", 10, 170)
+	dc.DrawString("Country Rank  :", 190, 170)
+	dc.DrawString("#"+user.GlobalRank, 100, 200)
+	dc.DrawString("#"+user.CountryRank, 320, 200)
+	dc.DrawString("PP: "+user.PP, 10, 230)
+	user.Accuracy = user.Accuracy[:5] //准确度保留后两位
+	dc.DrawString("Accuracy: "+user.Accuracy+"%", 190, 230)
+
+	return dc.GenMessageAuto()
 }

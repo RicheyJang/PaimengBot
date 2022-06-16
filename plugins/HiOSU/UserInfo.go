@@ -13,8 +13,6 @@ import (
 	zero "github.com/wdvxdr1123/ZeroBot"
 )
 
-// var OSUid string //全局变量OSU id
-
 func BindOSUidHandler(ctx *zero.Ctx) {
 	OSUid := strings.TrimSpace(utils.GetArgs(ctx))
 	if err := PutOsuID(ctx.Event.UserID, OSUid); err != nil { //有报错返回写入日志
