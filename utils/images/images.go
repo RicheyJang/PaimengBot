@@ -33,15 +33,6 @@ type ImageCtx struct {
 	*gg.Context
 }
 
-// NewImageCtxWithBGPath 以背景图片路径创建带有背景图片的图片上下文
-func NewImageCtxWithBGPath(w, h int, bgPath string, opacity float64) (*ImageCtx, error) {
-	bg, err := gg.LoadImage(bgPath)
-	if err != nil {
-		return nil, err
-	}
-	return NewImageCtxWithBG(w, h, bg, opacity), nil
-}
-
 // NewImageCtxWithBG 创建带有背景图片的图片上下文，通过opacity设置不透明度
 func NewImageCtxWithBG(w, h int, bg image.Image, opacity float64) *ImageCtx {
 	if opacity > 0 && opacity < 1 {

@@ -1,6 +1,8 @@
 package manager
 
 import (
+	"io/fs"
+
 	"github.com/RicheyJang/PaimengBot"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -99,4 +101,14 @@ func WhenConfigFileChange(hook ...FileHook) {
 // GetDB 获取数据库
 func GetDB() *gorm.DB {
 	return defaultManager.GetDB()
+}
+
+// GetStaticFile 获取指定静态文件
+func GetStaticFile(name string) (fs.File, error) {
+	return PaimengBot.GetStaticFS().Open("static/" + name)
+}
+
+// ReadStaticFile 读取指定静态文件
+func ReadStaticFile(name string) ([]byte, error) {
+	return PaimengBot.GetStaticFS().ReadFile("static/" + name)
 }
