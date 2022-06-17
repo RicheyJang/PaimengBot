@@ -30,6 +30,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/emoji_mix"
 	_ "github.com/RicheyJang/PaimengBot/plugins/geng"
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin"
+	_ "github.com/RicheyJang/PaimengBot/plugins/github"
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
 	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
