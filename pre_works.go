@@ -1,6 +1,7 @@
 package PaimengBot
 
 import (
+	"embed"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -73,6 +74,14 @@ func DoPreWorks() {
 	}
 	// 检查是否以服务模式启动
 	CheckDaemon()
+}
+
+//go:embed static
+var staticFiles embed.FS
+
+// GetStaticFS 获取静态资源文件对象
+func GetStaticFS() embed.FS {
+	return staticFiles
 }
 
 // 尝试修正当前路径
