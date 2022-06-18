@@ -3,7 +3,8 @@ package HiOSU
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/fogleman/gg"
+	"github.com/RicheyJang/PaimengBot/manager"
+	"image"
 	"io"
 	"strings"
 	"time"
@@ -108,21 +109,51 @@ func GetModel(ModelNumber string) string {
 func ToImageUser(user User, Model string) (message.MessageSegment, error) { //生成图片(需要修改)
 	width := float64(465)
 	height := float64(240)
-	var dc = images.NewImageCtx(int(width), int(height))
+	var dc = images.NewImageCtx(int(width), int(height)) //生成图片大小
 
-	Image, _ := gg.LoadImage("./data/img/HiOSU/Logo/Logo_96x97.png") //OSU图标路径
-	ModelImage, _ := gg.LoadImage("./modes/mania_20x20.png")
+	LogoFile, err := manager.GetStaticFile("HiOSU/Logo/Logo_96x97.png") //读取OSU图标
+	if err != nil {
+		log.Errorf("get HiOSU Logo.png error: %v", err)
+		return message.MessageSegment{}, nil
+	}
+	LogoImage, _, err := image.Decode(LogoFile) // 解码为image.Image
+	if err != nil {
+		log.Errorf("Decode HiOSU Logo.png error: %v", err)
+	}
 
-	dc.SetHexColor("#000000") // 设置画笔颜色为绿色
+	//读取各种模式的图标
+	StDFile, err := manager.GetStaticFile("HiOSU/Model/std_20x20.png") //Osu!模式图标
+	if err != nil {
+		log.Errorf("get Osu!Model.png error: %v", err)
+	}
+	CatchFile, err := manager.GetStaticFile("HiOSU/Model/catch_20x20.png") //Catch模式图标
+	if err != nil {
+		log.Errorf("get CatchModel.png error: %v", err)
+	}
+	MainaFile, err := manager.GetStaticFile("HiOSU/Model/mania_20x20.png") //Osu!Maina模式图标
+	if err != nil {
+		log.Errorf("get MainaModel.png error: %v", err)
+	}
+	TaikoFile, err := manager.GetStaticFile("HiOSU/Model/taiko_20x20.png") //Taiko模式图标
+	if err != nil {
+		log.Errorf("get TaikoModel.png error: %v", err)
+	}
+
+	StDImage, _, err := image.Decode(StDFile)     // StD图片解码为image.Image
+	CtBImage, _, err := image.Decode(CatchFile)   // CtD图片解码为image.Image
+	MainaImage, _, err := image.Decode(MainaFile) // Maina图片解码为image.Image
+	TaikoImage, _, err := image.Decode(TaikoFile) // Taiko图片解码为image.Image
+
+	dc.SetHexColor("#000000") // 设置画笔颜色为黑
 	dc.Clear()                // 使用当前颜色（绿）填满画布，即设置背景色
 
-	err := dc.LoadFontFace("./ttf/zh-cn.ttf", 20)
+	err = dc.LoadFontFace("./ttf/zh-cn.ttf", 20)
 	if err != nil {
 		return message.MessageSegment{}, err
 	}
-	dc.SetRGB(1, 1, 1) // 设置画笔颜色为黑色
+	dc.SetRGB(1, 1, 1) // 设置画笔颜色为白
 
-	dc.DrawImage(Image, 10, 10) //贴OSU图标
+	dc.DrawImage(LogoImage, 10, 10) //贴OSU图标
 
 	dc.DrawString("Country :"+user.Country, 130, 40)
 	err = dc.LoadFontFace("./ttf/zh-cn.ttf", 40) //字体设置大一些
@@ -136,16 +167,18 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //�
 	}
 	dc.DrawString("Join Date: "+user.JoinDate, 130, 100)
 	dc.DrawString("-----------------------------------------------", 0, 123)
+
+	var ModelImage image.Image
 	switch Model {
 
 	case "Osu!Mania":
-		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/mania_20x20.png") //各种模式的图片
+		ModelImage = MainaImage
 	case "Taiko":
-		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/taiko_20x20.png")
-	case "CtB":
-		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/catch_20x20.png")
+		ModelImage = TaikoImage
+	case "Catch":
+		ModelImage = CtBImage
 	default:
-		ModelImage, _ = gg.LoadImage("./data/img/HiOSU/modes/std_20x20.png")
+		ModelImage = StDImage
 
 	}
 
