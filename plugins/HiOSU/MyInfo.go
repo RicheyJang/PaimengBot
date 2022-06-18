@@ -175,7 +175,7 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //ç”
 		ModelImage = MainaImage
 	case "Taiko":
 		ModelImage = TaikoImage
-	case "Catch":
+	case "CtB":
 		ModelImage = CtBImage
 	default:
 		ModelImage = StDImage
