@@ -37,7 +37,7 @@ func MineInfoHandler(ctx *zero.Ctx) {
 	//查询数据表中用户绑定信息
 	OSUid := GetOsuid(ctx.Event.UserID)
 	if len(OSUid) == 0 {
-		ctx.Send("没有绑定OSU账号的说(○｀ 3′○)")
+		ctx.Send("没有绑定OSU账号的说\n(○｀ 3′○)")
 		return
 	}
 	//获取用户要查询的模式
@@ -57,7 +57,7 @@ func MineInfoHandler(ctx *zero.Ctx) {
 	}
 
 	if USER.CountryRank == "" {
-		ctx.Send("从来没有玩过" + Model + "模式的说(～o￣3￣)～")
+		ctx.Send("从来没有玩过" + Model + "模式的说\n(～o￣3￣)～")
 	} else {
 		//去除时间后面的小时,分钟,秒
 		//2020-08-17 23:02:42 --->  2020-08-17
@@ -126,7 +126,7 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //�
 	if err != nil {
 		log.Errorf("get Osu!Model.png error: %v", err)
 	}
-	CatchFile, err := manager.GetStaticFile("HiOSU/Model/catch_20x20.png") //Catch模式图标
+	CtBFile, err := manager.GetStaticFile("HiOSU/Model/catch_20x20.png") //Catch模式图标
 	if err != nil {
 		log.Errorf("get CatchModel.png error: %v", err)
 	}
@@ -140,7 +140,7 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //�
 	}
 
 	StDImage, _, err := image.Decode(StDFile)     // StD图片解码为image.Image
-	CtBImage, _, err := image.Decode(CatchFile)   // CtD图片解码为image.Image
+	CtBImage, _, err := image.Decode(CtBFile)     // CtD图片解码为image.Image
 	MainaImage, _, err := image.Decode(MainaFile) // Maina图片解码为image.Image
 	TaikoImage, _, err := image.Decode(TaikoFile) // Taiko图片解码为image.Image
 
