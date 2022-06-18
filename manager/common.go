@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"image"
 	"io/fs"
 
 	"github.com/RicheyJang/PaimengBot"
@@ -111,4 +112,17 @@ func GetStaticFile(name string) (fs.File, error) {
 // ReadStaticFile 读取指定静态文件
 func ReadStaticFile(name string) ([]byte, error) {
 	return PaimengBot.GetStaticFS().ReadFile("static/" + name)
+}
+
+// DecodeStaticImage 读取并解码静态图片文件
+func DecodeStaticImage(name string) (image.Image, error) {
+	file, err := GetStaticFile(name) // 获取该文件的fs.File
+	if err != nil {
+		return nil, err
+	}
+	im, _, err := image.Decode(file) // 解码为image.Image
+	if err != nil {
+		return nil, err
+	}
+	return im, nil
 }
