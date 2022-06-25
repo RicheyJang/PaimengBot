@@ -66,6 +66,10 @@ func (task *RemindTask) addJob(scheduler cron.Schedule) (err error) {
 		id, err = proxy.AddSchedule(scheduler, fn)
 	}
 	task.CronID = int(id)
+	// Mysql5.7后默认配置下不允许时间为0
+	if task.RunAt.IsZero() {
+		task.RunAt = scheduler.Next(time.Now())
+	}
 	// 将task添加进数据库或更新cronID
 	err = proxy.GetDB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
