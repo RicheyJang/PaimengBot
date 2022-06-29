@@ -77,6 +77,10 @@ func addDialogue(ctx *zero.Ctx) {
 		log.Errorf("wrong addDialogue args :%v", err)
 		return
 	}
+	if utils.StringRealLength(question) >= 180 {
+		ctx.Send("问句太长啦，可以使用文件添加该问答")
+		return
+	}
 	if utils.IsSuperUser(ctx.Event.UserID) && utils.IsMessagePrimary(ctx) {
 		// 超级用户 in 私聊
 		err = SetDialogue(0, question, msg)

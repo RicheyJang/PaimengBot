@@ -208,10 +208,16 @@ func parseSinglePoolByTable(s *goquery.Selection, normalPool *DrawPool) (pool Dr
 var poolTimeLayouts = []string{
 	"2006/01/02 15:04",
 	"2006/01/02 15:04:05",
+	"2006/1/2 15:04:05",
+	"2006/1/2 15:04",
 	"2006/01/02",
+	"2006/1/2",
 	"2006-01-02 15:04:05",
 	"2006-01-02 15:04",
+	"2006-1-2 15:04:05",
+	"2006-1-2 15:04",
 	"2006-01-02",
+	"2006-1-2",
 }
 
 func parsePoolTime(value string) (tm time.Time, err error) {

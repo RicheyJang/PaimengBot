@@ -69,7 +69,7 @@ func GetSpecQuestion(groupID int64, index int) string {
 
 type GroupChatDialogue struct {
 	GroupID  int64  `gorm:"column:group_id;primaryKey;autoIncrement:false"`
-	Question string `gorm:"column:question;primaryKey;autoIncrement:false"`
+	Question string `gorm:"column:question;primaryKey;autoIncrement:false;size:181"`
 	Answer   string `gorm:"column:answer"`
 }
 
