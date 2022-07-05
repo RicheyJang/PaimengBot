@@ -3,6 +3,8 @@ package HiOSU
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/RicheyJang/PaimengBot/manager"
+	"image"
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/utils/client"
@@ -52,7 +54,8 @@ func RecentPlayHandler(ctx *zero.Ctx) {
 		ctx.Send("最近没有玩过" + Model + "这个模式哦")
 		return
 	}
-	ctx.Send(ToImageRecent(recent, Model, OSUid))
+	Image, _ := ToImageRecent(recent, Model, OSUid)
+	ctx.Send(Image)
 }
 
 func GetRecentPlay(API string) (Recent, error) {
@@ -75,18 +78,83 @@ func GetRecentPlay(API string) (Recent, error) {
 	return recents[0], nil
 }
 
-func ToImageRecent(recent Recent, Model string, OsuId string) message.MessageSegment { //生成图片(需要修改)
-	str := "谱面ID:" + recent.BeatmapId +
-		"\n玩家名: " + OsuId +
-		"\n玩家ID:" + recent.UserId +
-		"\n游玩模式: " + Model +
-		"\n评价:" + recent.Rank +
-		"\n最大连击 : " + recent.MaxCombo +
-		"\n分数:" + recent.Score +
-		"\n游玩时间: " + recent.Date
-	//"\nCount300: " + recent.Count300 +
-	//"\nCount100: " + recent.Count100 +
-	//"\nCount50: " + recent.Count50 +
-	//"\nCountMiss: " + recent.CountMiss
-	return images.GenStringMsg(str)
+func ToImageRecent(recent Recent, Model string, OsuId string) (message.MessageSegment, error) { //生成图片
+
+	ModelImage, err := getModelImage(Model)
+	if err != nil {
+		return message.MessageSegment{}, err
+	}
+
+	width := float64(800)
+	height := float64(400)
+	var dc = images.NewImageCtxWithBGColor(int(width), int(height), "black")
+
+	ResultImage, _ := GetResultImage(recent)                                            //最终成绩图
+	ModelImage, _ = getModelImage(Model)                                                //模式图片
+	Count300Image, _ := manager.DecodeStaticImage("HiOSU/rank/CountImage/Count300.png") //各种判定图片
+	Count100Image, _ := manager.DecodeStaticImage("HiOSU/rank/CountImage/Count100.png")
+	Count50Image, _ := manager.DecodeStaticImage("HiOSU/rank/CountImage/Count50.png")
+	CountMissImage, _ := manager.DecodeStaticImage("HiOSU/rank/CountImage/CountMiss.png")
+
+	dc.UseDefaultFont(30)
+	dc.SetRGB(1, 1, 1) // 设置画笔颜色为黑色
+
+	dc.DrawImage(ResultImage, 490, 0)
+
+	dc.DrawString("User: "+OsuId, 15, 40)
+	dc.DrawString("BeatmapId:"+recent.BeatmapId, 15, 80)
+
+	dc.DrawString("Date: "+recent.Date, 15, 120)
+
+	dc.DrawImage(ModelImage, 15, 153)
+	dc.DrawString(Model, 50, 170)
+
+	dc.DrawImage(Count300Image, 15, 180)
+	dc.DrawString(": "+recent.Count300, 65, 205)
+	dc.DrawImage(Count100Image, 190, 180)
+	dc.DrawString(": "+recent.Count100, 240, 205)
+	dc.DrawImage(Count50Image, 15, 210)
+	dc.DrawString(": "+recent.Count50, 65, 235)
+	dc.DrawImage(CountMissImage, 190, 210)
+	dc.DrawString(": "+recent.CountMiss, 225, 235)
+
+	dc.DrawString("Score: "+recent.Score, 15, 285)
+
+	dc.DrawString("Max Combo: "+recent.MaxCombo, 15, 320)
+	dc.DrawString("Rank: "+recent.Rank, 15, 350)
+
+	return dc.GenMessageAuto()
+}
+
+func GetResultImage(recent Recent) (image.Image, error) {
+
+	switch recent.Rank {
+
+	case "XH":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-XH_307x400.png")
+
+	case "X":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-X_307x400.png")
+
+	case "SH":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-SH_307x400.png")
+
+	case "S":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-S_307x400.png")
+
+	case "A":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-A_307x400.png")
+
+	case "B":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-B_307x400.png")
+
+	case "C":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-C_307x400.png")
+
+	case "D":
+		return manager.DecodeStaticImage("HiOSU/rank/ranking-D_307x400.png")
+
+	default:
+		return manager.DecodeStaticImage("HiOSU/rank/raning-default.png")
+	}
 }

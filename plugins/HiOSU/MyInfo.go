@@ -97,7 +97,7 @@ func GetMyInfo(API string) (User, error) {
 	return users[0], nil
 }
 
-func ToImageUser(user User, Model string) (message.MessageSegment, error) { //生成图片(需要修改)
+func ToImageUser(user User, Model string) (message.MessageSegment, error) { //生成图片
 	// 读取Logo
 	LogoImage, err := manager.DecodeStaticImage("HiOSU/Logo/Logo_96x97.png")
 	if err != nil {
