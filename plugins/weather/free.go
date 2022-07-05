@@ -107,14 +107,10 @@ func FreeGetWeather(city string) (Weather, error) {
 
 func getNumberFromString(s string) (v int) {
 	rs := []rune(s)
-	found := false
 	for _, r := range rs {
-		if r > '0' && r < '9' {
+		if r >= '0' && r <= '9' {
 			v *= 10
 			v += int(r - '0')
-			found = true
-		} else if found {
-			break
 		}
 	}
 	return
