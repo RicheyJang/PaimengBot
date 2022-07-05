@@ -3,14 +3,14 @@ package HiOSU
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/RicheyJang/PaimengBot/manager"
 	"image"
 	"strings"
 
-	"github.com/RicheyJang/PaimengBot/utils/client"
-
+	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/client"
 	"github.com/RicheyJang/PaimengBot/utils/images"
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -54,7 +54,19 @@ func RecentPlayHandler(ctx *zero.Ctx) {
 		ctx.Send("最近没有玩过" + Model + "这个模式哦")
 		return
 	}
-	Image, _ := ToImageRecent(recent, Model, OSUid)
+	Image, err := ToImageRecent(recent, Model, OSUid)
+	if err != nil {
+		log.Errorf("ToImageRecent err: %v", err)
+		ctx.Send("谱面ID:" + recent.BeatmapId +
+			"\n玩家名: " + OSUid +
+			"\n玩家ID:" + recent.UserId +
+			"\n游玩模式: " + Model +
+			"\n评价:" + recent.Rank +
+			"\n最大连击 : " + recent.MaxCombo +
+			"\n分数:" + recent.Score +
+			"\n游玩时间: " + recent.Date)
+		return
+	}
 	ctx.Send(Image)
 }
 
