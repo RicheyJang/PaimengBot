@@ -24,7 +24,7 @@ var info = manager.PluginInfo{
 	SuperUsage: `需要把go-cqhttp的设备类型修改为非手表
 config-plugin配置项：
 	poke.replies: 回复内容列表，会从中随机选取，支持CQ码
-另外，回复内容里还可以配置上某种动作，例如：
+另外，回复内容里还可以附带上某种动作，例如：
 不准戳我！[mute] ：这将回复一句"不准戳我"，并将其禁言2分钟
 目前支持的动作：
 	[mute]：禁言两分钟，前提是将Bot设为群管理员
@@ -44,7 +44,7 @@ func init() {
 		return ctx.Event.NoticeType == "notify" && ctx.Event.SubType == "poke" && ctx.Event.TargetID == ctx.Event.SelfID
 	}).SetBlock(true).ThirdPriority().Handle(pokeHandler)
 	proxy.AddConfig(consts.PluginConfigCDKey, "3s")
-	proxy.AddConfig("replies", []string{"？", "hentai!", "( >﹏<。)", "好气喔，我要给你起个难听的绰号", "那...那里...那里不能戳...", "喏[pixiv]", "不准戳我啦[mute 0.1]", "[poke]"})
+	proxy.AddConfig("replies", []string{"？", "hentai!", "( >﹏<。)", "好气喔，我要给你起个难听的绰号", "那...那里...那里不能戳...", "[pixiv]喏", "不准戳我啦[mute 0.1]", "[poke]"})
 }
 
 var actionRegex = regexp.MustCompile(`\[([a-z]{2,10})\s*([01]\.\d+)?]`)
@@ -63,17 +63,24 @@ func pokeHandler(ctx *zero.Ctx) {
 	log.Info("即将回复：", reply)
 	// 发送回复内容
 	str := strings.TrimSpace(actionRegex.ReplaceAllString(reply, ""))
-	if len(str) > 0 { // 内容非空
+	index := 0
+	if loc := actionRegex.FindStringIndex(reply); len(loc) > 0 {
+		index = loc[0]
+	}
+	if len(str) > 0 && index > 0 { // 内容非空 且 先回复再动作
 		ctx.Send(str)
 	}
 	// 解析、执行动作字符串
 	actions := actionRegex.FindAllStringSubmatch(reply, -1)
 	for _, action := range actions {
-		if len(actions) <= 2 {
+		if len(action) <= 2 {
 			continue
 		}
 		rate, _ := strconv.ParseFloat(action[2], 32)
 		dealActions(ctx, action[1], rate)
+	}
+	if len(str) > 0 && index == 0 { // 内容非空 且 （先动作再回复 或 无动作）
+		ctx.Send(str)
 	}
 }
 
@@ -85,6 +92,7 @@ func dealActions(ctx *zero.Ctx, action string, rate float64) {
 	if ctx.Event.UserID == 0 {
 		return
 	}
+	log.Infof("do %v to %v", action, ctx.Event.UserID)
 	// 执行各类动作
 	switch action {
 	case "mute": // 禁言

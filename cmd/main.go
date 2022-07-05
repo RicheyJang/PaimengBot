@@ -41,6 +41,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_query"
 	_ "github.com/RicheyJang/PaimengBot/plugins/pixiv_rank"
+	_ "github.com/RicheyJang/PaimengBot/plugins/poke"
 	_ "github.com/RicheyJang/PaimengBot/plugins/random"
 	_ "github.com/RicheyJang/PaimengBot/plugins/short_url"
 	_ "github.com/RicheyJang/PaimengBot/plugins/statistic"
