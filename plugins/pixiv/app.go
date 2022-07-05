@@ -15,6 +15,9 @@ func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 		log.Warnf("num <= 0, num: %d", num)
 		return []PictureInfo{}
 	}
+	if num >= 20 {
+		num = 19
+	}
 	// 请求
 	c := client.NewHttpClient(&client.HttpOptions{TryTime: 3, Timeout: 15 * time.Second})
 	req := APIRequest{
@@ -28,14 +31,14 @@ func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 		req.R18 = 1
 	}
 	rsp := APIResponse{}
-	err := c.PostMarshal(PixivAPI, req, &rsp)
+	err := c.PostMarshal(PixivLAppAPI, req, &rsp)
 	if err != nil {
-		log.Warnf("PostMarshal %v, err: %v", PixivAPI, err)
+		log.Warnf("PostMarshal %v, err: %v", PixivLAppAPI, err)
 		return []PictureInfo{}
 	}
 	// 解析
 	if len(rsp.Data) == 0 {
-		log.Warnf("PostMarshal %v rsp is empty, req=%+v, rsp.error=%v", PixivAPI, req, rsp.Error)
+		log.Warnf("PostMarshal %v rsp is empty, req=%+v, rsp.error=%v", PixivLAppAPI, req, rsp.Error)
 		return []PictureInfo{}
 	}
 	var pics []PictureInfo
@@ -57,7 +60,7 @@ func getPicturesFromLolicon(tags []string, num int, isR18 bool) []PictureInfo {
 	return pics
 }
 
-const PixivAPI = "https://api.lolicon.app/setu/v2"
+const PixivLAppAPI = "https://api.lolicon.app/setu/v2"
 
 type APIRequest struct {
 	Num   int      `json:"num,omitempty"`

@@ -43,9 +43,13 @@ func newDownloader(tags []string, num int, isR18 bool) *downloader {
 		excessive = true
 		num = rand.Intn(10) + 1
 	}
+	captain := num * 2
+	if num <= 5 { // 为防止后续图片下载失败等，拿取的图片信息数会>num
+		captain = num + 6 // 为防止请求API数量过多
+	}
 	return &downloader{
 		has:       false,
-		cap:       (num + 10) * 2, // 为防止后续图片下载失败等，拿取的图片信息数会>num
+		cap:       captain,
 		excessive: excessive,
 
 		tags:  realTags,
