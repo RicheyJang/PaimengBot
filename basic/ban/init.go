@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/RicheyJang/PaimengBot/manager"
-	"github.com/RicheyJang/PaimengBot/utils"
-
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
@@ -56,9 +54,6 @@ const AllPluginKey = "all"
 const TipContent = "该功能已被禁用"
 
 func checkPluginStatus(condition *manager.PluginCondition, ctx *zero.Ctx) error {
-	if !utils.IsMessage(ctx) { //仅处理消息类型事件
-		return nil
-	}
 	// 群ban
 	if ctx.Event.GroupID != 0 && !GetGroupPluginStatus(ctx.Event.GroupID, condition) {
 		if proxy.GetConfigBool("tip") {

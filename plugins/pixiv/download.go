@@ -144,6 +144,13 @@ func dealWithdraw(msgID int64) {
 	})
 }
 
+// GetRandomPictures 获取至少least张随机涩图，但也可能为空
+func GetRandomPictures(tags []string, least int, r18 bool) []PictureInfo {
+	d := newDownloader(tags, least, r18)
+	d.get()
+	return d.pics
+}
+
 // CheckNoSESE 不可以涩涩检查，为true时才可以进行下一步
 func (pic PictureInfo) CheckNoSESE() bool {
 	return proxy.GetConfigBool("r18") || !utils.StringSliceContain(pic.Tags, "R-18")
