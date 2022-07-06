@@ -18,6 +18,7 @@ type Dealer func(ctx *zero.Ctx, question string) message.Message
 var dealers = []Dealer{ // 在此添加新的Dealer即可，其它事宜会自动处理
 	WhoAreYou,
 	PluginName,
+	aiDealer,
 	IDoNotKnow,
 }
 
