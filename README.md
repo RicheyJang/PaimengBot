@@ -38,6 +38,8 @@
 - [x] 网易云评论 (netease)
 - [x] 点歌 (music)
 - [x] 随机\随机数 (random)
+- [x] 漂流瓶 (bottle)
+- [x] 戳一戳 (poke)
 
 ### 原神相关
 - [x] 今日可肝素材查询 (genshin_resource)
@@ -53,9 +55,10 @@
 - [x] 搜梗 (geng)
 - [x] 识图搜番 (whatanime)
 - [x] 疫情查询 (COVID)
-- [x] 混合表情 (emoji_mix)
 - [x] 短链接还原 (short_url)
-- [ ] ~~短链接生成~~(防止滥用，暂不提供)
+- [x] 天气 (weather)
+- [x] GitHub查询 (github)
+- [x] 混合表情 (emoji_mix)
 
 ### 群功能
 - [x] 群管理:快捷禁言/踢人 (admin)
@@ -73,6 +76,13 @@
 - [x] Pixiv排行榜 (pixiv_rank)
 - [x] Pixiv搜索 (pixiv_query)
 - [ ] coser
+- [ ] 自定义图库
+
+### 可选插件
+
+若想启用这些插件，请自行下载源码取消掉cmd/main.go内的可选插件注释，[**自行编译**](#编译)
+
+- [x] OSU查询 (HiOSU)
 
 </details>
 

@@ -22,7 +22,7 @@ var info = manager.PluginInfo{
 	github RicheyJang/PaimengBot`,
 	SuperUsage: `config-plugin配置项：
 	github.maxresult：一次性最多返回多少个仓库信息`,
-	Classify: "一般功能",
+	Classify: "实用工具",
 }
 
 func init() {
