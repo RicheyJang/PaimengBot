@@ -174,3 +174,12 @@ func (c HttpClient) GetGJson(url string) (gjson.Result, error) {
 	}
 	return gjson.Parse(string(rspBody)), nil
 }
+
+// Head 发送Head请求
+func (c HttpClient) Head(url string) (*http.Response, error) {
+	req, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	return c.Do(req)
+}

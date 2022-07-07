@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -56,6 +57,9 @@ func downloadAndReplace(version string, destFilepath string) error {
 	index := strings.LastIndex(downloadURL, "/")
 	if index == -1 {
 		return fmt.Errorf("downloadURL is invalid")
+	}
+	if res, err := cli.Head(downloadURL); err != nil || res.StatusCode != http.StatusOK { // 测试链接可用性
+		return fmt.Errorf("HEAD download URL(%v) failed, code=%v, err: %v", downloadURL, res.StatusCode, err)
 	}
 	filename := downloadURL[index+1:]
 	// 下载压缩包
