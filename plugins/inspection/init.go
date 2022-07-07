@@ -5,6 +5,9 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
@@ -34,6 +37,7 @@ config-plugin配置项：
 }
 
 const unknownVersion = "unknown"
+const deleteListFile = "./delete.list"
 
 var Version = unknownVersion
 
@@ -52,6 +56,22 @@ func init() {
 	proxy.AddConfig("heartbeat.interval", "1h")
 	proxy.AddConfig("heartbeat.period", "9-22")
 	manager.WhenConfigFileChange(heartbeatConfigHook)
+	// 启动3秒后，依据待删除文件清单，删除文件
+	_, _ = proxy.AddScheduleOnceFunc(3*time.Second, func() {
+		if !utils.FileExists(deleteListFile) {
+			return
+		}
+		list, err := ioutil.ReadFile(deleteListFile)
+		if err != nil {
+			return
+		}
+		if err = utils.RemovePath(string(list)); err != nil {
+			log.Errorf("删除%v文件失败，请手动删除！, err: %v", string(list), err)
+		}
+		if err = utils.RemovePath(deleteListFile); err != nil {
+			log.Errorf("删除%v文件失败，请手动删除！, err: %v", deleteListFile, err)
+		}
+	})
 }
 
 // 清理临时文件
@@ -111,23 +131,7 @@ func restartHandler(ctx *zero.Ctx) {
 		return
 	}
 
-	proc := exec.Command(os.Args[0], os.Args[1:]...)
-	//proc.Stdin = os.Stdin
-	proc.Stderr = os.Stderr
-	proc.Stdout = os.Stdout
-	err := proc.Start()
-	if err != nil {
-		log.Error("重启失败：", err)
-		return
-	}
-
-	log.Info("NEW PID: ", proc.Process.Pid)
-	pidErr := ioutil.WriteFile("./bot.pid", []byte(fmt.Sprintf("%d", proc.Process.Pid)), 0o644)
-	if pidErr != nil {
-		log.Errorf("save pid file error: %v", pidErr)
-	}
-
-	log.Fatal("旧进程退出")
+	rebirthTo(os.Args[0])
 }
 
 // 升级
@@ -157,11 +161,47 @@ func updateHandler(ctx *zero.Ctx) {
 		ctx.Send("已取消")
 		return
 	}
+	// 规整目标可执行文件路径
+	oldPath := os.Args[0]
+	oldName := filepath.Base(oldPath)
+	oldExt := filepath.Ext(oldPath)
+	lastLen := len(oldExt)
+	lastIndex := strings.LastIndex(oldName, "_") // 替换自动更新过的_vx.x.x
+	if lastIndex > 0 {
+		lastLen = len(oldName) - lastIndex
+	}
+	destPath := oldPath[:len(oldPath)-lastLen] + "_" + now + oldExt
 	// 执行更新
-	if err = downloadAndReplace(now); err != nil {
+	if err = downloadAndReplace(now, destPath); err != nil {
 		log.Errorf("downloadAndReplace err: %v", err)
 		ctx.Send("失败了...")
 		return
 	}
-	ctx.Send(fmt.Sprintf("更新成功，请自行重启%v以完成更新", utils.GetBotNickname()))
+	ctx.Send(fmt.Sprintf("更新成功，即将重启%v，重启成功与否都无提示", utils.GetBotNickname()))
+	// 记录当前可执行文件绝对路径至待删除文件名单 并 重启
+	if err = ioutil.WriteFile(deleteListFile, []byte(oldPath), 0o644); err != nil {
+		log.Errorf("无法记录待删除文件清单，请自行删除%v文件，err: %v", oldPath, err)
+	}
+	rebirthTo(destPath)
+}
+
+// 关闭当前进程，启动指定可执行文件继续执行
+func rebirthTo(path string) {
+	proc := exec.Command(path, os.Args[1:]...)
+	//proc.Stdin = os.Stdin
+	proc.Stderr = os.Stderr
+	proc.Stdout = os.Stdout
+	err := proc.Start()
+	if err != nil {
+		log.Error("重启失败：", err)
+		return
+	}
+
+	log.Info("NEW PID: ", proc.Process.Pid)
+	pidErr := ioutil.WriteFile("./bot.pid", []byte(fmt.Sprintf("%d", proc.Process.Pid)), 0o644)
+	if pidErr != nil {
+		log.Errorf("save pid file error: %v", pidErr)
+	}
+
+	log.Fatal("旧进程退出")
 }
