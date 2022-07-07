@@ -20,8 +20,8 @@
 行尾括号内为插件Key，对应着配置文件config-plugin.yaml中各个插件的根配置项key
 
 ### 基本功能
-- [x] 权限管理与鉴权 (auth)
-- [x] 功能开关与封(解)禁 (ban)
+- [x] 权限管理与鉴权 (auth)：各功能可分权限使用
+- [x] 功能开关与封(解)禁 (ban)：可按功能封人、封群
 - [x] 加群\好友申请事件处理\推送 (event)
 - [x] 帮助 (help)
 - [x] 功能CD限流 (limiter)
@@ -29,17 +29,17 @@
 - [x] 签到与财富 (sc)
 
 ### 一般功能
-- [x] 聊天\自定义问答 (chat)
-- [x] 定期提醒 (note)
+- [x] 聊天\自定义问答 (chat)：具有强大的文件问答集自定义功能
+- [x] 定期提醒 (note)：定时定点或指定间隔提醒，支持CRON
 - [x] 联系管理员 (contact)
 - [x] 复读 (echo)
-- [x] 自检 (inspection)
-- [x] 功能使用统计(可分人分日) (statistic)
+- [x] 控制命令 (inspection)：自检、重启、检查更新等
+- [x] 功能使用统计 (statistic)：可分人分日统计
 - [x] 网易云评论 (netease)
 - [x] 点歌 (music)
 - [x] 随机\随机数 (random)
 - [x] 漂流瓶 (bottle)
-- [x] 戳一戳 (poke)
+- [x] 戳一戳 (poke)：可自行配置回答，还支持多种动作
 
 ### 原神相关
 - [x] 今日可肝素材查询 (genshin_resource)
@@ -49,8 +49,8 @@
 - [x] 原神便笺查询 (genshin_query)
 
 ### 实用工具
-- [x] B站订阅、自动推送 (bilibili)
-- [x] 任意语种翻译(甚至文言文) (translate)
+- [x] B站订阅 (bilibili)：UP主、番剧、直播更新时自动推送
+- [x] 翻译 (translate)：甚至支持文言文
 - [x] 纯小写缩写翻译 (hhsh)
 - [x] 搜梗 (geng)
 - [x] 识图搜番 (whatanime)
@@ -58,10 +58,10 @@
 - [x] 短链接还原 (short_url)
 - [x] 天气 (weather)
 - [x] GitHub查询 (github)
-- [x] 混合表情 (emoji_mix)
+- [x] 混合表情 (emoji_mix)：合成两个emoji表情
 
 ### 群功能
-- [x] 群管理:快捷禁言/踢人 (admin)
+- [x] 群管理 (admin)：快捷踢人、禁言、拉黑
 - [x] 撤回消息 (withdraw)
 - [x] 设置入群欢迎 (welcome)
 - [x] 关键词撤回 (keyword)
