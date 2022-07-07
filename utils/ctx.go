@@ -89,6 +89,20 @@ func WaitNextMessage(ctx *zero.Ctx) *zero.Event {
 	}
 }
 
+// GetConfirm 发送tip并获取用户确认消息，为true代表用户确定
+func GetConfirm(tip string, ctx *zero.Ctx) bool {
+	ctx.Send(tip)
+	event := WaitNextMessage(ctx)
+	if event == nil { // 无回应
+		return false
+	}
+	confirm := strings.TrimSpace(event.Message.ExtractPlainText())
+	if !(confirm == "是" || confirm == "确定" || confirm == "确认") {
+		return false
+	}
+	return true
+}
+
 // GetImageURL 通过消息获取其中的图片URL
 func GetImageURL(msg message.MessageSegment) string {
 	if msg.Type != "image" {

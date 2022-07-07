@@ -7,9 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/RicheyJang/PaimengBot/utils/consts"
-
-	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 
@@ -22,54 +19,6 @@ import (
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
-
-var proxy *manager.PluginProxy
-var info = manager.PluginInfo{
-	Name: "自检与清理",
-	Usage: `
-用法：
-	自检：展示程序与环境状态
-	清理临时数据：清空临时文件夹，并统计大小
-
-config-plugin配置项：
-可以通过heartbeat系列配置项添加心跳检测并将心跳消息定期发送给监听人
-若长时间没有收到心跳检测消息(且在监听时间段内)，说明机器人出现问题；但，非专业勿动：
-	inspection.heartbeat.receiver: 心跳检测监听人ID列表
-	inspection.heartbeat.interval: 心跳检测时间间隔
-	inspection.heartbeat.period: 24小时制监听时间段，仅在该时间段内发送心跳消息`,
-	IsSuperOnly: true,
-}
-
-func init() {
-	proxy = manager.RegisterPlugin(info)
-	if proxy == nil {
-		return
-	}
-	proxy.OnCommands([]string{"自检", "check", "状态"}).SetBlock(true).SecondPriority().Handle(selfCheckHandler)
-	proxy.OnCommands([]string{"清理临时数据"}).SetBlock(true).SecondPriority().Handle(cleanTemp)
-	proxy.AddConfig("heartbeat.receiver", []int64{})
-	proxy.AddConfig("heartbeat.interval", "1h")
-	proxy.AddConfig("heartbeat.period", "9-22")
-	manager.WhenConfigFileChange(heartbeatConfigHook)
-}
-
-func cleanTemp(ctx *zero.Ctx) {
-	usage := utils.PathSize(consts.TempRootDir)
-	err := utils.RemovePath(consts.TempRootDir)
-	if err != nil {
-		log.Errorf("cleanTemp err: %v", err)
-		ctx.Send("清理失败了...")
-	} else {
-		ctx.Send(fmt.Sprintf("成功清理%v大小的空间", formatBytesSize(usage)))
-	}
-}
-
-func selfCheckHandler(ctx *zero.Ctx) {
-	msg := formResponse(CheckEnvironment(),
-		CheckSelf(utils.IsSuperUser(ctx.Event.UserID) && ctx.Event.SubType == "friend"),
-		CheckOnebot(false))
-	ctx.SendChain(msg)
-}
 
 // CheckEnvironment 生成主机环境信息
 func CheckEnvironment() string {
