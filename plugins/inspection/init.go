@@ -32,7 +32,9 @@ config-plugin配置项：
 	IsSuperOnly: true,
 }
 
-var Version = "unknown"
+const unknownVersion = "unknown"
+
+var Version = unknownVersion
 
 func init() {
 	proxy = manager.RegisterPlugin(info)
@@ -64,6 +66,12 @@ func cleanTemp(ctx *zero.Ctx) {
 
 // 自检
 func selfCheckHandler(ctx *zero.Ctx) {
+	if proxy.LockUser(0) {
+		ctx.Send("自检中...")
+		return
+	}
+	defer proxy.UnlockUser(0)
+
 	msg := formResponse(CheckEnvironment(),
 		CheckSelf(utils.IsSuperUser(ctx.Event.UserID) && ctx.Event.SubType == "friend"),
 		CheckOnebot(false))
@@ -72,6 +80,12 @@ func selfCheckHandler(ctx *zero.Ctx) {
 
 // 关机
 func shutdownHandler(ctx *zero.Ctx) {
+	if proxy.LockUser(0) {
+		ctx.Send("请等待上一命令完成")
+		return
+	}
+	defer proxy.UnlockUser(0)
+
 	if !utils.GetConfirm(fmt.Sprintf("确定关闭%v？", utils.GetBotNickname()), ctx) {
 		ctx.Send("已取消")
 		return
@@ -84,6 +98,12 @@ func shutdownHandler(ctx *zero.Ctx) {
 
 // 重启
 func restartHandler(ctx *zero.Ctx) {
+	if proxy.LockUser(0) {
+		ctx.Send("请等待上一命令完成")
+		return
+	}
+	defer proxy.UnlockUser(0)
+
 	if !utils.GetConfirm(fmt.Sprintf("确定自动重启%v？这不一定会成功且无提示，建议手动重启", utils.GetBotNickname()), ctx) {
 		ctx.Send("已取消")
 		return
@@ -110,13 +130,19 @@ func restartHandler(ctx *zero.Ctx) {
 
 // 升级
 func updateHandler(ctx *zero.Ctx) {
-	if Version == "unknown" {
+	if proxy.LockUser(0) {
+		ctx.Send("请等待上一命令完成")
+		return
+	}
+	defer proxy.UnlockUser(0)
+
+	if Version == unknownVersion {
 		ctx.Send("当前为非官方发布版本，请自行升级：\nhttps://github.com/RicheyJang/PaimengBot")
 		return
 	}
 	// 检查更新
 	now, err := getLatestVersion()
-	if err != nil {
+	if err != nil || len(now) == 0 {
 		log.Errorf("getLatestVersion err: %v", err)
 		ctx.Send("检查失败了...")
 		return
@@ -130,13 +156,7 @@ func updateHandler(ctx *zero.Ctx) {
 		return
 	}
 	// 执行更新
-	lst, err := getLatestURL(now)
-	if err != nil {
-		log.Errorf("getLatestURL err: %v", err)
-		ctx.Send("失败了...")
-		return
-	}
-	if err = downloadAndReplace(lst); err != nil {
+	if err = downloadAndReplace(now); err != nil {
 		log.Errorf("downloadAndReplace err: %v", err)
 		ctx.Send("失败了...")
 		return

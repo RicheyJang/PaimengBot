@@ -111,7 +111,7 @@ func CheckSelf(showNet bool) string {
 	pidMem, _ := pid.MemoryPercent()
 	pidTime, _ := pid.CreateTime()
 	pidConn, _ := pid.Connections()
-	self += fmt.Sprintf("进程名：%v\nCPU占用：%v\n内存占用：%v\nGoroutine: %v\n启动时间：%v\n", pidName,
+	self += fmt.Sprintf("进程名：%v\n版本：%v\nCPU占用：%v\n内存占用：%v\nGoroutine: %v\n启动时间：%v\n", pidName, Version,
 		formatPercent(pidPercent), formatPercent(float64(pidMem)), runtime.NumGoroutine(), formatTime(uint64(pidTime/1000)))
 	self += fmt.Sprintf("网络连接：共%v条连接\n", len(pidConn))
 
