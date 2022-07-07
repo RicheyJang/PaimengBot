@@ -26,8 +26,9 @@ var info = manager.PluginInfo{
 	删除漂流瓶 [漂流瓶ID]：让这个漂流瓶永远消失
 	删除所有漂流瓶：让当前已有的所有漂流瓶永远消失
 config-plugin配置项：
-	max：最多容纳多少漂流瓶，溢出时会丢弃较早放入的漂流瓶
-建议配置调用花费，来防止恶意扔漂流瓶，详情：帮助 签到与财富`,
+	bottle.max：最多容纳多少漂流瓶，溢出时会丢弃较早放入的漂流瓶
+	bottle.black：禁用词汇列表
+	bottle.destroy：是(true)否(false)在捡起漂流瓶后顺便删除，默认不删`,
 }
 var proxy *manager.PluginProxy
 
@@ -41,6 +42,8 @@ func init() {
 	proxy.OnCommands([]string{"删除漂流瓶"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(deleteHandler)
 	proxy.OnFullMatch([]string{"删除所有漂流瓶"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(deleteAllHandler)
 	proxy.AddConfig("max", 200)
+	proxy.AddConfig("black", []string{"爹", "爸"})
+	proxy.AddConfig("destroy", false)
 }
 
 func dropHandler(ctx *zero.Ctx) {
@@ -52,6 +55,12 @@ func dropHandler(ctx *zero.Ctx) {
 	if len(content) > 1000 {
 		ctx.Send("内容太长啦，放不下啦")
 		return
+	}
+	for _, word := range proxy.GetConfigStrings("black") {
+		if strings.Contains(content, word) {
+			ctx.Send("内容中包含禁用词汇")
+			return
+		}
 	}
 	// 记录数据库
 	err := proxy.GetDB().Transaction(func(tx *gorm.DB) error {
@@ -96,6 +105,9 @@ func pickHandler(ctx *zero.Ctx) {
 		return
 	}
 	ctx.Send(genBottleMsg(bottle))
+	if proxy.GetConfigBool("destroy") {
+		proxy.GetDB().Delete(bottle)
+	}
 }
 
 func deleteHandler(ctx *zero.Ctx) {
