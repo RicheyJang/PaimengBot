@@ -3,6 +3,7 @@ package chat
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strings"
 
@@ -20,25 +21,42 @@ func AIReply(ctx *zero.Ctx, question string) message.Message {
 	if len(api) == 0 {
 		return nil
 	}
-	if !strings.Contains(api, "%s") {
-		log.Error("AI API内必须包含%s作为问句的占位符，请重新配置")
+	body := proxy.GetConfigString("ai.body")
+	if !strings.Contains(api, "%s") && !strings.Contains(body, "%s") {
+		log.Error("AI问答API或Body内必须包含%s作为问句的占位符，请重新配置")
 		return nil
 	}
 	if !strings.HasPrefix(api, "http") {
 		api = "http://" + api
 	}
-	api = fmt.Sprintf(api, url.QueryEscape(question))
+	if strings.Contains(api, "%s") {
+		api = fmt.Sprintf(api, url.QueryEscape(question))
+	}
+	if strings.Contains(body, "%s") {
+		body = fmt.Sprintf(body, question)
+	}
 	// 请求
 	cli := client.NewHttpClient(nil)
-	src, err := cli.GetReader(api)
-	if err != nil {
-		log.Errorf("GET %v error: %v", api, err)
-		return nil
+	cli.SetUserAgent()
+	var src *http.Response
+	var err error
+	if len(body) == 0 { // 无Body 使用GET请求
+		src, err = cli.Get(api)
+		if err != nil {
+			log.Errorf("AI GET %v error: %v", api, err)
+			return nil
+		}
+	} else { // 含Body 使用POST json请求
+		src, err = cli.Post(api, "application/json", strings.NewReader(body))
+		if err != nil {
+			log.Errorf("AI POST %v error: %v", api, err)
+			return nil
+		}
 	}
-	defer src.Close()
-	rsp, err := io.ReadAll(src)
+	defer src.Body.Close()
+	rsp, err := io.ReadAll(src.Body)
 	if err != nil {
-		log.Errorf("GET %v error: %v", api, err)
+		log.Errorf("AI read from body error: api=%v, %v", api, err)
 		return nil
 	}
 	// 解析请求
@@ -56,15 +74,27 @@ func AIReply(ctx *zero.Ctx, question string) message.Message {
 	// 尾处理
 	if len(answer) > 0 {
 		tip := proxy.GetConfigString("ai.tip")
+		tip = strings.ReplaceAll(tip, "\\n", "\n")
 		tipMsg := message.ParseMessageFromString(tip)
 		return append(tipMsg, message.Text(answer))
+	} else {
+		log.Warn("AI问答API答句为空，原始回包：", string(rsp))
+		return nil
 	}
-	return nil
 }
 
 func aiDealer(ctx *zero.Ctx, question string) message.Message {
 	if !proxy.GetConfigBool("ai.enable") {
 		return nil
 	}
-	return AIReply(ctx, question)
+	// 加锁，防止频繁调用
+	if proxy.LockUser(ctx.Event.UserID) {
+		return nil
+	}
+	defer proxy.UnlockUser(ctx.Event.UserID)
+	msg := AIReply(ctx, question)
+	if len(msg) > 0 {
+		log.Infof("from AI API")
+	}
+	return msg
 }

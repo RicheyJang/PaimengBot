@@ -47,7 +47,8 @@ config-plugin文件配置项：
 	chat.diylevel 自定义问答功能所需的最低管理员权限等级，默认为5，设为0则非群管理员用户也可自定义
 	chat.at 在群聊中，机器人的回复是(true)否(false)@提问者
 	chat.ai.enable 是(true)否(false)启用AI问答，可自行配置AI问答API
-	chat.ai.api AI问答所使用的API完整网址，必须包含%s用于放置问句
+	chat.ai.api AI问答所使用的API完整网址
+	chat.ai.body AI问答API请求包的Body内容，为空则使用GET请求；api或body其一必须包含%s用于放置问句
 	chat.ai.replaces 对AI问答的答句进行的词语替换映射
 	chat.ai.response 若AI问答API的回包为json格式，则在此填写答句的字段key；为空则直接将整个回包作为答句
 	chat.ai.tip 若触发AI问答，在答复消息前添加的附加前缀，可以为空`,
@@ -75,10 +76,11 @@ func init() {
 	proxy.AddConfig("at", true)
 
 	proxy.AddConfig("ai.enable", false)
-	proxy.AddConfig("ai.api", "http://api.qingyunke.com/api.php?key=free&appid=0&msg=%s")
+	proxy.AddConfig("ai.api", "")
+	proxy.AddConfig("ai.body", "")
 	proxy.AddConfig("ai.replaces", map[string]string{"小爱": "我", "{br}": "\\n"})
-	proxy.AddConfig("ai.response", "content")
-	proxy.AddConfig("ai.tip", "来自青云客API：\\n")
+	proxy.AddConfig("ai.response", "")
+	proxy.AddConfig("ai.tip", "来自AI问答：\\n")
 }
 
 func addDialogue(ctx *zero.Ctx) {
