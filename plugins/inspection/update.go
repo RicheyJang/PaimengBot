@@ -65,7 +65,13 @@ func downloadAndReplace(version string) error {
 	}
 	// defer utils.RemovePath(downloadDir) // TODO 下载更新完成后删除临时文件夹
 	downloadPath := filepath.Join(downloadDir, filename)
-	if err := client.DownloadToFile(downloadPath, downloadURL, 2); err != nil {
+	timeoutStr := proxy.GetConfigString("timeout") // 获取超时时间
+	timeout, _ := time.ParseDuration(timeoutStr)
+	if timeout < 5*time.Second {
+		timeout = 5 * time.Second
+	}
+	cli = client.NewHttpClient(&client.HttpOptions{Timeout: timeout, TryTime: 2})
+	if err := cli.DownloadToFile(downloadPath, downloadURL); err != nil {
 		return err
 	}
 	// 解压出可执行文件

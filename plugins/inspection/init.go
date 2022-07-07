@@ -24,6 +24,7 @@ var info = manager.PluginInfo{
 	关机：紧急关闭Bot程序
 
 config-plugin配置项：
+	inspection.timeout: 自动更新的超时时间，默认为5分钟
 可以通过heartbeat系列配置项添加心跳检测并将心跳消息定期发送给监听人
 若长时间没有收到心跳检测消息(且在监听时间段内)，说明机器人出现问题；但，非专业勿动：
 	inspection.heartbeat.receiver: 心跳检测监听人ID列表
@@ -46,6 +47,7 @@ func init() {
 	proxy.OnFullMatch([]string{"检查更新"}, zero.OnlyPrivate).SetBlock(true).SecondPriority().Handle(updateHandler)
 	proxy.OnFullMatch([]string{"关机"}, zero.OnlyPrivate).SetBlock(true).SecondPriority().Handle(shutdownHandler)
 	proxy.OnFullMatch([]string{"重启"}, zero.OnlyPrivate).SetBlock(true).SecondPriority().Handle(restartHandler)
+	proxy.AddConfig("timeout", "5m") // 默认超时 5分钟
 	proxy.AddConfig("heartbeat.receiver", []int64{})
 	proxy.AddConfig("heartbeat.interval", "1h")
 	proxy.AddConfig("heartbeat.period", "9-22")
