@@ -24,7 +24,8 @@ builds:
         goarch: arm64
       - goos: windows
         goarch: arm
-    
+    ldflags:
+      - -X github.com/RicheyJang/PaimengBot/plugins/inspection.Version=v{{.Version}}
     main: ./cmd
     binary: "paimeng" # 可执行文件名
 
