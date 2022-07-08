@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -51,33 +52,31 @@ func downloadAndReplace(version string, destFilepath string) error {
 		return fmt.Errorf("no suitable asset found")
 	}
 	downloadURL := downloadAsset.Get("browser_download_url").String()
+	filename := downloadAsset.Get("name").String()
 	// 验证URL
 	if len(downloadURL) == 0 {
 		return fmt.Errorf("downloadURL is empty")
 	}
-	index := strings.LastIndex(downloadURL, "/")
-	if index == -1 {
+	if index := strings.LastIndex(downloadURL, "/"); index == -1 {
 		return fmt.Errorf("downloadURL is invalid")
 	}
-	if res, err := cli.Head(downloadURL); err != nil || res.StatusCode != http.StatusOK { // 测试链接可用性
-		return fmt.Errorf("HEAD download URL(%v) failed, code=%v, err: %v", downloadURL, res.StatusCode, err)
-	}
-	filename := downloadURL[index+1:]
-	// 下载压缩包
+	// 规整路径
 	downloadDir := filepath.Join(consts.TempRootDir, "update")
 	if _, err := utils.MakeDir(downloadDir); err != nil {
 		return err
 	}
 	defer utils.RemovePath(downloadDir) // 下载更新完成后删除临时文件夹
 	downloadPath := filepath.Join(downloadDir, filename)
-	timeoutStr := proxy.GetConfigString("timeout") // 获取超时时间
-	timeout, _ := time.ParseDuration(timeoutStr)
-	if timeout < 5*time.Second {
-		timeout = 5 * time.Second
+	// 下载发行包
+	githubProxy := proxy.GetConfigString("proxy")
+	if len(githubProxy) == 0 { // 使用默认代理
+		githubProxy = "https://ghproxy.com/?q="
 	}
-	cli = client.NewHttpClient(&client.HttpOptions{Timeout: timeout, TryTime: 2})
-	if err := cli.DownloadToFile(downloadPath, downloadURL); err != nil {
-		return err
+	if err = downloadGithubAsset(cli, githubProxy+url.QueryEscape(downloadURL), downloadPath); err != nil {
+		err = downloadGithubAsset(cli, downloadURL, downloadPath) // 首先尝试镜像站，失败后再使用源地址
+	}
+	if err != nil { // 全部失败
+		return fmt.Errorf("download error: %v", err)
 	}
 	// 解压出可执行文件
 	var newBinaryPath string
@@ -102,6 +101,23 @@ func downloadAndReplace(version string, destFilepath string) error {
 	}
 	defer newFile.Close()
 	if _, err = io.Copy(oldFile, newFile); err != nil {
+		return err
+	}
+	return nil
+}
+
+// 通过github或镜像站下载发布包
+func downloadGithubAsset(checkClient *client.HttpClient, githubURL string, destPath string) error {
+	if res, err := checkClient.Head(githubURL); err != nil || res.StatusCode != http.StatusOK { // 测试链接可用性
+		return fmt.Errorf("HEAD download URL(%v) failed, code=%v, err: %v", githubURL, res.StatusCode, err)
+	}
+	timeoutStr := proxy.GetConfigString("timeout") // 获取超时时间
+	timeout, _ := time.ParseDuration(timeoutStr)
+	if timeout < 5*time.Second {
+		timeout = 5 * time.Second
+	}
+	cli := client.NewHttpClient(&client.HttpOptions{Timeout: timeout, TryTime: 2})
+	if err := cli.DownloadToFile(destPath, githubURL); err != nil {
 		return err
 	}
 	return nil
