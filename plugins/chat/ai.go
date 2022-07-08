@@ -76,7 +76,8 @@ func AIReply(ctx *zero.Ctx, question string) message.Message {
 		tip := proxy.GetConfigString("ai.tip")
 		tip = strings.ReplaceAll(tip, "\\n", "\n")
 		tipMsg := message.ParseMessageFromString(tip)
-		return append(tipMsg, message.Text(answer))
+		answerMsg := message.ParseMessageFromString(answer)
+		return append(tipMsg, answerMsg...)
 	} else {
 		log.Warn("AI问答API答句为空，原始回包：", string(rsp))
 		return nil
