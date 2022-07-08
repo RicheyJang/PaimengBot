@@ -173,8 +173,10 @@ func updateHandler(ctx *zero.Ctx) {
 
 // 关闭当前进程，启动指定可执行文件继续执行
 func rebirthTo(path string) {
+	proxy.GetLevelDB().Close()
+
 	proc := exec.Command(path, os.Args[1:]...)
-	//proc.Stdin = os.Stdin
+	proc.Stdin = os.Stdin
 	proc.Stderr = os.Stderr
 	proc.Stdout = os.Stdout
 	err := proc.Start()
@@ -196,7 +198,6 @@ func rebirthTo(path string) {
 func deleteOldBinary() {
 	nowPath := os.Args[0]
 	nowName := filepath.Base(nowPath)
-	nowExt := filepath.Ext(nowPath)
 	lastIndex := strings.LastIndex(nowName, versionSeparator)
 	if lastIndex <= 0 {
 		return
@@ -206,8 +207,7 @@ func deleteOldBinary() {
 	files, _ := os.ReadDir(".")
 	for _, file := range files {
 		fileInfo, _ := file.Info()
-		if isExecutable(fileInfo) && file.Name() != nowName &&
-			filepath.Ext(file.Name()) == nowExt && strings.HasPrefix(file.Name(), deletePrefix) {
+		if isExecutable(fileInfo) && file.Name() != nowName && strings.HasPrefix(file.Name(), deletePrefix) {
 			err := os.RemoveAll(filepath.Join(".", file.Name()))
 			if err != nil {
 				log.Errorf("删除旧版本文件(%v) error: %v", file.Name(), err)
