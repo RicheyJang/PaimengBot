@@ -38,7 +38,7 @@ config-plugin配置项：
 }
 
 const unknownVersion = "unknown"
-const deleteListFile = "./delete.list"
+const versionSeparator = "_"
 
 var Version = unknownVersion
 
@@ -57,22 +57,8 @@ func init() {
 	proxy.AddConfig("heartbeat.interval", "1h")
 	proxy.AddConfig("heartbeat.period", "9-22")
 	manager.WhenConfigFileChange(heartbeatConfigHook)
-	// 启动3秒后，依据待删除文件清单，删除文件
-	_, _ = proxy.AddScheduleOnceFunc(3*time.Second, func() {
-		if !utils.FileExists(deleteListFile) {
-			return
-		}
-		list, err := ioutil.ReadFile(deleteListFile)
-		if err != nil {
-			return
-		}
-		if err = utils.RemovePath(string(list)); err != nil {
-			log.Errorf("删除%v文件失败，请手动删除！, err: %v", string(list), err)
-		}
-		if err = utils.RemovePath(deleteListFile); err != nil {
-			log.Errorf("删除%v文件失败，请手动删除！, err: %v", deleteListFile, err)
-		}
-	})
+	// 启动3秒后，删除旧版本文件
+	_, _ = proxy.AddScheduleOnceFunc(3*time.Second, deleteOldBinary)
 }
 
 // 清理临时文件
@@ -167,11 +153,11 @@ func updateHandler(ctx *zero.Ctx) {
 	oldName := filepath.Base(oldPath)
 	oldExt := filepath.Ext(oldPath)
 	lastLen := len(oldExt)
-	lastIndex := strings.LastIndex(oldName, "_") // 替换自动更新过的_vx.x.x
+	lastIndex := strings.LastIndex(oldName, versionSeparator) // 替换自动更新过的_vx.x.x
 	if lastIndex > 0 {
 		lastLen = len(oldName) - lastIndex
 	}
-	destPath := oldPath[:len(oldPath)-lastLen] + "_" + now + oldExt
+	destPath := oldPath[:len(oldPath)-lastLen] + versionSeparator + now + oldExt
 	// 执行更新
 	if err = downloadAndReplace(now, destPath); err != nil {
 		log.Errorf("downloadAndReplace err: %v", err)
@@ -179,10 +165,7 @@ func updateHandler(ctx *zero.Ctx) {
 		return
 	}
 	ctx.Send(fmt.Sprintf("更新成功，即将重启%v，重启成功与否都无提示", utils.GetBotNickname()))
-	// 记录当前可执行文件绝对路径至待删除文件名单 并 重启
-	if err = ioutil.WriteFile(deleteListFile, []byte(oldPath), 0o644); err != nil {
-		log.Errorf("无法记录待删除文件清单，请自行删除%v文件，err: %v", oldPath, err)
-	}
+	// 重启
 	rebirthTo(destPath)
 }
 
@@ -205,4 +188,30 @@ func rebirthTo(path string) {
 	}
 
 	log.Fatal("旧进程退出")
+}
+
+// 删除旧版本可执行文件
+func deleteOldBinary() {
+	nowPath := os.Args[0]
+	nowName := filepath.Base(nowPath)
+	nowExt := filepath.Ext(nowPath)
+	lastIndex := strings.LastIndex(nowName, versionSeparator)
+	if lastIndex <= 0 {
+		return
+	}
+	deletePrefix := nowName[:lastIndex]
+	// 遍历当前目录下的所有可执行文件
+	files, _ := os.ReadDir(".")
+	for _, file := range files {
+		fileInfo, _ := file.Info()
+		if isExecutable(fileInfo) && file.Name() != nowName &&
+			filepath.Ext(file.Name()) == nowExt && strings.HasPrefix(file.Name(), deletePrefix) {
+			err := os.RemoveAll(filepath.Join(".", file.Name()))
+			if err != nil {
+				log.Errorf("删除旧版本文件(%v) error: %v", file.Name(), err)
+			} else {
+				log.Infof("成功删除旧版本文件%v", file.Name())
+			}
+		}
+	}
 }

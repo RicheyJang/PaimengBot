@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -143,7 +144,7 @@ func unzipFile(zipPath, dest string) (string, error) {
 	defer rc.Close()
 	// 遍历压缩包
 	for _, f := range rc.File {
-		if !f.FileInfo().IsDir() && (f.Mode().Perm()&os.FileMode(0111)) == 0111 { // 只需解压出可执行文件
+		if isExecutable(f.FileInfo()) { // 只需解压出可执行文件
 			fr, err := f.Open()
 			if err != nil {
 				return "", err
@@ -179,7 +180,7 @@ func tarGzFile(zipPath, dest string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		if !h.FileInfo().IsDir() && (h.FileInfo().Mode().Perm()&os.FileMode(0111)) == 0111 {
+		if isExecutable(h.FileInfo()) {
 			dest = filepath.Join(dest, filepath.Base(h.Name))
 			return dest, decompressFileTo(tr, dest)
 		}
@@ -199,4 +200,9 @@ func decompressFileTo(fr io.Reader, destPath string) error {
 		return err
 	}
 	return nil
+}
+
+// 是否为可执行文件
+func isExecutable(file fs.FileInfo) bool {
+	return !file.IsDir() && (file.Mode().Perm()&os.FileMode(0111)) == 0111
 }
