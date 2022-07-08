@@ -164,13 +164,13 @@ func CheckOnebot(brief bool) string {
 	}
 
 	// 统计信息
-	bot += fmt.Sprintf("\n收到的数据包总数: %s", rsp.Get("stat.PacketReceived").String())
-	bot += fmt.Sprintf("\n发送的数据包总数: %s", rsp.Get("stat.PacketSent").String())
-	bot += fmt.Sprintf("\n数据包丢失总数: %s", rsp.Get("stat.PacketLost").String())
-	bot += fmt.Sprintf("\n接收消息总数: %s", rsp.Get("stat.MessageReceived").String())
-	bot += fmt.Sprintf("\n发送消息总数: %s", rsp.Get("stat.MessageSent").String())
-	bot += fmt.Sprintf("\n链接断开次数: %s", rsp.Get("stat.DisconnectTimes").String())
-	bot += fmt.Sprintf("\n账号掉线次数: %s", rsp.Get("stat.LostTimes").String())
+	bot += fmt.Sprintf("\n收到的数据包总数: %s", rsp.Get("stat.packet_received").String())
+	bot += fmt.Sprintf("\n发送的数据包总数: %s", rsp.Get("stat.packet_sent").String())
+	bot += fmt.Sprintf("\n数据包丢失总数: %s", rsp.Get("stat.packet_lost").String())
+	bot += fmt.Sprintf("\n接收消息总数: %s", rsp.Get("stat.message_received").String())
+	bot += fmt.Sprintf("\n发送消息总数: %s", rsp.Get("stat.message_sent").String())
+	bot += fmt.Sprintf("\n链接断开次数: %s", rsp.Get("stat.disconnect_times").String())
+	bot += fmt.Sprintf("\n账号掉线次数: %s", rsp.Get("stat.lost_times").String())
 	return bot
 }
 
