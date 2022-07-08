@@ -204,5 +204,8 @@ func decompressFileTo(fr io.Reader, destPath string) error {
 
 // 是否为可执行文件
 func isExecutable(file fs.FileInfo) bool {
+	if runtime.GOOS == "windows" {
+		return !file.IsDir() && strings.HasSuffix(file.Name(), ".exe")
+	}
 	return !file.IsDir() && (file.Mode().Perm()&os.FileMode(0111)) == 0111
 }
