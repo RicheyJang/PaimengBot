@@ -118,8 +118,8 @@ func IDoNotKnow(ctx *zero.Ctx, question string) message.Message {
 	case []string, []interface{}:
 		a = cast.ToStringSlice(c)
 	}
-	if len(a) == 0 {
-		a = []string{"{nickname}不知道哦"}
+	if len(a) == 0 || (len(a) == 1 && a[0] == "") {
+		return nil
 	}
 	str := a[rand.Intn(len(a))]
 	str = strings.ReplaceAll(str, "{nickname}", utils.GetBotNickname())
