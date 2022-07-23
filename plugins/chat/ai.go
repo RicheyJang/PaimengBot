@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils/client"
 	log "github.com/sirupsen/logrus"
@@ -36,7 +37,7 @@ func AIReply(ctx *zero.Ctx, question string) message.Message {
 		body = fmt.Sprintf(body, question)
 	}
 	// 请求
-	cli := client.NewHttpClient(nil)
+	cli := client.NewHttpClient(&client.HttpOptions{Timeout: getAITimeout()})
 	cli.SetUserAgent()
 	var src *http.Response
 	var err error
@@ -98,4 +99,14 @@ func aiDealer(ctx *zero.Ctx, question string) message.Message {
 		log.Infof("from AI API")
 	}
 	return msg
+}
+
+func getAITimeout() time.Duration {
+	str := proxy.GetConfigString("ai.timeout")
+	tm, err := time.ParseDuration(str)
+	if err != nil || tm <= 0 {
+		log.Warnf("wrong timeout format: %v", err)
+		return time.Second * 10
+	}
+	return tm
 }
