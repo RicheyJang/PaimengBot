@@ -3,12 +3,18 @@ package sc
 import (
 	"math"
 
-	log "github.com/sirupsen/logrus"
-
-	"gorm.io/gorm"
-
 	"github.com/RicheyJang/PaimengBot/basic/dao"
+	log "github.com/sirupsen/logrus"
+	zero "github.com/wdvxdr1123/ZeroBot"
+	"gorm.io/gorm"
 )
+
+const ReturnCostTag = "return_cost"
+
+// SetNeedReturnCost 标记当前操作需要返还扣除的货币
+func SetNeedReturnCost(ctx *zero.Ctx) {
+	ctx.State[ReturnCostTag] = true
+}
 
 // RealCoin 获取真实金额，即基础货币 * 倍率
 func RealCoin(base float64) float64 {

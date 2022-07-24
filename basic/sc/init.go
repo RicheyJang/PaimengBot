@@ -62,6 +62,7 @@ func init() {
 	proxy.OnCommands([]string{"设置好感度", "设置财富"}, zero.SuperUserPermission).SetBlock(true).ThirdPriority().Handle(setHandler)
 	proxy.OnCommands([]string{"增加好感度", "增加财富"}, zero.SuperUserPermission).SetBlock(true).ThirdPriority().Handle(addHandler)
 	manager.AddPreHook(costHook).SetPriority(10)
+	manager.AddPostHook(returnCostHook)
 	proxy.AddConfig("onlygroup", true)
 	proxy.AddConfig("coin.unit", "原石")
 	proxy.AddConfig("coin.rate", 80)
@@ -318,7 +319,32 @@ func costHook(plugin *manager.PluginCondition, ctx *zero.Ctx) error {
 		ctx.SendChain(message.At(ctx.Event.UserID), message.Text(fmt.Sprintf("货币不足，当前剩余%.0f%s", RealCoin(left), Unit())))
 		return fmt.Errorf("货币不足")
 	}
+	ctx.State["cost_coin"] = cost
 	log.Infof("扣除用户%d基础金额%.2f，剩余基础金额：%.2f", ctx.Event.UserID, cost, left)
+	return nil
+}
+
+// 若打上了返还Tag，则返还
+func returnCostHook(plugin *manager.PluginCondition, ctx *zero.Ctx) error {
+	// 检查
+	costV, ok := ctx.State["cost_coin"]
+	if !ok { // 未扣除
+		return nil
+	}
+	if _, ok = ctx.State[ReturnCostTag]; !ok { // 未打上返还Tag
+		return nil
+	}
+	cost, ok := costV.(float64)
+	if cost <= 0 || !ok { // 花费金额无需返还
+		return nil
+	}
+	// 返还
+	left, ok := AddBaseCoin(ctx.Event.UserID, cost)
+	if !ok {
+		return nil
+	}
+	ctx.SendChain(message.At(ctx.Event.UserID), message.Text(fmt.Sprintf("扣除的%.0f%s已返还", RealCoin(cost), Unit())))
+	log.Infof("返还用户%d基础金额%.2f，剩余基础金额：%.2f", ctx.Event.UserID, cost, left)
 	return nil
 }
 
