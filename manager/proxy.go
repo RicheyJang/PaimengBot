@@ -1,6 +1,7 @@
 package manager
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
@@ -20,9 +21,10 @@ import (
 // PluginProxy 插件代理，呈现给插件，用于添加事件动作、读写配置、获取插件锁、添加定时任务
 // 插件在注册后，应只与此代理交互，与Manager再无交际
 type PluginProxy struct {
-	key      string         // 插件Key
-	u        *PluginManager // 所从属的插件管理器
-	userLock sync.Map       // 用户锁
+	key        string                        // 插件Key
+	u          *PluginManager                // 所从属的插件管理器
+	userLock   sync.Map                      // 用户锁
+	callLimits map[string]*pluginCallLimiter // 调用限制映射
 
 	c PluginCondition // 插件状态（被管理器控制）
 }
@@ -281,4 +283,95 @@ func (p *PluginProxy) LockUser(userID int64) bool {
 // UnlockUser 解锁用户
 func (p *PluginProxy) UnlockUser(userID int64) {
 	p.userLock.Delete(userID)
+}
+
+// ---- 调用限制器 ----
+
+// SetCallLimiter 设置调用限制器：功能级、可设置次数、重启后仍有效、耗时长，建议用于天级月级。
+// 每interval时间段内可调用times次，并非令牌桶，起始计时点以truncate进行向前对齐
+func (p *PluginProxy) SetCallLimiter(key string, interval time.Duration, times int) *pluginCallLimiter {
+	cl := &pluginCallLimiter{
+		key:      key,
+		interval: interval,
+		truncate: interval, // 对齐时长使用interval
+		times:    int64(times),
+	}
+	p.callLimits[key] = cl
+	return cl
+}
+
+// BindTimesConfig 绑定次数配置项Key
+func (cl *pluginCallLimiter) BindTimesConfig(key string) *pluginCallLimiter {
+	cl.timesConfigKey = key
+	return cl
+}
+
+// CheckCallLimit 检查调用限制，为true表示可以进行一下步操作并会扣除一次调用次数
+func (p *PluginProxy) CheckCallLimit(key string) bool {
+	cl, ok := p.callLimits[key]
+	if !ok || cl == nil {
+		return true
+	}
+	// 上锁
+	cl.mutex.Lock()
+	defer cl.mutex.Unlock()
+	// 读取上次调用状态
+	now := time.Now()
+	levelKey := fmt.Sprintf("%s.p_call_limit.%s", p.key, key)
+	infoV, err := p.GetLevelDB().Get([]byte(levelKey), nil)
+	if err != nil || len(infoV) == 0 { // 尚未调用过
+		infoV, err = json.Marshal(pluginCallLimitInfo{
+			StartTamp: now.Truncate(cl.truncate).Unix(),
+			CallCount: 1,
+		})
+		if err != nil {
+			return true
+		}
+		_ = p.GetLevelDB().Put([]byte(levelKey), infoV, nil)
+		return true
+	}
+	// 解析上次调用状态
+	var info pluginCallLimitInfo
+	_ = json.Unmarshal(infoV, &info)
+	if now.Sub(time.Unix(info.StartTamp, 0)) > cl.interval { // 进入下一时窗
+		info.StartTamp = now.Truncate(cl.truncate).Unix()
+		info.CallCount = 1
+	} else {
+		info.CallCount++
+	}
+	// 获取次数限制
+	times := cl.times
+	if len(cl.timesConfigKey) > 0 {
+		times = p.GetConfigInt64(cl.timesConfigKey)
+	}
+	if times <= 0 {
+		times = 1
+	}
+	// 检查调用次数限制
+	if int64(info.CallCount) > times { // 超出限制
+		return false
+	}
+	// 更新调用状态
+	infoV, err = json.Marshal(info)
+	if err != nil {
+		return true
+	}
+	_ = p.GetLevelDB().Put([]byte(levelKey), infoV, nil)
+	return true
+}
+
+type pluginCallLimiter struct {
+	key      string
+	interval time.Duration
+	truncate time.Duration
+	times    int64
+
+	timesConfigKey string
+
+	mutex sync.Mutex
+}
+
+type pluginCallLimitInfo struct {
+	StartTamp int64 `json:"first_call"`
+	CallCount int   `json:"call_count"`
 }

@@ -91,8 +91,9 @@ func (manager *PluginManager) RegisterPlugin(info PluginInfo) *PluginProxy {
 		return nil
 	}
 	proxy := &PluginProxy{ // 创建插件代理
-		key: key,
-		u:   manager,
+		key:        key,
+		u:          manager,
+		callLimits: make(map[string]*pluginCallLimiter),
 		c: PluginCondition{
 			Key:        key,
 			PluginInfo: info,
