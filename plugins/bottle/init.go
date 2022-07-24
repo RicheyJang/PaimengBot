@@ -5,15 +5,15 @@ import (
 	"strconv"
 	"strings"
 
-	"gorm.io/gorm"
-
-	"github.com/RicheyJang/PaimengBot/utils/images"
-	log "github.com/sirupsen/logrus"
-	"github.com/wdvxdr1123/ZeroBot/message"
-
+	"github.com/RicheyJang/PaimengBot/basic/auth"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/RicheyJang/PaimengBot/utils/images"
+
+	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
+	"gorm.io/gorm"
 )
 
 var info = manager.PluginInfo{
@@ -23,7 +23,7 @@ var info = manager.PluginInfo{
 	扔漂流瓶 [内容]：请文明用语哦
 	捡漂流瓶`,
 	SuperUsage: `
-	删除漂流瓶 [漂流瓶ID]：让这个漂流瓶永远消失
+	删除漂流瓶 [漂流瓶ID]：让这个漂流瓶永远消失（群管也可执行）
 	删除所有漂流瓶：让当前已有的所有漂流瓶永远消失
 config-plugin配置项：
 	bottle.max：最多容纳多少漂流瓶，溢出时会丢弃较早放入的漂流瓶
@@ -111,6 +111,11 @@ func pickHandler(ctx *zero.Ctx) {
 }
 
 func deleteHandler(ctx *zero.Ctx) {
+	// 校验权限
+	if !(utils.IsSuperUser(ctx.Event.UserID) || auth.CheckPriority(ctx, auth.DefaultAdminLevel, false)) {
+		return
+	}
+	// 执行
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	id, err := strconv.ParseInt(arg, 10, 64)
 	if err != nil {

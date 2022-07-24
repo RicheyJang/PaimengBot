@@ -44,6 +44,9 @@ config-plugin配置项：
 	IsSuperOnly: true,
 }
 
+const DefaultAdminLevel = 5
+const DefaultOwnerLevel = 1
+
 func init() {
 	proxy = manager.RegisterPlugin(info)
 	if proxy == nil {
@@ -52,9 +55,9 @@ func init() {
 	proxy.OnCommands([]string{"更新管理员权限"}).SetBlock(true).FirstPriority().Handle(flushAllPriority)
 	proxy.OnCommands([]string{"设置管理员权限"}).SetBlock(true).FirstPriority().Handle(setOnePriority)
 	proxy.OnCommands([]string{"查看管理员权限"}).SetBlock(true).FirstPriority().Handle(showPriority)
-	proxy.AddConfig("defaultLevel", 5)
-	proxy.AddConfig("ownerLevel", 1) // 群主的默认权限等级
-	proxy.AddConfig("superLevel", 1) // 超级用户的默认权限等级
+	proxy.AddConfig("defaultLevel", DefaultAdminLevel)
+	proxy.AddConfig("ownerLevel", DefaultOwnerLevel) // 群主的默认权限等级
+	proxy.AddConfig("superLevel", DefaultOwnerLevel) // 超级用户的默认权限等级
 	_, _ = proxy.AddScheduleDailyFunc(1, 5, initialAllPriority)
 	manager.AddPreHook(authHook) // 在调用插件前检查管理员权限
 }
