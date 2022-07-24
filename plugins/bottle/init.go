@@ -28,6 +28,7 @@ var info = manager.PluginInfo{
 config-plugin配置项：
 	bottle.max：最多容纳多少漂流瓶，溢出时会丢弃较早放入的漂流瓶
 	bottle.black：禁用词汇列表
+	bottle.notip：没有捡到任何漂流瓶时的回复消息内容
 	bottle.destroy：是(true)否(false)在捡起漂流瓶后顺便删除，默认不删`,
 }
 var proxy *manager.PluginProxy
@@ -45,6 +46,7 @@ func init() {
 	proxy.OnFullMatch([]string{"删除所有漂流瓶"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(deleteAllHandler)
 	proxy.AddConfig("max", 200)
 	proxy.AddConfig("black", []string{"爹", "爸"})
+	proxy.AddConfig("notip", "啥都没捞着")
 	proxy.AddConfig("destroy", false)
 }
 
@@ -103,7 +105,11 @@ func pickHandler(ctx *zero.Ctx) {
 		return
 	}
 	if res.RowsAffected == 0 {
-		ctx.Send("啥都没捞着")
+		rep := proxy.GetConfigString("notip")
+		if len(rep) == 0 {
+			return
+		}
+		ctx.Send(rep)
 		return
 	}
 	ctx.Send(genBottleMsg(bottle))
