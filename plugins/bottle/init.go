@@ -39,7 +39,9 @@ func init() {
 	}
 	proxy.OnCommands([]string{"扔漂流瓶", "丢漂流瓶"}).SetBlock(true).SetPriority(3).Handle(dropHandler)
 	proxy.OnFullMatch([]string{"捡漂流瓶", "捡起漂流瓶"}).SetBlock(true).SetPriority(3).Handle(pickHandler)
-	proxy.OnCommands([]string{"删除漂流瓶"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(deleteHandler)
+	proxy.OnCommands([]string{"删除漂流瓶"}, func(ctx *zero.Ctx) bool {
+		return zero.SuperUserPermission(ctx) || auth.CheckPriority(ctx, auth.DefaultAdminLevel, false)
+	}).SetBlock(true).SetPriority(3).Handle(deleteHandler)
 	proxy.OnFullMatch([]string{"删除所有漂流瓶"}, zero.SuperUserPermission).SetBlock(true).SetPriority(3).Handle(deleteAllHandler)
 	proxy.AddConfig("max", 200)
 	proxy.AddConfig("black", []string{"爹", "爸"})
@@ -111,11 +113,6 @@ func pickHandler(ctx *zero.Ctx) {
 }
 
 func deleteHandler(ctx *zero.Ctx) {
-	// 校验权限
-	if !(utils.IsSuperUser(ctx.Event.UserID) || auth.CheckPriority(ctx, auth.DefaultAdminLevel, false)) {
-		return
-	}
-	// 执行
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	id, err := strconv.ParseInt(arg, 10, 64)
 	if err != nil {
