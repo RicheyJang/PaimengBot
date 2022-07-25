@@ -306,10 +306,18 @@ func (cl *pluginCallLimiter) BindTimesConfig(key string) *pluginCallLimiter {
 	return cl
 }
 
+func (cl *pluginCallLimiter) SkipSuperuser(skip bool) *pluginCallLimiter {
+	cl.skipSuperuser = skip
+	return cl
+}
+
 // CheckCallLimit 检查调用限制，为true表示可以进行一下步操作并会扣除一次调用次数
-func (p *PluginProxy) CheckCallLimit(key string) bool {
+func (p *PluginProxy) CheckCallLimit(key string, id int64) bool {
 	cl, ok := p.callLimits[key]
 	if !ok || cl == nil {
+		return true
+	}
+	if cl.skipSuperuser && utils.IsSuperUser(id) {
 		return true
 	}
 	// 上锁
@@ -317,7 +325,7 @@ func (p *PluginProxy) CheckCallLimit(key string) bool {
 	defer cl.mutex.Unlock()
 	// 读取上次调用状态
 	now := time.Now()
-	levelKey := fmt.Sprintf("%s.p_call_limit.%s", p.key, key)
+	levelKey := fmt.Sprintf("%s.p_call_limit.%s.%d", p.key, key, id)
 	infoV, err := p.GetLevelDB().Get([]byte(levelKey), nil)
 	if err != nil || len(infoV) == 0 { // 尚未调用过
 		infoV, err = json.Marshal(pluginCallLimitInfo{
@@ -367,6 +375,7 @@ type pluginCallLimiter struct {
 	times    int64
 
 	timesConfigKey string
+	skipSuperuser  bool
 
 	mutex sync.Mutex
 }

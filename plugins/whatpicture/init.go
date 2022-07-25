@@ -39,7 +39,7 @@ func init() {
 	proxy.AddConfig("timeout", "30s")
 	proxy.AddConfig("link", true)
 	proxy.AddConfig(consts.PluginConfigCDKey, "1m")
-	proxy.SetCallLimiter("all", 24*time.Hour, 5).BindTimesConfig("max")
+	proxy.SetCallLimiter("all", 24*time.Hour, 5).BindTimesConfig("max").SkipSuperuser(true)
 }
 
 func searchPicHandler(ctx *zero.Ctx) {
@@ -71,7 +71,7 @@ func searchPicHandler(ctx *zero.Ctx) {
 	}
 	defer proxy.UnlockUser(0)
 	// 检测是否到限额
-	if !proxy.CheckCallLimit("all") {
+	if !proxy.CheckCallLimit("all", ctx.Event.UserID) {
 		ctx.Send("今日搜图次数已达上限，请明天再试")
 		sc.SetNeedReturnCost(ctx)
 		return
