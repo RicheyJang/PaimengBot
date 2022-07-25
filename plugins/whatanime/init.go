@@ -14,6 +14,8 @@ var info = manager.PluginInfo{
 	Name: "看图识番",
 	Usage: `用法：
 	识番/搜番 [图片]: 搜索该图出现的番剧以及时间点`,
+	SuperUsage: `config-plugin配置项：
+	whatanime.timeout: 单次搜索超时时间`,
 	Classify: "实用工具",
 }
 var proxy *manager.PluginProxy
@@ -24,6 +26,7 @@ func init() {
 		return
 	}
 	proxy.OnCommands([]string{"识番", "搜番", "这是什么番", "搜动漫", "这是什么动漫"}).SetBlock(true).SecondPriority().Handle(searchAnimeHandler)
+	proxy.AddConfig("timeout", "30s")
 	proxy.AddAPIConfig(consts.APIOfTraceMoeKey, "api.trace.moe")
 }
 

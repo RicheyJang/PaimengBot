@@ -5,6 +5,7 @@ import (
 	"math"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
@@ -29,7 +30,12 @@ func searchAnimeByTraceMoe(url string, showAdult bool) (msg message.Message, err
 	// 暂时使用trace.moe提供的anilistInfo，今后可以改成https://anilist.gitbook.io/anilist-apiv2-docs/提供的更为详细的信息
 	api = fmt.Sprintf("%ssearch?anilistInfo&cutBorders&url=%s", api, url)
 	// 调用
-	c := client.NewHttpClient(nil)
+	timeoutS := proxy.GetConfigString("timeout")
+	timeout, err := time.ParseDuration(timeoutS)
+	if err != nil || timeout <= 0 {
+		timeout = 30 * time.Second
+	}
+	c := client.NewHttpClient(&client.HttpOptions{Timeout: timeout})
 	rsp, err := c.GetGJson(api)
 	if err != nil {
 		return message.Message{message.Text("出错了...")}, err
