@@ -1,0 +1,931 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <atom:link href=" https://richeyjang.github.io/PaimengBot/rss.xml" rel="self" type="application/rss+xml"/>
+    <title>派蒙Bot</title>
+    <link> https://richeyjang.github.io/PaimengBot/</link>
+    <description>一个使用Onebot协议、基于ZeroBot的QQ娱乐机器人</description>
+    <language>zh-CN</language>
+    <pubDate>Mon, 25 Jul 2022 08:54:54 GMT</pubDate>
+    <lastBuildDate>Mon, 25 Jul 2022 08:54:54 GMT</lastBuildDate>
+    <generator>@mr-hope/vuepress-plugin-feed</generator>
+    <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
+    <item>
+      <title>Proxy文档</title>
+      <link> https://richeyjang.github.io/PaimengBot/develop/proxy/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/develop/proxy/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">Proxy文档</source>
+      <pubDate>Sat, 29 Jan 2022 04:13:09 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="proxy文档"> Proxy文档</h1>
+<p>提供：统一插件配置管理、关系型数据库、K-V数据库、定时任务、插件用户级锁、调用限制器。</p>
+<p>位于manager/proxy.go文件，注释也比较详尽，尽量参阅注释吧。</p>
+<h2 id="统一插件配置管理"> 统一插件配置管理</h2>
+<p>所有插件配置收归到config-plugin.yaml文件，通过<code>proxy.AddConfig</code>函数，会自动添加一个配置项；通过<code>proxy.GetConfig</code>系列函数，可以获取该插件的指定配置项值。</p>
+<div><p>例子</p>
+<p>在echo插件的init函数中调用proxy.AddConfig(&quot;times&quot;, 3)来新增一个配置项，会在config-plugin.yaml文件中自动添加一个<code>echo.times</code>配置项，默认值为3。</p>
+<p>在echo插件的EchoHandler中调用proxy.GetConfigString(&quot;times&quot;)来获取<code>echo.times</code>配置项的值，并自动转为string类型。</p>
+</div>
+<h2 id="关系型数据库"> 关系型数据库</h2>
+<p>派蒙Bot已经初始化好了一个数据库连接，直接通过<code>proxy.GetDB()</code>即可获取一个已建立连接的<code>*gorm.DB</code>，直接CURD即可。</p>
+<p>gorm文档：<a href="https://gorm.io/zh_CN/docs/index.html" target="_blank" rel="noopener noreferrer">gorm</a></p>
+<p><strong>注意</strong>！若想在单独的model.go文件init函数中初始化即<code>AutoMigrate</code>一个model，请不要使用<code>proxy.GetDB()</code>，因为此时proxy可能还没有被初始化，可以这样进行代替：</p>
+<div><pre><code><span>import</span> <span>(</span>
+	<span>"github.com/RicheyJang/PaimengBot/manager"</span>
+	log <span>"github.com/sirupsen/logrus"</span>
+<span>)</span>
+
+<span>type</span> SomeModel <span>struct</span> <span>{</span>
+	ID    <span>int</span>    <span>`gorm:"column:id;primaryKey"`</span>
+	Value <span>string</span>
+<span>}</span>
+
+<span>func</span> <span>init</span><span>(</span><span>)</span> <span>{</span>
+	err <span>:=</span> manager<span>.</span><span>GetDB</span><span>(</span><span>)</span><span>.</span><span>AutoMigrate</span><span>(</span><span>&amp;</span>SomeModel<span>{</span><span>}</span><span>)</span> <span>// manager包全局提供了一个已初始化好的*gorm.DB，专门用于AutoMigrate</span>
+	<span>if</span> err <span>!=</span> <span>nil</span> <span>{</span>
+		log<span>.</span><span>Errorf</span><span>(</span><span>"[SQL] SomeModel 初始化失败, err: %v"</span><span>,</span> err<span>)</span>
+	<span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br></div></div><h2 id="k-v数据库"> K-V数据库</h2>
+<p>派蒙Bot使用<code>goleveldb</code>作为K-V数据库，通过<code>proxy.GetLevelDB()</code>即可获取一个已初始化好的<code>*leveldb.DB</code>。</p>
+<p>goleveldb仓库：<a href="https://github.com/syndtr/goleveldb" target="_blank" rel="noopener noreferrer">Github</a></p>
+<h2 id="定时任务"> 定时任务</h2>
+<p>想每天2点班执行某个任务？想每隔30秒执行某个任务？想在2分钟后执行一次某个任务？想在每个月1号的13点执行某个任务？</p>
+<p>派蒙Bot的proxy提供了一系列定时任务相关函数，收归统一管理：例如可以通过PluginCondition的Disabled方法关闭该插件所有定时任务。</p>
+<div><pre><code><span>// AddScheduleFunc 添加定时任务，并自动启动: spec为一个标准cron表达式</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>AddScheduleFunc</span><span>(</span>spec <span>string</span><span>,</span> fn <span>func</span><span>(</span><span>)</span><span>)</span> <span>(</span>id cron<span>.</span>EntryID<span>,</span> err <span>error</span><span>)</span>
+<span>// AddScheduleEveryFunc 便携添加定时任务，固定时间间隔执行，duration符合time.ParseDuration</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>AddScheduleEveryFunc</span><span>(</span>duration <span>string</span><span>,</span> fn <span>func</span><span>(</span><span>)</span><span>)</span> <span>(</span>id cron<span>.</span>EntryID<span>,</span> err <span>error</span><span>)</span> 
+<span>// AddScheduleDailyFunc 便携添加定时任务，每天hour:minute时执行</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>AddScheduleDailyFunc</span><span>(</span>hour<span>,</span> minute <span>int</span><span>,</span> fn <span>func</span><span>(</span><span>)</span><span>)</span> <span>(</span>id cron<span>.</span>EntryID<span>,</span> err <span>error</span><span>)</span>
+<span>// AddScheduleOnceFunc 便携添加定时任务，在等待period（period&lt;1年）时长后执行仅一次</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>AddScheduleOnceFunc</span><span>(</span>period time<span>.</span>Duration<span>,</span> fn <span>func</span><span>(</span><span>)</span><span>)</span> <span>(</span>id cron<span>.</span>EntryID<span>,</span> err <span>error</span><span>)</span>
+<span>// DeleteSchedule 删除指定id定时任务</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>DeleteSchedule</span><span>(</span>id cron<span>.</span>EntryID<span>)</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br></div></div><h2 id="其它"> 其它</h2>
+<p>TODO</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装派蒙Bot</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/bot/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/bot/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装派蒙Bot</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装派蒙bot"> 安装派蒙Bot</h1>
+<h2 id="最后的配置"> 最后的配置</h2>
+<p>最后，在派蒙Bot文件夹下的config-main.yaml配置文件中，在superuser配置项（是一个YAML字符串数组类型）中，添加上你自己的QQ号（作为超级用户管理派蒙Bot）。</p>
+<p><img src="./../pic/superuserconfig.jpg" alt="superuser" loading="lazy"></p>
+<h2 id="运行"> 运行</h2>
+<p>类似<a href="./#第一次启动">第一次启动</a>，再次运行派蒙机器人。</p>
+<p><strong>注意</strong>！派蒙Bot和Go-cqhttp都要持续运行，缺一不可。</p>
+<h2 id="长期部署"> 长期部署</h2>
+<p>派蒙Bot支持以服务方式在后台运行，进入派蒙Bot目录，执行：</p>
+<div><pre><code>./paimeng -d
+</code></pre>
+<div><span>1</span><br></div></div><p>Go-cqhttp也支持以服务方式在后台运行，但需要以密码方式登录过，并保证服务方式启动时无需输密码、扫码、滑条等操作，进入Go-cqhttp目录，执行：</p>
+<div><pre><code>./go-cqhttp -d
+</code></pre>
+<div><span>1</span><br></div></div><p>但是，很多情况下，仍需进行输密码、扫码、滑条等操作，所以建议使用<code>Screen</code>或<code>Tmux</code>等会话保持工具来保证Go-cqhttp的持续运行。</p>
+<p><strong>如果启动成功，那么你就可以快乐地与派蒙Bot玩耍啦</strong></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>开发文档</title>
+      <link> https://richeyjang.github.io/PaimengBot/develop/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/develop/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">开发文档</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="开发文档"> 开发文档</h1>
+<h2 id="基本介绍"> 基本介绍</h2>
+<p>派蒙Bot使用插件式统一管理，用以提供帮助、限流、鉴权等能力。开发语言Golang，因此理论性能要比使用python开发的机器人高出不少。</p>
+<p>推荐Golang教程：<a href="https://golang.iswbm.com/" target="_blank" rel="noopener noreferrer">iswbm</a></p>
+<h2 id="插件开发"> 插件开发</h2>
+<p><strong>插件管理器所在包：manager</strong></p>
+<p>开发一个新插件时，请在plugins目录下新建一个目录，其目录名(包名)会被manager自动沿用为插件Key，用于进行插件配置、限流管理等等。</p>
+<div><p>例子</p>
+<p>例如，开发一个复读插件，在plugins目录下新建目录echo，在echo下创建echo.go文件，它的插件Key将会自动设为echo，在config-plugin.yaml文件中，该插件的配置项将会以<code>echo</code>为根。</p>
+</div>
+<h3 id="初始化"> 初始化</h3>
+<p>首先，为你的新插件声明一个<code>manager.PluginInfo</code>类型变量，用以描述插件信息。</p>
+<p><code>manager.PluginInfo</code>结构定义：</p>
+<div><pre><code><span>// PluginInfo 插件信息</span>
+<span>type</span> PluginInfo <span>struct</span> <span>{</span>
+	Name        <span>string</span> <span>// [必填] 插件名称</span>
+	Usage       <span>string</span> <span>// [必填] 插件用法描述：会在插件帮助详情中展示</span>
+
+	SuperUsage  <span>string</span> <span>// [选填] 插件超级用户用法描述</span>
+	Classify    <span>string</span> <span>// [选填] 插件分类，为空时代表默认分类</span>
+	IsPassive   <span>bool</span>   <span>// [选填] 是否为被动插件：在帮助中被标识为被动功能；</span>
+	IsSuperOnly <span>bool</span>   <span>// [选填] 是否为超级用户专属插件：若true，消息性事件会自动加上SuperOnly检查；在帮助中只有超级用户私聊可见；</span>
+	AdminLevel  <span>int</span>    <span>// [选填] 群管理员使用最低级别： 0 表示非群管理员专用插件 >0 表示数字越低，权限要求越高；会在帮助中进行标识；配置文件中 插件Key.adminlevel 配置项优先级高于此项</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br></div></div><p>随后，声明一个<code>*manager.PluginProxy</code>类型变量，用来作为插件代理 使用插件管理器提供的各项能力。</p>
+<p>接下来，在<code>init</code>函数中，调用<code>manager.RegisterPlugin(info manager.PluginInfo)</code>函数来初始化你的<code>*manager.PluginProxy</code>。</p>
+<p>至此，你的新插件（以echo为例）应该是这个样子：</p>
+<div><pre><code><span>package</span> echo
+
+<span>import</span> <span>(</span>
+	<span>"github.com/RicheyJang/PaimengBot/manager"</span>
+	
+	zero <span>"github.com/wdvxdr1123/ZeroBot"</span>
+<span>)</span>
+
+<span>var</span> info <span>=</span> manager<span>.</span>PluginInfo<span>{</span> <span>// [1] 声明插件信息结构变量</span>
+	Name<span>:</span> <span>"复读"</span><span>,</span>
+	Usage<span>:</span> <span>`
+用法：
+	echo [复读内容]：将echo后的内容进行复读
+`</span><span>,</span>
+<span>}</span>
+<span>var</span> proxy <span>*</span>manager<span>.</span>PluginProxy <span>// [2] 声明插件代理变量</span>
+
+<span>func</span> <span>init</span><span>(</span><span>)</span> <span>{</span>
+	proxy <span>=</span> manager<span>.</span><span>RegisterPlugin</span><span>(</span>info<span>)</span> <span>// [3] 使用插件信息初始化插件代理</span>
+	<span>if</span> proxy <span>==</span> <span>nil</span> <span>{</span> <span>// 若初始化失败，请return，失败原因会在日志中打印</span>
+		<span>return</span>
+	<span>}</span>
+	<span>// [4] 此处进行其它初始化操作</span>
+<span>}</span>
+
+<span>// [5] 其它代码实现</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br></div></div><h3 id="定义事件处理"> 定义事件处理</h3>
+<div><p>Onebot基础知识</p>
+<p>派蒙Bot全面基于<a href="https://github.com/botuniverse/onebot-11" target="_blank" rel="noopener noreferrer">Onebot v11协议</a>，Onebot采用事件与API系统：收到新消息、收到好友请求、收到群邀请等等皆为由前端（如go-cqhttp）推送给后端（如派蒙Bot）的事件，后端会对事件进行处理，并可以通过一定的方式来调用前端API：如发送各类消息、撤回消息、同意好友请求等等。</p>
+</div>
+<p>proxy初始化后，便可以使用proxy提供的能力了。</p>
+<p>最常用的便是定义某个事件的处理函数（Handler）。例如，想要在收到以<code>复读</code>或<code>echo</code>开头的消息时进行一定的处理，便可以：</p>
+<div><pre><code>proxy<span>.</span><span>OnCommands</span><span>(</span><span>[</span><span>]</span><span>string</span><span>{</span><span>"复读"</span><span>,</span><span>"echo"</span><span>}</span><span>)</span><span>.</span><span>SetBlock</span><span>(</span><span>true</span><span>)</span><span>.</span><span>FirstPriority</span><span>(</span><span>)</span><span>.</span><span>Handle</span><span>(</span>EchoHandler<span>)</span>
+</code></pre>
+<div><span>1</span><br></div></div><p><code>OnCommands</code>这类以On开头的函数为事件注册函数，会针对某一类事件进行注册以提供事件处理函数。同类型的函数有：</p>
+<div><pre><code><span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnCommands</span><span>(</span>cmd <span>[</span><span>]</span><span>string</span><span>,</span> rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理消息内容以cmd中任意一项开头的消息事件，消息内容中剩下的部分则为参数</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnRegex</span><span>(</span>reg <span>string</span><span>,</span> rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理消息内容满足reg正则的消息事件</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnFullMatch</span><span>(</span>cmd <span>[</span><span>]</span><span>string</span><span>,</span> rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理消息内容与cmd中任意一项完全相同的消息事件</span>
+
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>On</span><span>(</span>tp <span>string</span><span>,</span> rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理[tp]类型事件</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnMessage</span><span>(</span>rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理消息类型事件</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnRequest</span><span>(</span>rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理Request类型事件</span>
+<span>func</span> <span>(</span>p <span>*</span>PluginProxy<span>)</span> <span>OnNotice</span><span>(</span>rules <span>...</span>zero<span>.</span>Rule<span>)</span> <span>*</span>zero<span>.</span>Matcher <span>// 处理Notice类型事件</span>
+<span>// 上述三种类型参见Onebot协议</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br></div></div><p>可以注意到，每个事件注册函数参数中都包含了<code>rules ...zero.Rule</code>，它是一系列过滤函数，函数定义如下，只有所有过滤函数皆返回true，该事件才会被你所指定的Handler处理。</p>
+<div><pre><code><span>func</span><span>(</span>ctx <span>*</span>zero<span>.</span>Ctx<span>)</span> <span>bool</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>回归此前的事件注册，在<code>OnCommand</code>后的各个函数：</p>
+<div><pre><code><span>SetBlock</span><span>(</span><span>true</span><span>)</span> <span>// 代表经过此Handler处理后，其它事件处理函数不再处理此次事件，一般需要设为true，防止同一事件被多个插件处理</span>
+<span>FirstPriority</span><span>(</span><span>)</span> <span>// 此Handler的优先级，同类型函数还有SetPriority(int)</span>
+<span>Handle</span><span>(</span>EchoHandler<span>)</span> <span>// 指定Handler为EchoHandler函数</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><p>而一个Handler（例如EchoHandler）的类型应该为：</p>
+<div><pre><code><span>func</span> <span>(</span>ctx <span>*</span>zero<span>.</span>Ctx<span>)</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>在Handler及Rule的定义中都出现了zero.Ctx，它是ZeroBot框架（一个实现了Onebot协议的Go后端框架，派蒙Bot是对它的上层封装）所提供的事件上下文，常用属性或方法有：</p>
+<div><pre><code>ctx<span>.</span>Event <span>// 此次事件的内容</span>
+ctx<span>.</span><span>MessageString</span><span>(</span><span>)</span> <span>string</span> <span>// 获取消息事件的消息纯文本内容</span>
+ctx<span>.</span><span>Send</span><span>(</span>message <span>interface</span><span>{</span><span>}</span><span>)</span> <span>int64</span> <span>// 快捷向消息发送者发送一条消息，返回消息ID</span>
+ctx<span>.</span><span>SendChain</span><span>(</span>message <span>...</span>message<span>.</span>MessageSegment<span>)</span> <span>int64</span> <span>// 以消息链的方式向消息发送者发送一条消息</span>
+<span>// 其它请参见zerobot.Ctx定义</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div></div><p>例如，上述例子的EchoHandler，其内容如下：</p>
+<div><pre><code><span>func</span> <span>EchoHandler</span><span>(</span>ctx <span>*</span>zero<span>.</span>Ctx<span>)</span> <span>{</span>
+	str <span>:=</span> utils<span>.</span><span>GetArgs</span><span>(</span>ctx<span>)</span> <span>// 派蒙Bot提供的工具函数，用于获取此次事件的消息参数内容</span>
+	tm <span>:=</span> proxy<span>.</span><span>GetConfigInt64</span><span>(</span><span>"times"</span><span>)</span> <span>// proxy提供的统一配置项管理功能，此函数用于获取int64类型的times配置项值</span>
+	<span>for</span> i <span>:=</span> <span>int64</span><span>(</span><span>0</span><span>)</span><span>;</span> i <span>&lt;</span> tm<span>;</span> i<span>++</span> <span>{</span>
+		ctx<span>.</span><span>Send</span><span>(</span>str<span>)</span>
+	<span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br></div></div><div><p>重要</p>
+<p>派蒙Bot作为一个较为完毕的Onebot后端框架，无论是插件代理proxy还是工具包utils，都提供了大量固有能力：如<strong>统一插件配置管理、定时任务、插件用户级锁、关系型数据库、K-V数据库、快捷获取指定消息内容、2D绘图、可重试的Http Client、字符串处理</strong>等等，无需自己造轮子，详细请参见<a href="proxy">proxy文档</a>和<a href="utils">工具包文档</a>。</p>
+</div>
+<h3 id="完整复读插件示例"> 完整复读插件示例：</h3>
+<p>最后，写完一个插件后，别忘在cmd/main.go文件的import中引用该插件所在的包，以启用该插件，例如：</p>
+<div><pre><code><span>// cmd/main.go中</span>
+<span>import</span> <span>(</span>
+	<span>// ...其它包</span>
+	<span>_</span> <span>"github.com/RicheyJang/PaimengBot/plugins/echo"</span>
+<span>)</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br></div></div><div><pre><code><span>package</span> echo
+
+<span>import</span> <span>(</span>
+	<span>"github.com/RicheyJang/PaimengBot/manager"</span>
+	<span>"github.com/RicheyJang/PaimengBot/utils"</span>
+	
+	zero <span>"github.com/wdvxdr1123/ZeroBot"</span>
+<span>)</span>
+
+<span>var</span> info <span>=</span> manager<span>.</span>PluginInfo<span>{</span> <span>// [1] 声明插件信息结构变量</span>
+	Name<span>:</span> <span>"复读"</span><span>,</span>
+	Usage<span>:</span> <span>`
+用法：
+	echo [复读内容]：将echo后的内容进行复读
+`</span><span>,</span>
+<span>}</span>
+<span>var</span> proxy <span>*</span>manager<span>.</span>PluginProxy <span>// [2] 声明插件代理变量</span>
+
+<span>func</span> <span>init</span><span>(</span><span>)</span> <span>{</span>
+	proxy <span>=</span> manager<span>.</span><span>RegisterPlugin</span><span>(</span>info<span>)</span> <span>// [3] 使用插件信息初始化插件代理</span>
+	<span>if</span> proxy <span>==</span> <span>nil</span> <span>{</span> <span>// 若初始化失败，请return，失败原因会在日志中打印</span>
+		<span>return</span>
+	<span>}</span>
+	proxy<span>.</span><span>OnCommands</span><span>(</span><span>[</span><span>]</span><span>string</span><span>{</span><span>"复读"</span><span>,</span><span>"echo"</span><span>}</span><span>)</span><span>.</span><span>SetBlock</span><span>(</span><span>true</span><span>)</span><span>.</span><span>FirstPriority</span><span>(</span><span>)</span><span>.</span><span>Handle</span><span>(</span>EchoHandler<span>)</span> <span>// [4] 注册事件处理函数</span>
+	proxy<span>.</span><span>AddConfig</span><span>(</span><span>"times"</span><span>,</span> <span>2</span><span>)</span> <span>// proxy提供的统一配置项管理功能，此函数新增一个配置项times，默认值为2</span>
+<span>}</span>
+
+<span>// [5] Handler实现</span>
+<span>func</span> <span>EchoHandler</span><span>(</span>ctx <span>*</span>zero<span>.</span>Ctx<span>)</span> <span>{</span>
+	str <span>:=</span> utils<span>.</span><span>GetArgs</span><span>(</span>ctx<span>)</span> <span>// 派蒙Bot提供的工具函数，用于获取此次事件的消息参数内容</span>
+	tm <span>:=</span> proxy<span>.</span><span>GetConfigInt64</span><span>(</span><span>"times"</span><span>)</span> <span>// proxy提供的统一配置项管理功能，此函数用于获取int64类型的times配置项值</span>
+	<span>for</span> i <span>:=</span> <span>int64</span><span>(</span><span>0</span><span>)</span><span>;</span> i <span>&lt;</span> tm<span>;</span> i<span>++</span> <span>{</span>
+		ctx<span>.</span><span>Send</span><span>(</span>str<span>)</span>
+	<span>}</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br><span>16</span><br><span>17</span><br><span>18</span><br><span>19</span><br><span>20</span><br><span>21</span><br><span>22</span><br><span>23</span><br><span>24</span><br><span>25</span><br><span>26</span><br><span>27</span><br><span>28</span><br><span>29</span><br><span>30</span><br><span>31</span><br><span>32</span><br><span>33</span><br><span>34</span><br><span>35</span><br></div></div><h2 id="事件处理hook"> 事件处理Hook</h2>
+<p>此外，还可以为事件处理添加钩子函数，已有插件中的限流、鉴权、统计等便是基于钩子函数实现的。</p>
+<p>挂载点有两处：</p>
+<ol>
+<li>进入具体的事件处理函数前</li>
+<li>事件处理函数处理完成后</li>
+<li>plugin-config配置文件有所变更时</li>
+</ol>
+<p>第一处使用：</p>
+<div><pre><code>manager<span>.</span><span>AddPreHook</span><span>(</span>hook <span>...</span>PluginHook<span>)</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>第二处使用：</p>
+<div><pre><code>manager<span>.</span><span>AddPostHook</span><span>(</span>hook <span>...</span>PluginHook<span>)</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>第三处使用：</p>
+<div><pre><code>manager<span>.</span><span>WhenConfigFileChange</span><span>(</span>hook <span>...</span>FileHook<span>)</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>其中，<code>PluginHook</code>定义为：</p>
+<div><pre><code><span>func</span><span>(</span>condition <span>*</span>manager<span>.</span>PluginCondition<span>,</span> ctx <span>*</span>zero<span>.</span>Ctx<span>)</span> <span>error</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>condition包含了即将被调用的插件信息：</p>
+<div><pre><code><span>type</span> PluginCondition <span>struct</span> <span>{</span>
+	PluginInfo            <span>// 插件信息（由插件提供，只读）</span>
+	Key        <span>string</span>     <span>// 插件Key</span>
+	NormalCmd  <span>[</span><span>]</span><span>[</span><span>]</span><span>string</span> <span>// 该插件的普通用户命令集</span>
+	SuperCmd   <span>[</span><span>]</span><span>[</span><span>]</span><span>string</span> <span>// 该插件的超级用户专用命令集</span>
+<span>}</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br></div></div><p>ctx为此次事件的zerobot上下文。</p>
+<p><strong>注意</strong>！对于返回值，若返回的error不为nil，控制器将立马终止此次事件，后续一切事件处理函数或其它钩子都将不会被调用。</p>
+<p>此外，manager还提供了一些PluginCondition相关的工具函数：</p>
+<div><pre><code>manager<span>.</span><span>GetAllPluginConditions</span><span>(</span><span>)</span> <span>[</span><span>]</span><span>*</span>PluginCondition <span>// 返回所有插件的PluginCondition</span>
+<span>GetPluginConditionByKey</span><span>(</span>key <span>string</span><span>)</span> <span>*</span>PluginCondition <span>// 通过插件Key查询该插件的PluginCondition</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div></div><p><code>FileHook</code>定义为：</p>
+<div><pre><code><span>func</span><span>(</span>event fsnotify<span>.</span>Event<span>)</span> <span>error</span> <span>// 该error仅会在日志中有所体现</span>
+</code></pre>
+<div><span>1</span><br></div></div>]]></content:encoded>
+    </item>
+    <item>
+      <title>安装MySQL</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/mysql/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/mysql/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装MySQL</source>
+      <pubDate>Fri, 03 Dec 2021 09:46:22 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装mysql"> 安装MySQL</h1>
+<h2 id="安装"> 安装</h2>
+<div><p>声明</p>
+<p>如果你选用了MySQL作为数据库，那想必你对MySQL一定很熟悉叭！（如果并不，请出门左拐选用PostgreSQL，<s>或者右拐百度</s>）</p>
+</div>
+<p>请自行安装MySQL后，自行新建一个数据库、一个新用户</p>
+<h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>mysql</code></p>
+<p>db的其它配置项：name修改为数据库名，host修改为<code>localhost</code>，port修改为<code>3306</code>，user修改为你此前自行创建的数据库用户名，passwd修改为你此前自行设置的密码。</p>
+<p><img src="./../pic/mysql.jpg" alt="mysql" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>工具包文档</title>
+      <link> https://richeyjang.github.io/PaimengBot/develop/utils/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/develop/utils/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">工具包文档</source>
+      <pubDate>Sat, 29 Jan 2022 04:13:09 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="工具包文档"> 工具包文档</h1>
+<p>utils包提供：快捷获取指定消息内容、2D绘图、可重试的Http Client、字符串处理等轮子。</p>
+<p>位于utils目录，注释也比较详尽，尽量参阅注释吧。</p>
+<h2 id="utils包结构"> utils包结构</h2>
+<ul>
+<li>client包：可重试的Http Client封装</li>
+<li>consts包：一些全局常量定义</li>
+<li>images包：2D绘图工具包，是对gg库的上层封装</li>
+<li>rules包：一些派蒙Bot预设事件过滤规则</li>
+<li>push包：主动消息推送相关封装，直接<code>push.Send</code>即可</li>
+<li>common.go：字符串处理等杂项工具函数</li>
+<li>ctx.go：从zero.Ctx中提取所需信息或能力的一些工具函数</li>
+<li>file.go：用于文件判断或处理的一些工具函数</li>
+<li>logrus.go：用于日志格式设置，非必要请勿改动</li>
+<li>reflect.go：为manager提供自动化插件管理能力支持，非必要请勿改动</li>
+</ul>
+<h2 id="用法"> 用法</h2>
+<p>TODO，参阅函数注释吧</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装Postgresql</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/postgresql/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/postgresql/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装Postgresql</source>
+      <pubDate>Fri, 03 Dec 2021 09:46:22 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装postgresql"> 安装Postgresql</h1>
+<h2 id="安装"> 安装</h2>
+<div><p>提示</p>
+<p>以下为Ubuntu系统安装Postgresql的方法，若你使用的是CentOS等其它系统，请自行百度...</p>
+<p>如果遇到问题，可以参考一下<a href="https://linux.cn/article-11480-1.html" target="_blank" rel="noopener noreferrer">推荐教程</a></p>
+</div>
+<p>首先，安装Postgresql</p>
+<div><pre><code><span>sudo</span> <span>apt</span> update
+<span>sudo</span> <span>apt</span> <span>install</span> postgresql postgresql-contrib
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div></div><p>切换至postgres用户</p>
+<div><pre><code><span>sudo</span> <span>su</span> - postgres
+</code></pre>
+<div><span>1</span><br></div></div><p>打开psql</p>
+<div><pre><code>psql
+</code></pre>
+<div><span>1</span><br></div></div><p>修改数据库postgres用户的密码</p>
+<div><pre><code>alter user postgres with password <span>'123456'</span><span>;</span> <span>#此处的123456修改为你所想设置的用户密码</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>创建一个新数据库</p>
+<div><pre><code>CREATE DATABASE testdb OWNER postgres<span>;</span> <span>#此处的testdb修改为你自己随便起的一个数据库名</span>
+</code></pre>
+<div><span>1</span><br></div></div><p>输入<code>\q</code>来退出psql，输入<code>exit</code>切回原用户，随后重启postgresql</p>
+<div><pre><code><span>sudo</span> systemctl restart postgresql
+</code></pre>
+<div><span>1</span><br></div></div><h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>postgresql</code></p>
+<p>db的其它配置项：name修改为数据库名，host修改为<code>localhost</code>，port修改为<code>5432</code>，user修改为<code>postgres</code>或你自行创建的数据库用户名，passwd修改为你此前自行设置的密码。</p>
+<p><img src="./../pic/postgres.jpg" alt="postgresql" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>如何安装派蒙Bot</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">如何安装派蒙Bot</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="如何安装派蒙bot"> 如何安装派蒙Bot</h1>
+<p>预先准备好以下内容：</p>
+<ul>
+<li>一个独立的QQ账号，作为机器人账号</li>
+<li>一台能联网的主机</li>
+</ul>
+<p><strong>请选择你所要安装的操作系统：</strong></p>
+<ul>
+<li>
+<p><a href="./windows/">Windows</a></p>
+</li>
+<li>
+<p><a href="./linux/">Linux</a></p>
+</li>
+</ul>
+<div><p>提示</p>
+<p>长期部署，建议使用Linux，更加容易维护</p>
+<p>这里顺便推荐一下<a href="https://curl.qcloud.com/caEZjVuw" target="_blank" rel="noopener noreferrer">腾讯云的轻量应用服务器</a>，可以无脑24h持续运行\自带公网IP。最近还搞活动：2核2G云服务器，足够派蒙Bot使用了，一年才65元，活动链接：<a href="https://curl.qcloud.com/n0SjB8mh" target="_blank" rel="noopener noreferrer">腾讯云采购</a></p>
+<p>前方需要一点点的命令行基础，少年你准备好了嘛？</p>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>在Linux下安装派蒙Bot</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">在Linux下安装派蒙Bot</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="在linux下安装派蒙bot"> 在Linux下安装派蒙Bot</h1>
+<div><p>与Windows下的区别</p>
+<p>相比于在Windows下安装，其实仅仅是启动命令、安装数据库命令有所不同，所有配置项的配置方法完全一致。</p>
+</div>
+<h2 id="下载"> 下载</h2>
+<p>首先，到<a href="https://github.com/RicheyJang/PaimengBot/releases" target="_blank" rel="noopener noreferrer"><strong>Release</strong></a>页面下载最新Linux版本的派蒙Bot，解压缩至任意文件夹。</p>
+<p>解压缩命令参考：</p>
+<div><pre><code><span>tar</span> -zxvf 压缩包名
+</code></pre>
+<div><span>1</span><br></div></div><h2 id="第一次启动"> 第一次启动</h2>
+<p>cd进入解压缩得到的文件夹中执行：</p>
+<div><pre><code>./paimeng
+</code></pre>
+<div><span>1</span><br></div></div><p>运行后，会自动生成主配置文件<code>config-main.yaml</code>，随后程序自动结束。</p>
+<p><strong>接下来，请安装<a href="cqhttp">Go-CQHttp</a>和<a href="database">数据库</a></strong></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装数据库</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/database/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/database/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装数据库</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装数据库"> 安装数据库</h1>
+<p>目前，派蒙Bot支持SQLite、MySql、PostgreSQL这3种数据库，依据以下教程，<strong>任选其一</strong>进行安装、配置即可。推荐使用PostgreSQL，会有更高的运行效率、更小的磁盘占用。</p>
+<div><p>提示</p>
+<p>但若你对任何数据库完全没有了解，或在配置过程中遇到了超出能力范围的问题，
+可以选用SQLite：一种轻型、无需配置的单文件式数据库</p>
+</div>
+<ul>
+<li>
+<p><a href="../postgresql">PostgreSQL</a></p>
+</li>
+<li>
+<p><a href="../sqlite">SQLite</a></p>
+</li>
+<li>
+<p><a href="../mysql">MySQL</a></p>
+</li>
+</ul>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装SQLite</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/sqlite/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/sqlite/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装SQLite</source>
+      <pubDate>Fri, 03 Dec 2021 09:46:22 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装sqlite"> 安装SQLite</h1>
+<h2 id="安装"> 安装</h2>
+<p>若你使用的是Ubuntu，运行以下两条命令即可：</p>
+<div><pre><code><span>sudo</span> <span>apt</span> <span>install</span> sqlite
+<span>sudo</span> <span>apt</span> <span>install</span> libsqlite3-dev
+</code></pre>
+<div><span>1</span><br><span>2</span><br></div></div><h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>sqlite</code>、name配置项为<code>./data/sqlite.db</code>即可。</p>
+<p><img src="./../pic/sqlite.jpg" alt="sqlite" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装Go-CQHttp</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/cqhttp/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/cqhttp/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装Go-CQHttp</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装go-cqhttp"> 安装Go-CQHttp</h1>
+<div><p>提示</p>
+<p>go-cqhttp是一个用Go开发的QQ机器人前端，用于登录QQ机器人账号、收发消息等等，是派蒙Bot的必要依赖哦。</p>
+</div>
+<h2 id="下载"> 下载</h2>
+<p>首先，从<a href="https://github.com/Mrs4s/go-cqhttp/releases" target="_blank" rel="noopener noreferrer">go-cqhttp发布页</a>下载最新Windows版本的go-cqhttp，解压缩到任意目录。</p>
+<h2 id="首次启动"> 首次启动</h2>
+<p>随后，使用命令行进入该目录，运行go-cqhttp。在首次运行时，它会要求你输入选择通信方式，选择 2 ( Websocket 通信)，会生成一个配置文件config.yml。</p>
+<p><img src="./../pic/cqhttp1-win.jpg" alt="cqhttp" loading="lazy"></p>
+<h2 id="配置"> 配置</h2>
+<p>接下来，打开配置文件config.yml，将文件首部的account.uin配置项（冒号后的内容）修改为你所要使用的机器人QQ账号；</p>
+<p><img src="./../pic/cqhttp-config.jpg" alt="cqhttp" loading="lazy"></p>
+<p>将文件末尾处的ws配置中的address项修改为0.0.0.0:<strong>6700</strong>。</p>
+<p><img src="./../pic/cqhttp-config2.jpg" alt="cqhttp" loading="lazy"></p>
+<h2 id="持续运行"> 持续运行</h2>
+<p>最后，重新运行go-cqhttp，扫码登录后，让它持续运行。</p>
+<div><p>出错</p>
+<p>若在安装go-cqhttp中出现问题，请参阅：<a href="https://docs.go-cqhttp.org/" target="_blank" rel="noopener noreferrer">go-cqhttp文档</a>。</p>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>可选安装项</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/other/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/other/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">可选安装项</source>
+      <pubDate>Sat, 01 Jan 2022 11:39:58 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="可选安装项"> 可选安装项</h1>
+<h2 id="chrome"> Chrome</h2>
+<p>部分功能需要你的机器上安装Chrome浏览器，否则无法正常支持。例如：原神今日素材；</p>
+<p><strong>Windows：</strong></p>
+<p><a href="https://www.google.cn/chrome/" target="_blank" rel="noopener noreferrer">官网</a></p>
+<p><strong>Linux：</strong></p>
+<div><pre><code><span># 下载源加入到系统的源列表</span>
+<span>sudo</span> <span>wget</span> http://www.linuxidc.com/files/repo/google-chrome.list -P /etc/apt/sources.list.d/
+
+<span># 导入谷歌软件公钥</span>
+<span>wget</span> -q -O - https://dl.google.com/linux/linux_signing_key.pub  <span>|</span> <span>sudo</span> apt-key <span>add</span> -
+
+<span># 更新列表 这一步可能会失败，多尝试几次</span>
+<span>sudo</span> <span>apt-get</span> update
+
+<span># 安装chrome 这一步也可能会失败，多尝试几次</span>
+<span>sudo</span> <span>apt-get</span> <span>install</span> google-chrome-stable
+
+<span># 测试 以--no-sandbox模式运行</span>
+google-chrome-stable --headless --disable-gpu --no-sandbox --screenshot https://www.baidu.com/
+<span># 若当前目录下多了一张百度页面截图，则说明安装成功</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br><span>4</span><br><span>5</span><br><span>6</span><br><span>7</span><br><span>8</span><br><span>9</span><br><span>10</span><br><span>11</span><br><span>12</span><br><span>13</span><br><span>14</span><br><span>15</span><br></div></div><p>此外，还需要安装中文字体</p>
+<div><pre><code><span>sudo</span> <span>apt-get</span> <span>install</span> ttf-wqy-microhei ttf-wqy-zenhei xfonts-wqy
+</code></pre>
+<div><span>1</span><br></div></div><div><p>提示</p>
+<p>此外，若依旧无法正常使用&quot;原神今日素材&quot;等功能（图片上文字变成小框框），请手动安装中文字体，请自行百度：Linux安装中文字体。</p>
+</div>
+<h2 id="omega图库"> Omega图库</h2>
+<div><p>提示</p>
+<p>此项需要有一定的数据库基础</p>
+</div>
+<p>Omega图库是一个由Ailitonia等人收集的Pixiv插画信息数据集（不是图包！），包含了9万余张精挑细选的插画。</p>
+<p>派蒙Bot已经内置了对该图库的支持和数据库表实现，导入该图库后，可以大大增强<code>好康的</code>插件的能力（逃</p>
+<p><strong>安装方法</strong>：</p>
+<ol>
+<li>
+<p>在<a href="https://github.com/Ailitonia/omega-miya/raw/master/archive_data/db_pixiv.7z" target="_blank" rel="noopener noreferrer">这里</a>下载该图库，随后解压出一个.sql文件（约39MB）。</p>
+</li>
+<li>
+<p>将该sql文件<strong>自行导入</strong>到派蒙Bot所配置的数据库里。</p>
+</li>
+</ol>
+<div><pre><code><span># 例如，在Linux下，使用Mysql数据库</span>
+mysql -u用户名 -p密码 数据库名 <span>&lt;</span> omega_pixiv_illusts_202108090411.sql
+<span># 别忘将用户名、密码、数据库名替换为你自己的</span>
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><ol start="3">
+<li>将config-plugin.yaml文件中的<code>pixiv.scale.omega</code>配置项值修改为非0。</li>
+</ol>
+<p>另外，该sql文件为Mysql的导出文件，可能会与Postgresql有一定冲突，在群文件中有Postgresql的导出版本。</p>
+<p>另另外，如果你觉得这个图库依旧不够大，可以参照该sql文件的格式向数据库的该张表内自行写入插图信息数据。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装Go-CQHttp</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/linux/cqhttp/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/linux/cqhttp/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装Go-CQHttp</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装go-cqhttp"> 安装Go-CQHttp</h1>
+<div><p>提示</p>
+<p>go-cqhttp是一个用Go开发的QQ机器人前端，用于登录QQ机器人账号、收发消息等等，是派蒙Bot的必要依赖哦。</p>
+</div>
+<h2 id="下载"> 下载</h2>
+<p>首先，从<a href="https://github.com/Mrs4s/go-cqhttp/releases" target="_blank" rel="noopener noreferrer">go-cqhttp发布页</a>下载最新Linux版本的go-cqhttp压缩包（例如<code>go-cqhttp_linux_amd64.tar.gz</code>），解压缩。</p>
+<h2 id="首次启动"> 首次启动</h2>
+<p>随后，在解压缩出的go-cqhttp文件夹下，运行go-cqhttp程序。在首次运行时，它会要求你输入选择通信方式，选择 2 ( Websocket 通信)，会生成一个配置文件config.yml。</p>
+<p><img src="./../pic/cqhttp1-linux.jpg" alt="cqhttp" loading="lazy"></p>
+<h2 id="配置"> 配置</h2>
+<p>接下来，打开（可以使用vim）配置文件config.yml，将文件首部的account.uin配置项（冒号后的内容）修改为你所要使用的机器人QQ账号；</p>
+<p><img src="./../pic/cqhttp-config.jpg" alt="cqhttp" loading="lazy"></p>
+<p>将文件末尾处的ws配置中的address项修改为0.0.0.0:<strong>6700</strong>。</p>
+<p><img src="./../pic/cqhttp-config2.jpg" alt="cqhttp" loading="lazy"></p>
+<h2 id="持续运行"> 持续运行</h2>
+<p>最后，重新运行go-cqhttp，扫码登录后，让它持续运行。</p>
+<p>在Linux下，你可能需要使用会话保持工具（例如<code>Screen</code>或<code>Tmux</code>来保持、切出会话）</p>
+<div><p>出错</p>
+<p>若在安装go-cqhttp中出现问题，请参阅：<a href="https://docs.go-cqhttp.org/" target="_blank" rel="noopener noreferrer">go-cqhttp文档</a>。</p>
+</div>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装MySQL</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/mysql/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/mysql/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装MySQL</source>
+      <pubDate>Fri, 03 Dec 2021 08:31:06 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装mysql"> 安装MySQL</h1>
+<h2 id="安装"> 安装</h2>
+<div><p>声明</p>
+<p>如果你选用了MySQL作为数据库，那想必你对MySQL一定很熟悉叭！（如果并不，请出门左拐选用PostgreSQL，<s>或者右拐百度</s>）</p>
+</div>
+<p>请自行安装MySQL后，自行新建一个数据库、一个新用户</p>
+<h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>mysql</code></p>
+<p>db的其它配置项：name修改为数据库名，host修改为<code>localhost</code>，port修改为<code>3306</code>，user修改为你此前自行创建的数据库用户名，passwd修改为你此前自行设置的密码。</p>
+<p><img src="./../pic/mysql.jpg" alt="mysql" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装数据库</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/database/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/database/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装数据库</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装数据库"> 安装数据库</h1>
+<p>目前，派蒙Bot支持SQLite、MySql、PostgreSQL这3种数据库，依据以下教程，<strong>任选其一</strong>进行安装、配置即可。</p>
+<div><p>提示</p>
+<p>推荐使用PostgreSQL，会有更高的运行效率、更小的磁盘占用。</p>
+<p><strong>注意</strong>！若你对任何数据库都完全没有任何了解，或在配置过程中遇到了超出能力范围的问题，
+建议选用SQLite：一种轻型、无需配置的单文件式数据库；同时，版本≥<code>v0.2.2</code>、Windows下的派蒙Bot的默认数据库已经配置为SQLite，可以直接<a href="../bot">跳过这一步</a></p>
+</div>
+<ul>
+<li>
+<p><a href="../postgresql">PostgreSQL</a></p>
+</li>
+<li>
+<p><a href="../sqlite">SQLite</a></p>
+</li>
+<li>
+<p><a href="../mysql">MySQL</a></p>
+</li>
+</ul>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装Postgresql</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/postgresql/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/postgresql/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装Postgresql</source>
+      <pubDate>Fri, 03 Dec 2021 08:31:06 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装postgresql"> 安装Postgresql</h1>
+<h2 id="安装"> 安装</h2>
+<ol>
+<li>在<a href="https://www.enterprisedb.com/downloads/postgres-postgresql-downloads" target="_blank" rel="noopener noreferrer">Postgresql官网</a>下载Windows的Postgresql安装程序</li>
+<li>选择安装路径，一路next，中途会让你设置一下postgres用户的密码</li>
+<li>在安装目录下的pgAdmin 4/bin文件夹下，双击打开pgAdmin4.exe，输入你此前设置的密码</li>
+<li>双击左侧的<code>Servers</code>，再次输入密码；在左侧的<code>Databases</code>上右键，选择Create/Database...，在弹出的窗口中的第一行输入数据库名（自己随便起一个），点击Save来创建数据库。</li>
+</ol>
+<h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>postgresql</code></p>
+<p>db的其它配置项：name修改为数据库名，host修改为<code>localhost</code>，port修改为<code>5432</code>，user修改为<code>postgres</code>或你此前自行创建的数据库用户名，passwd修改为你此前自行设置的密码。</p>
+<p><img src="./../pic/postgres.jpg" alt="postgresql" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装派蒙Bot</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/bot/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/bot/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装派蒙Bot</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装派蒙bot"> 安装派蒙Bot</h1>
+<h2 id="最后的配置"> 最后的配置</h2>
+<p>最后，在派蒙Bot文件夹下的config-main.yaml配置文件中，在superuser配置项（是一个YAML字符串数组类型）中，添加上你自己的QQ号（作为超级用户管理派蒙Bot）。</p>
+<p><img src="./../pic/superuserconfig.jpg" alt="superuser" loading="lazy"></p>
+<h2 id="运行"> 运行</h2>
+<p>类似<a href="./#第一次启动">第一次启动</a>，再次运行派蒙机器人。</p>
+<p><strong>注意</strong>！派蒙Bot和Go-cqhttp都要运行，缺一不可。</p>
+<p><strong>如果启动成功，那么你就可以快乐地与派蒙Bot玩耍啦</strong></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>在Windows下安装派蒙Bot</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">在Windows下安装派蒙Bot</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="在windows下安装派蒙bot"> 在Windows下安装派蒙Bot</h1>
+<h2 id="下载"> 下载</h2>
+<p>首先，到<a href="https://github.com/RicheyJang/PaimengBot/releases" target="_blank" rel="noopener noreferrer"><strong>Release</strong></a>页面下载最新Windows版本的派蒙Bot，解压缩至任意文件夹。</p>
+<h2 id="第一次启动"> 第一次启动</h2>
+<p>使用命令行（如cmd、Powershell）在解压后的文件夹中执行：</p>
+<div><pre><code>paimeng.exe
+</code></pre>
+<div><span>1</span><br></div></div><p>运行后，会自动生成主配置文件<code>config-main.yaml</code>，随后程序自动结束。</p>
+<p><strong>接下来，请安装<a href="cqhttp">Go-CQHttp</a>和<a href="database">数据库</a></strong></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>安装SQLite</title>
+      <link> https://richeyjang.github.io/PaimengBot/install/windows/sqlite/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/install/windows/sqlite/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">安装SQLite</source>
+      <pubDate>Fri, 03 Dec 2021 08:31:06 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="安装sqlite"> 安装SQLite</h1>
+<h2 id="安装"> 安装</h2>
+<p>一般来说，无需安装</p>
+<h2 id="配置"> 配置</h2>
+<p>随后，在派蒙Bot文件夹下的config-main.yaml配置文件中，修改db的type配置项为<code>sqlite</code>、name配置项为<code>./data/sqlite.db</code>即可。</p>
+<p><img src="./../pic/sqlite.jpg" alt="sqlite" loading="lazy"></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>派蒙Bot文档</title>
+      <link> https://richeyjang.github.io/PaimengBot/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">派蒙Bot文档</source>
+      <pubDate>Thu, 02 Dec 2021 14:30:45 GMT</pubDate>
+      <content:encoded><![CDATA[<p>一个使用Onebot协议、基于ZeroBot的QQ娱乐机器人，支持30余种功能，可以大大丰富你的QQ体验或群活跃度，欸嘿。</p>
+<div><p>提示</p>
+<p>如果安装或使用中遇到问题，欢迎加群<a href="https://qm.qq.com/cgi-bin/qm/qr?k=2u70XSTgORNbVzAnnsSYD2GLrelRuQC6&amp;jump_from=webapi" target="_blank" rel="noopener noreferrer">应急食品测试群(724694686)</a></p>
+</div>
+<div><p>推荐</p>
+<p>推荐使用go-cqhttp作为QQ前端，推荐安装在Ubuntu中，推荐使用PostgreSQL作为数据库，但若你没有数据库基础也无需担心，
+派蒙Bot支持SQLite：一种轻型、无需配置的单文件式数据库。</p>
+</div>
+<p>安装与配置时需要少量的命令行操作基础，一般来说，计算机纯小白也可以在1小时内完成配置，进行愉快的玩耍。</p>
+<p>点击上方的<a href="./install/"><strong>开始安装</strong></a>来部署可爱的派蒙Bot吧！</p>
+<p>开发不易，如果觉得派蒙Bot还不错的话，就点个star吧：<a href="https://github.com/RicheyJang/PaimengBot" target="_blank" rel="noopener noreferrer"><strong>Github</strong></a></p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>基础插件详情</title>
+      <link> https://richeyjang.github.io/PaimengBot/use/basic/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/use/basic/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">基础插件详情</source>
+      <pubDate>Fri, 03 Dec 2021 11:43:56 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="基础插件详情"> 基础插件详情</h1>
+<div><p>约定</p>
+<p>下列文档中，使用<code>灰底</code>标出的，皆为config-plugin.yaml文件<a href="./#插件配置">配置项</a>。</p>
+<p>此外，命令中所出现的：方括号[]内的内容，代表一个参数</p>
+</div>
+<h3 id="权限管理"> 权限管理</h3>
+<ul>
+<li><strong>超级用户专属</strong></li>
+<li><strong>配置项</strong>：<code>auth</code></li>
+<li><strong>说明</strong>：</li>
+</ul>
+<p>部分插件会有最低权限等级要求，即在帮助中以方括号包裹的数字，只有高于该权限等级的群成员才能使用</p>
+<p>本插件用于进行群成员权限等级设置，保证用户不会做出越权行为（例如普通用户禁用本群某个功能）。</p>
+<ul>
+<li><strong>命令</strong>：</li>
+</ul>
+<p>更新管理员权限：会将所有群中未被设置权限的群管理员设为默认权限等级（配置项<code>auth.defaultlevel</code>）</p>
+<p>设置管理员权限 [群号] [用户QQ号] [Level]：将指定群的指定用户权限设为Level</p>
+<ul>
+<li><strong>其它</strong>：</li>
+</ul>
+<p>每日1点5分，会自动将所有群中未被设置权限的管理员设为默认权限等级（<code>auth.defaultlevel</code>）</p>
+<p>权限level(&gt;=1)数字越小，权限越高</p>
+<p>超级管理员的权限会被确保至少为<code>auth.superlevel</code>级</p>
+<p>部分插件已预置了最低权限等级，但所有插件皆可通过config-plugin文件进行权限等级配置</p>
+<p>只需配置该文件中的 <code>插件Key.adminlevel</code> 配置项，即可设置指定插件的最低权限等级了</p>
+<p>例如将 <code>translate.adminlevel</code> 配置项值设为5，则只有群权限等级高于5(level&lt;=5)的成员才能使用翻译插件</p>
+<h3 id="限流"> 限流</h3>
+<ul>
+<li><strong>说明</strong>：</li>
+</ul>
+<p>统筹所有插件的CD限流，即单用户调用单个插件功能的最大时间间隔，若调用过于频繁，两次调用的间隔小于所配置的CD时长，将自动阻止此次调用。</p>
+<ul>
+<li><strong>配置项</strong>：</li>
+</ul>
+<p>分为全局CD以及单插件CD：</p>
+<p>通过<code>limiter.globalcd</code>来配置全局CD，将对所有插件生效</p>
+<p>通过配置config-plugin文件下的<code>插件Key.cd</code>配置项来设置针对该插件的CD，该CD优先级高于全局CD</p>
+<p>例如：想要配置翻译插件的CD时长为1分钟30秒，在config-plugin文件中新增或修改<code>translate.cd</code>配置项为1m30s即可。</p>
+<h3 id="帮助"> 帮助</h3>
+<ul>
+<li><strong>说明</strong>：</li>
+</ul>
+<p>可以清晰明了地说明插件的功能，以及插件的使用方法。</p>
+<ul>
+<li><strong>命令</strong>：</li>
+</ul>
+<p>帮助： 分类查看所有插件列表</p>
+<p>帮助 [插件名]： 查看指定插件的详细帮助</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>插件列表</title>
+      <link> https://richeyjang.github.io/PaimengBot/use/list/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/use/list/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">插件列表</source>
+      <pubDate>Sat, 01 Jan 2022 11:39:58 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="插件列表"> 插件列表</h1>
+<p>以下为派蒙Bot已经集成的插件列表：</p>
+<div><p>提示</p>
+<p>此列表可能更新不及时，最新列表及各插件Key请参阅Github <a href="https://github.com/RicheyJang/PaimengBot#%E5%8A%9F%E8%83%BD" target="_blank" rel="noopener noreferrer">README文档的功能列表</a>。</p>
+</div>
+<h2 id="基本功能插件"> <a href="basic">基本功能插件</a></h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-0"> <a href="./basic/#权限管理">权限管理</a><label for="task-item-0"> [权限管理](basic/#权限管理)：管理指定用户在指定群的权限，能不能开关本群功能之类的</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-1"><label for="task-item-1"> 功能开关：管理哪些用户、哪些群可以使用哪些插件</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-2"><label for="task-item-2"> 好友/群管理：拦截、处理好友请求/群邀请；强行被拉入群时自动退群</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-3"> <a href="./basic/#帮助">帮助</a><label for="task-item-3"> [帮助](basic/#帮助)：查看所有插件，以及指定插件的详细用法</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-4"> <a href="./basic/#限流">限流</a><label for="task-item-4"> [限流](basic/#限流)：设置指定插件的CD时长，不同用户间的CD相互独立哦，防止恶意调用</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-5"><label for="task-item-5"> 用户昵称系统：让派蒙Bot以你喜欢的昵称称呼你~，不同群之间通用哦</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-6"><label for="task-item-6"> 签到与财富</label></li>
+</ul>
+<h2 id="一般插件"> 一般插件</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-7"><label for="task-item-7"> 聊天\自定义问答：可以通过对话或文件问答库的方式自定义问答，支持正则、多答句随机、答句CQ码、变量</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-8"><label for="task-item-8"> 联系管理员：通过派蒙Bot向其超级用户发消息</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-9"><label for="task-item-9"> 复读</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-10"><label for="task-item-10"> 自检：检查派蒙Bot以及服务器状态，清理临时数据</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-11"><label for="task-item-11"> 功能使用统计(可分人分日)</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-12"><label for="task-item-12"> 点歌</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-13"><label for="task-item-13"> 随机\随机数</label></li>
+</ul>
+<h2 id="原神相关"> 原神相关</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-14"><label for="task-item-14"> 今日可肝素材查询</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-15"><label for="task-item-15"> 模拟原神抽卡</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-16"><label for="task-item-16"> 米游社管理</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-17"><label for="task-item-17"> 米游社签到</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-18"><label for="task-item-18"> 原神便笺查询</label></li>
+</ul>
+<h2 id="实用工具"> 实用工具</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-19"><label for="task-item-19"> B站订阅、自动推送</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-20"><label for="task-item-20"> 任意语种翻译(甚至文言文)</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-21"><label for="task-item-21"> 简写翻译：将网络中的各类全字母简写翻译成人话，例如yyds->永远滴神</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-22"><label for="task-item-22"> 搜梗</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-23"><label for="task-item-23"> 识图搜番</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-24"><label for="task-item-24"> 疫情查询</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-25"><label for="task-item-25"> 短链接还原</label></li>
+<li><input type="checkbox"  disabled="disabled" id="task-item-26"><label for="task-item-26"> 短链接生成(防止滥用，暂不提供)</label></li>
+</ul>
+<h2 id="群功能"> 群功能</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-27"><label for="task-item-27"> 群管理:快捷禁言/踢人/拉黑</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-28"><label for="task-item-28"> 撤回消息</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-29"><label for="task-item-29"> 设置入群欢迎</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-30"><label for="task-item-30"> 按关键词撤回</label></li>
+</ul>
+<h2 id="小游戏"> 小游戏</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-31"><label for="task-item-31"> 看图猜成语</label></li>
+<li><input type="checkbox"  disabled="disabled" id="task-item-32"><label for="task-item-32"> 谁是卧底</label></li>
+<li><input type="checkbox"  disabled="disabled" id="task-item-33"><label for="task-item-33"> 文字RPG</label></li>
+</ul>
+<h2 id="好康的"> 好康的</h2>
+<ul>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-34"><label for="task-item-34"> 涩图</label></li>
+<li><input type="checkbox" checked="checked" disabled="disabled" id="task-item-35"><label for="task-item-35"> Pixiv排行榜</label></li>
+<li><input type="checkbox"  disabled="disabled" id="task-item-36"><label for="task-item-36"> 查看Pixiv插图所有分P</label></li>
+<li><input type="checkbox"  disabled="disabled" id="task-item-37"><label for="task-item-37"> coser</label></li>
+</ul>
+<p>其它插件正在快速开发中~</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>主配置文件说明</title>
+      <link> https://richeyjang.github.io/PaimengBot/use/main/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/use/main/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">主配置文件说明</source>
+      <pubDate>Sat, 26 Feb 2022 03:50:23 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="主配置文件说明"> 主配置文件说明</h1>
+<div><p>约定</p>
+<p>下列文档中，使用<code>灰底</code>标出的，皆为config-main.yaml文件配置项。</p>
+</div>
+<h2 id="部署相关"> 部署相关</h2>
+<p>以下配置项在部署成功完成后便不建议对其进行改动：</p>
+<ul>
+<li>
+<p><code>db</code>: 数据库配置，包括：数据库类型<code>db.type</code>、数据库Host<code>db.host</code>、数据库端口<code>db.port</code>、数据库名<code>db.name</code>、数据库登录用户名<code>db.user</code>、数据库登录密码<code>db.passwd</code>。<strong>此配置项不支持热更新</strong></p>
+</li>
+<li>
+<p><code>server</code>: 与go-cqhttp通信对接的相关配置，包括：go-cqhttp端地址<code>server.address</code>、通信Token<code>server.token</code>，需与go-cqhttp端一致。<strong>此配置项不支持热更新</strong></p>
+</li>
+<li>
+<p><code>log</code>: 日志配置，包括：日志最大保留天数<code>log.date</code>、日志输出级别<code>log.level</code>。</p>
+</li>
+<li>
+<p><code>tmp</code>: 临时文件相关配置，包括：同类型临时文件数量上限<code>tmp.maxcount</code>。</p>
+</li>
+</ul>
+<h2 id="运行相关"> 运行相关</h2>
+<ul>
+<li>
+<p><code>nickname</code>: 派蒙Bot的名字，默认为<em>派蒙</em>。</p>
+</li>
+<li>
+<p><code>superuser</code>: 派蒙Bot的超级用户列表，为数组类型，填写超级用户们的QQ号即可，请勿添加作为Bot的QQ号。</p>
+</li>
+<li>
+<p><code>plugins-always-call</code>: 该配置项值可以为：true、false、列表（字符串数组）：<em>true</em>代表所有功能可以自由调用，即在群聊中调用时<strong>无需</strong>加上派蒙Bot名字前缀或@派蒙Bot；<em>false</em>代表部分可能产生歧义的功能在群聊中调用时<strong>需要</strong>加上派蒙Bot名字前缀或@派蒙，默认值；列表则表示只有所列出的插件(Key)可以自由调用。<strong>此配置项不支持热更新</strong></p>
+</li>
+</ul>
+<p>例如，若将<code>plugins-always-call</code>配置成：</p>
+<div><pre><code><span>plugins-always-call</span><span>:</span>
+<span>-</span> chat
+<span>-</span> help
+</code></pre>
+<div><span>1</span><br><span>2</span><br><span>3</span><br></div></div><p>那么，只有聊天插件及帮助插件可以自由调用，而其他插件在群聊中调用时，需要加上派蒙Bot名字前缀或@派蒙Bot。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>使用文档</title>
+      <link> https://richeyjang.github.io/PaimengBot/use/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/use/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">使用文档</source>
+      <pubDate>Fri, 03 Dec 2021 05:32:05 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="使用方法"> 使用方法</h1>
+<div><p>提示</p>
+<p>最基本的，派蒙Bot是一个<strong>QQ机器人</strong>，<a href="./../install/">部署安装</a>完成后，请使用你的QQ与机器人QQ进行对话交流。</p>
+</div>
+<h2 id="简介"> 简介</h2>
+<p>派蒙Bot使用<strong>插件式管理</strong>，一个插件为一个同类型功能集合。</p>
+<p>例如，翻译插件，它提供了常用语种间的文本翻译功能，向派蒙Bot说：<code>翻译 hello</code>，它会将&quot;hello&quot;翻译成中文，回复<code>你好</code>；同样属于翻译插件，你还可以对她说：<code>中文翻译成日语 你好</code>，它会将&quot;你好&quot;翻译成日语，回复<code>こんにちは</code>；诸如此类。</p>
+<div><p>提示</p>
+<p>想要快速得知都有哪些插件？向派蒙Bot发消息：<code>帮助</code>或者<code>功能</code></p>
+<p>想要快速得知某个插件的用法？向派蒙Bot发消息：<code>帮助 [插件名]</code>，例如 <code>帮助 翻译</code></p>
+<p>而且，派蒙Bot正在快速迭代中，<strong>本文档不一定更新及时，请以<code>帮助</code>内容为准</strong></p>
+</div>
+<h2 id="主配置"> 主配置</h2>
+<div><p>提示</p>
+<p>派蒙Bot的所有配置默认使用YAML格式，一种比较简单的配置文件格式，参考<a href="https://www.runoob.com/w3cnote/yaml-intro.html" target="_blank" rel="noopener noreferrer">菜鸟教程</a></p>
+</div>
+<p>派蒙Bot全局上的一些配置项，例如数据库、日志等级、超级用户等，统一使用config-main.yaml文件进行配置。</p>
+<p>该文件的配置项详情请参考左侧<a href="main">主配置文件说明</a>。</p>
+<h2 id="插件配置"> 插件配置</h2>
+<p>各个插件本身的配置（例如权限管理插件中群管理员的默认权限等级）统一使用config-plugin.yaml文件进行配置。</p>
+<p>例如，权限管理插件在config-plugin.yaml文件中，其所有配置都在<code>auth</code>（它的插件Key）配置项内，想要配置群管理员的默认权限等级，只需修改<code>auth</code>配置项下的子配置项<code>defaultlevel</code>的内容（冒号后的部分）即可，其默认值为5。</p>
+<p>各个插件的用法及配置项详情请参考左侧<a href="list">插件列表</a>项或<code>帮助</code>命令。</p>
+<div><p>约定</p>
+<p>将例如<code>auth</code>配置项下的子配置项<code>defaultlevel</code>，简写记为<code>auth.defaultlevel</code></p>
+</div>
+<p>此外，所有插件配置都是<strong>热更新</strong>的哦（修改后无需重启立即生效）。</p>
+]]></content:encoded>
+    </item>
+    <item>
+      <title>一般插件</title>
+      <link> https://richeyjang.github.io/PaimengBot/use/plugins/</link>
+      <guid isPermaLink="false"> https://richeyjang.github.io/PaimengBot/use/plugins/</guid>
+      <source url=" https://richeyjang.github.io/PaimengBot/rss.xml">一般插件</source>
+      <pubDate>Fri, 03 Dec 2021 11:43:56 GMT</pubDate>
+      <content:encoded><![CDATA[<h1 id="一般插件"> 一般插件</h1>
+<div><p>约定</p>
+<p>下列文档中，使用<code>灰底</code>标出的，皆为config-plugin.yaml文件<a href="./#插件配置">配置项</a>。</p>
+<p>此外，命令中所出现的：方括号[]内的内容，代表一个参数</p>
+</div>
+<p>TODO</p>
+]]></content:encoded>
+    </item>
+  </channel>
+</rss>

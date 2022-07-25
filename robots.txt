@@ -1,0 +1,5 @@
+
+User-agent:*
+Disallow:
+
+Sitemap:  https://richeyjang.github.io/PaimengBot/sitemap.xml
