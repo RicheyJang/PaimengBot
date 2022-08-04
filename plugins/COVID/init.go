@@ -27,11 +27,18 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"疫情", "新冠疫情"}).SetBlock(true).ThirdPriority().Handle(covid19Handler)
+	proxy.OnCommands([]string{"疫情", "新冠疫情"}, zero.OnlyToMe).SetBlock(true).ThirdPriority().Handle(covid19Handler)
+	proxy.OnRegex(`^(\S{1,10})疫情$`, zero.OnlyToMe).SetBlock(true).SetPriority(3).Handle(covid19Handler)
 }
 
 func covid19Handler(ctx *zero.Ctx) {
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
+	if len(arg) == 0 {
+		matches := utils.GetRegexpMatched(ctx)
+		if len(matches) > 1 {
+			arg = matches[1]
+		}
+	}
 	// 查询
 	lines, err := GetCOVID19Condition(arg)
 	if err != nil {
