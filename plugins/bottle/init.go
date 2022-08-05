@@ -163,7 +163,7 @@ func genBottleMsg(bottle DriftingBottleModel) (msg message.MessageSegment) {
 			msg = message.Text(fmt.Sprintf("漂流瓶ID：%d\n%s", bottle.ID, bottle.Content))
 		}
 	}()
-	W, H := 200.0, 50.0
+	W, H := 310.0, 50.0
 	// 测量长度 分行
 	img := images.NewImageCtx(1, 1)
 	if err = img.UseDefaultFont(18); err != nil {
