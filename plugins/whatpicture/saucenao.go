@@ -13,7 +13,7 @@ import (
 )
 
 func searchPicBySaucenao(picURL string, showAdult bool) ([]message.Message, error) {
-	numres := proxy.GetConfigInt64("max")
+	numres := proxy.GetConfigInt64("results")
 	if numres <= 0 {
 		numres = 1
 	}
@@ -37,10 +37,10 @@ func searchPicBySaucenao(picURL string, showAdult bool) ([]message.Message, erro
 	var msgs []message.Message
 	minSimilarity := rsp.Get("header.minimum_similarity").Float()
 	for _, result := range rsp.Get("results").Array() {
-		if result.Get("header.similarity").Float() < minSimilarity {
-			continue
-		}
 		picInfo := newPictureInfo(result)
+		if result.Get("header.similarity").Float() < minSimilarity {
+			picInfo.lowSimilar = true
+		}
 		// 分Index讨论分别解析
 		switch result.Get("header.index_id").Int() {
 		case 5, 6, 51, 52, 53: // pixiv
@@ -69,6 +69,7 @@ type pictureInfo struct {
 	srcURL     string
 	srcDB      string
 	hidden     bool
+	lowSimilar bool
 	// 需各解析函数填写
 	category   string
 	title      string
@@ -158,18 +159,18 @@ func (p *pictureInfo) parseDefault(result gjson.Result) {
 		}
 	}
 	// 补全描述
-	if result.Get("data.part").Exists() {
+	if result.Get("data.part").String() != "" {
 		p.exDescribe += "\n集数：" + result.Get("data.part").String()
 	}
-	if result.Get("data.est_time").Exists() {
+	if result.Get("data.est_time").String() != "" {
 		p.exDescribe += "\n时间：" + result.Get("data.est_time").String()
 	}
-	if result.Get("data.author").Exists() {
+	if result.Get("data.author").String() != "" {
 		p.exDescribe += "\n作者：" + result.Get("data.author").String()
-	} else if result.Get("data.author_name").Exists() {
+	} else if result.Get("data.author_name").String() != "" {
 		p.exDescribe += "\n作者：" + result.Get("data.author_name").String()
 	}
-	if result.Get("data.company").Exists() {
+	if result.Get("data.company").String() != "" {
 		p.exDescribe += "\n厂商：" + result.Get("data.company").String()
 	}
 	p.exDescribe = strings.TrimSpace(p.exDescribe)
@@ -191,9 +192,15 @@ func (p pictureInfo) genMessage() (msg message.Message) {
 	// 缩略图
 	if !p.hidden && len(p.thumbnail) != 0 {
 		msg = append(msg, message.Image(p.thumbnail))
+	} else {
+		msg = append(msg, message.Text("\n不给你看图\n"))
 	}
 	// 描述
-	str := fmt.Sprintf("相似度: %.2f%%\n来源: %s", p.similarity, p.srcDB)
+	str := fmt.Sprintf("相似度: %.2f%%", p.similarity)
+	if p.lowSimilar {
+		str += "(较低)"
+	}
+	str += fmt.Sprintf("\n来源: %s", p.srcDB)
 	if len(p.exDescribe) != 0 {
 		str += "\n" + p.exDescribe
 	}

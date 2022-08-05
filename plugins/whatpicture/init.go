@@ -20,6 +20,7 @@ var info = manager.PluginInfo{
 	SuperUsage: `请预先配置saucenao的API Key，否则无法使用
 config-plugin配置项：
 	whatpicture.max: 每个用户的每日最大搜索次数
+	whatpicture.results: 展示的搜索结果数
 	whatpicture.timeout: 单次搜索超时时间
 	whatpicture.link: 搜索结果中是(true)否(false)附带链接
 	whatpicture.key: saucenao的API Key
@@ -33,8 +34,9 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"搜图", "识图", "搜本子"}).SetBlock(true).SetPriority(4).Handle(searchPicHandler)
+	proxy.OnCommands([]string{"搜图", "识图", "搜本子"}, zero.OnlyToMe).SetBlock(true).SetPriority(4).Handle(searchPicHandler)
 	proxy.AddConfig("max", 3)
+	proxy.AddConfig("results", 2)
 	proxy.AddConfig("key", "")
 	proxy.AddConfig("timeout", "30s")
 	proxy.AddConfig("link", true)
@@ -83,17 +85,9 @@ func searchPicHandler(ctx *zero.Ctx) {
 		ctx.Send(append(message.Message{message.At(ctx.Event.UserID)}, msgs[0]...))
 		return
 	}
-	if utils.IsMessageGroup(ctx) { // 群消息 节点转发
-		var forwardMsg message.Message
-		for _, m := range msgs {
-			forwardMsg = append(forwardMsg, message.CustomNode(utils.GetBotNickname(), ctx.Event.SelfID, m))
-		}
-		ctx.SendGroupForwardMessage(ctx.Event.GroupID, forwardMsg)
-	} else {
-		for _, m := range msgs {
-			ctx.Send(m)
-			time.Sleep(200 * time.Millisecond)
-		}
+	for _, m := range msgs {
+		ctx.Send(m)
+		time.Sleep(200 * time.Millisecond)
 	}
 }
 

@@ -352,9 +352,6 @@ func (p *PluginProxy) CheckCallLimit(key string, id int64) bool {
 	if len(cl.timesConfigKey) > 0 {
 		times = p.GetConfigInt64(cl.timesConfigKey)
 	}
-	if times <= 0 {
-		times = 1
-	}
 	// 检查调用次数限制
 	if int64(info.CallCount) > times { // 超出限制
 		return false

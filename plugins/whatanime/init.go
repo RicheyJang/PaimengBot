@@ -25,7 +25,7 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"识番", "搜番", "这是什么番", "搜动漫", "这是什么动漫"}).SetBlock(true).SecondPriority().Handle(searchAnimeHandler)
+	proxy.OnCommands([]string{"识番", "搜番", "这是什么番", "搜动漫", "这是什么动漫"}, zero.OnlyToMe).SetBlock(true).SecondPriority().Handle(searchAnimeHandler)
 	proxy.AddConfig("timeout", "30s")
 	proxy.AddAPIConfig(consts.APIOfTraceMoeKey, "api.trace.moe")
 }
