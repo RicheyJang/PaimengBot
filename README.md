@@ -75,6 +75,7 @@
 - [x] 涩图 (pixiv)
 - [x] Pixiv排行榜 (pixiv_rank)
 - [x] Pixiv搜索 (pixiv_query)
+- [x] 搜图\搜本子 (whatpicture)
 - [ ] coser
 - [ ] 自定义图库
 
