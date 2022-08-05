@@ -84,7 +84,7 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 		blocks[i].colNum = cols
 	}
 	w = math.Max(w, maxSingleW*float64(cols)+20*float64(cols-1)) // 多列，取最大框宽度的n倍
-	w, h = w+30, h+maxH+40
+	w, h = w+30, h+maxH+40+20
 	// 贴提示文字
 	img := images.NewImageCtxWithBGRGBA255(int(w), int(h), 255, 255, 255, 255)
 	err := img.PasteStringDefault(headTips, 24, 1.3, 10, 20, w)
@@ -101,6 +101,7 @@ func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[str
 		img.DrawImage(block.img, nowX, nowY)
 		nowY += int(block.h) + 40
 	}
+	img.PasteWatermark(w-50, h-15, 22, "#b8b8b8")
 	msg, err := img.GenMessageAuto()
 	if err != nil {
 		return message.Text(helps.String())

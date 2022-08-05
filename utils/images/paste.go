@@ -60,6 +60,15 @@ func (img *ImageCtx) PasteRoundedRectangle(x, y, w, h, r float64, colorStr strin
 	img.Fill()
 }
 
+// PasteWatermark 绘制水印，右下角定位
+func (img *ImageCtx) PasteWatermark(x, y, fontsize float64, color string) {
+	if err := img.UseDefaultFont(fontsize); err != nil {
+		return
+	} // 默认字体
+	img.SetColorAuto(color)
+	img.DrawStringAnchored("By RicheyJang's PaimengBot", x, y, 1, 0)
+}
+
 type Point struct {
 	X, Y float64
 }
