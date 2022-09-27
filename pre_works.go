@@ -25,7 +25,7 @@ import (
 
 func init() {
 	pflag.StringP("server", "s", "ws://127.0.0.1:6700/", "the websocket server address")
-	pflag.IntSliceP("superuser", "u", []int{}, "all superusers' id")
+	pflag.StringSliceP("superuser", "u", []string{}, "all superusers' id")
 	pflag.StringP("nickname", "n", "派蒙", "the bot's nickname")
 	pflag.StringP("log", "l", "info", "the level of logging")
 	pflag.BoolP("daemon", "d", false, "run the bot as a service")
@@ -172,7 +172,7 @@ func flushMainConfig(configPath string, configFileName string) error {
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) { // 配置文件发生变更之后会调用的回调函数
-		zero.BotConfig.SuperUsers = utils.IntSlice2int64Slice(viper.GetIntSlice("superuser"))
+		zero.BotConfig.SuperUsers = utils.StringSlice2int64Slice(viper.GetStringSlice("superuser"))
 		zero.BotConfig.NickName = []string{viper.GetString("nickname")}
 		_ = setupLogger()
 		log.Infof("reload main config from %v", e.Name)

@@ -68,7 +68,7 @@ func main() {
 	zero.RunAndBlock(zero.Config{
 		NickName:      []string{viper.GetString("nickname")},
 		CommandPrefix: "",
-		SuperUsers:    utils.IntSlice2int64Slice(viper.GetIntSlice("superuser")),
+		SuperUsers:    utils.StringSlice2int64Slice(viper.GetStringSlice("superuser")),
 		Driver: []zero.Driver{
 			driver.NewWebSocketClient(viper.GetString("server.address"), viper.GetString("server.token")),
 		},

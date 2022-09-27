@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 )
 
 func GoAndWait(handlers ...func() error) (err error) {
@@ -159,6 +160,14 @@ func BytesToUInt32(b []byte) uint32 {
 func IntSlice2int64Slice(slice []int) (newslice []int64) {
 	for i := 0; i < len(slice); i++ {
 		newslice = append(newslice, int64(slice[i]))
+	}
+	return
+}
+
+//将string切片转换为int64切片
+func StringSlice2int64Slice(slice []string) (newslice []int64) {
+	for i := 0; i < len(slice); i++ {
+		newslice = append(newslice, cast.ToInt64(slice[i]))
 	}
 	return
 }
