@@ -325,8 +325,5 @@ func isCNOrEn(str string) bool {
 			return true
 		}
 	}
-	if asciiReg.MatchString(str) {
-		return true
-	}
-	return false
+	return asciiReg.MatchString(str)
 }
