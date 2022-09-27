@@ -59,7 +59,7 @@ func StringLimit(s string, limit int) string {
 // MergeStringSlices 合并多个字符串切片并去重、去除空字符串
 func MergeStringSlices(slices ...[]string) (res []string) {
 	mp := FormSetByStrings(slices...)
-	for s, _ := range mp {
+	for s := range mp {
 		if len(s) == 0 {
 			continue
 		}
