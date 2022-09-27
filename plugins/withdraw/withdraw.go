@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -33,12 +34,12 @@ func withDrawMsg(ctx *zero.Ctx) {
 		log.Warn("get reply id = 0")
 		return
 	}
-	msg := ctx.GetMessage(replyID)
+	msg := ctx.GetMessage(message.NewMessageIDFromInteger(cast.ToInt64(replyID)))
 	// 检查是否为机器人本人消息
 	//if msg.Sender != nil && msg.Sender.ID != 0 && msg.Sender.ID != ctx.Event.SelfID {
 	//	ctx.Send(fmt.Sprintf("%v只能撤回%v自己发出的消息哦", utils.GetBotNickname(), utils.GetBotNickname()))
 	//	return
 	//}
-	ctx.DeleteMessage(replyID)
+	ctx.DeleteMessage(message.NewMessageIDFromInteger(cast.ToInt64(replyID)))
 	log.Infof("撤回消息 %v (id=%v)", utils.JsonString(msg), replyID)
 }

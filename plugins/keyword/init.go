@@ -5,10 +5,12 @@ import (
 
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
+	"github.com/spf13/cast"
 
 	"github.com/fsnotify/fsnotify"
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -75,7 +77,7 @@ func msgHandler(ctx *zero.Ctx) {
 		log.Infof(`触发关键词"%v"，撤回消息ID：%v`, ctx.State["keyword"], ctx.Event.MessageID)
 		ctx.Block()
 		ctx.Send("嘘！")
-		ctx.DeleteMessage(ctx.Event.MessageID)
+		ctx.DeleteMessage(message.NewMessageIDFromInteger(cast.ToInt64(ctx.Event.MessageID)))
 	}
 	// 其它处理
 }

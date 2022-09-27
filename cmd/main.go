@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -67,9 +68,9 @@ func main() {
 	zero.RunAndBlock(zero.Config{
 		NickName:      []string{viper.GetString("nickname")},
 		CommandPrefix: "",
-		SuperUsers:    viper.GetStringSlice("superuser"),
+		SuperUsers:    utils.IntSlice2int64Slice(viper.GetIntSlice("superuser")),
 		Driver: []zero.Driver{
 			driver.NewWebSocketClient(viper.GetString("server.address"), viper.GetString("server.token")),
 		},
-	})
+	}, nil)
 }

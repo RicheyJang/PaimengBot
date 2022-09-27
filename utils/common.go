@@ -154,3 +154,11 @@ func BytesToUInt32(b []byte) uint32 {
 	}
 	return binary.LittleEndian.Uint32(b)
 }
+
+//将int切片转换为int64切片
+func IntSlice2int64Slice(slice []int) (newslice []int64) {
+	for i := 0; i < len(slice); i++ {
+		newslice = append(newslice, int64(slice[i]))
+	}
+	return
+}
