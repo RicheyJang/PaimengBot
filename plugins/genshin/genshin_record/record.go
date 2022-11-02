@@ -116,7 +116,7 @@ func init() {
 
 func GetRecord(ctx *zero.Ctx) {
 	UID := GetUserUid(ctx.Event.UserID)
-	UID = UID[1 : len(UID)-1]
+	UID = UID[0 : len(UID)-1]
 
 	ServerNum := "0"
 	API := "https://api.daidr.me/apis/genshinUserinfo?uid=" + UID + "&server=" + ServerNum
@@ -195,7 +195,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 	RecordImage.UseDefaultFont(30)
 
-	RecordImage.DrawString(UID, 400, 800)
+	RecordImage.DrawString("UID: "+UID, 400, 800)
 
 	/*******************************角色信息**********************************/
 
