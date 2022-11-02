@@ -116,7 +116,7 @@ func init() {
 
 func GetRecord(ctx *zero.Ctx) {
 	UID := GetUserUid(ctx.Event.UserID)
-	UID = UID[0 : len(UID)-1]
+	UID = UID[0:len(UID)]
 
 	ServerNum := "0"
 	API := "https://api.daidr.me/apis/genshinUserinfo?uid=" + UID + "&server=" + ServerNum
