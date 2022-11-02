@@ -141,6 +141,10 @@ func GetRecord(ctx *zero.Ctx) {
 		ctx.Send(Image)
 		break
 
+	case 10101:
+		ctx.Send("查询次数太多啦，明天再来吧")
+		break
+
 	default:
 		ctx.Send(Info.Message)
 
@@ -166,7 +170,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	Server := GetUserServer(GenShin.Data.Role.Region)  //所属服务器
 	UserLevel := strconv.Itoa(GenShin.Data.Role.Level) //玩家等级
 
-	RecordImage.LoadFontFace("./ttf/zh-cn.ttf", 25)
+	RecordImage.UseDefaultFont(25)
 	RecordImage.SetHexColor("#e5e5e5")
 
 	ImgName, _ := manager.DecodeStaticImage("genshin/module/module01.png")
@@ -191,7 +195,6 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 	RecordImage.UseDefaultFont(30)
 
-	UID = "UID: " + "506482637"
 	RecordImage.DrawString(UID, 400, 800)
 
 	/*******************************角色信息**********************************/
