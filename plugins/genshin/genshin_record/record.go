@@ -111,11 +111,11 @@ func init() {
 	if proxy == nil {
 		return
 	}
-	proxy.OnCommands([]string{"原神战绩"}).SetBlock(true).Handle(GetRecord) //绑定账号
+	proxy.OnCommands([]string{"原神战绩"}).SetBlock(true).Handle(getRecord) //绑定账号
 }
 
-func GetRecord(ctx *zero.Ctx) {
-	UID := GetUserUid(ctx.Event.UserID)
+func getRecord(ctx *zero.Ctx) {
+	UID := getUserUid(ctx.Event.UserID)
 	UID = UID[0:len(UID)]
 
 	ServerNum := "0"
@@ -133,11 +133,11 @@ func GetRecord(ctx *zero.Ctx) {
 		ServerNum = "1"
 		API = "https://api.daidr.me/apis/genshinUserinfo?uid=" + UID + "&server=" + ServerNum
 		Info, _ = GetInfo(API)
-		Image, _ := GetRecordImage(Info, UID)
+		Image, _ := getRecordImage(Info, UID)
 		ctx.Send(Image)
 		break
 	case 0:
-		Image, _ := GetRecordImage(Info, UID)
+		Image, _ := getRecordImage(Info, UID)
 		ctx.Send(Image)
 		break
 
@@ -152,7 +152,7 @@ func GetRecord(ctx *zero.Ctx) {
 
 }
 
-func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, error) {
+func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, error) {
 
 	RecordImage := images.NewImageCtxWithBGColor(1000, 5000, "#363839")
 
@@ -167,7 +167,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	/************************基本信息*************************************/
 
 	Nickname := GenShin.Data.Role.Nickname             //玩家名
-	Server := GetUserServer(GenShin.Data.Role.Region)  //所属服务器
+	Server := getUserServer(GenShin.Data.Role.Region)  //所属服务器
 	UserLevel := strconv.Itoa(GenShin.Data.Role.Level) //玩家等级
 
 	RecordImage.UseDefaultFont(25)
@@ -208,7 +208,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	RecordImage.DrawLine(85, info_Y2, 900, info_Y2)
 	RecordImage.StrokePreserve()
 
-	err := UpdateCharacterPicture(GenShin)
+	err := updateCharacterPicture(GenShin)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -221,7 +221,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 		if i < 4 {
 			//左列角色信息
 			CharacterPic, _ := gg.LoadImage(GenshinCardDir + "/" + GenShin.Data.Avatars[i].Name + ".png") //角色图片
-			ElementPic, _ := GetElementPicture(GenShin.Data.Avatars[i].Element)                           //元素图
+			ElementPic, _ := getElementPicture(GenShin.Data.Avatars[i].Element)                           //元素图
 
 			//角色信息
 			CharacterName := GenShin.Data.Avatars[i].Name
@@ -243,7 +243,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 			//右列
 			CharacterPic, _ := gg.LoadImage(GenshinCardDir + "/" + GenShin.Data.Avatars[i].Name + ".png")
-			ElementPic, _ := GetElementPicture(GenShin.Data.Avatars[i].Element)
+			ElementPic, _ := getElementPicture(GenShin.Data.Avatars[i].Element)
 
 			CharacterName := GenShin.Data.Avatars[i].Name
 			CharacterLevel := "Lv. " + strconv.Itoa(GenShin.Data.Avatars[i].Level)
@@ -322,9 +322,9 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 	/********************************世界探索***********************************/
 
-	UpdateWorldICONPicture(GenShin)
-	UpdateWorldBackgroundPicture(GenShin)
-	UpdateWorldOfferingsPicture(GenShin)
+	updateWorldICONPicture(GenShin)
+	updateWorldBackgroundPicture(GenShin)
+	updateWorldOfferingsPicture(GenShin)
 
 	RecordImage.UseDefaultFont(50) //这里应该改为usedefeafont
 	WorldExploration := "世界探索"
@@ -407,7 +407,7 @@ func GetRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 }
 
-func GetUserUid(id int64) (u string) {
+func getUserUid(id int64) (u string) {
 	key := fmt.Sprintf("genshin_uid.u%v", id)
 	v, err := proxy.GetLevelDB().Get([]byte(key), nil)
 	if err != nil {
@@ -418,7 +418,7 @@ func GetUserUid(id int64) (u string) {
 }
 
 // 获取尘歌壶舒适度图标
-func UpdateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
+func updateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinHomeworldPicDir + "/levelicon")
 	if err != nil {
 		return err
@@ -444,7 +444,7 @@ func UpdateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
 }
 
 // 获取尘歌壶背景图
-func UpdateHomeworldPicture(info GenShinInfo) error {
+func updateHomeworldPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinHomeworldPicDir)
 	if err != nil {
 		return err
@@ -472,7 +472,7 @@ func UpdateHomeworldPicture(info GenShinInfo) error {
 }
 
 // 下载需要的世界背景图
-func UpdateWorldBackgroundPicture(info GenShinInfo) error {
+func updateWorldBackgroundPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinWorldBackgroundPicDir)
 	if err != nil {
 		return err
@@ -499,7 +499,7 @@ func UpdateWorldBackgroundPicture(info GenShinInfo) error {
 }
 
 // 其他的世界探索ICON
-func UpdateWorldOfferingsPicture(info GenShinInfo) error {
+func updateWorldOfferingsPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinWorldBackgroundPicDir + "/offerings")
 	if err != nil {
 		return err
@@ -527,7 +527,7 @@ func UpdateWorldOfferingsPicture(info GenShinInfo) error {
 }
 
 // 下载需要的世界ICON
-func UpdateWorldICONPicture(info GenShinInfo) error {
+func updateWorldICONPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinWorldICONPicDir)
 	if err != nil {
 		return err
@@ -554,7 +554,7 @@ func UpdateWorldICONPicture(info GenShinInfo) error {
 }
 
 // 下载需要的角色图片
-func UpdateCharacterPicture(info GenShinInfo) error {
+func updateCharacterPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinCardDir)
 	if err != nil {
 		return err
@@ -599,7 +599,7 @@ func GetInfo(API string) (GenShinInfo, error) {
 }
 
 // 将服务器信息转化
-func GetUserServer(Region string) string {
+func getUserServer(Region string) string {
 
 	switch Region {
 
@@ -625,7 +625,7 @@ func PathExists(path string) (bool, error) {
 }
 
 // 获取元素图片
-func GetElementPicture(ElementName string) (image.Image, error) {
+func getElementPicture(ElementName string) (image.Image, error) {
 	switch ElementName {
 
 	case "Cryo": //冰元素
