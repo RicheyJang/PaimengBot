@@ -47,6 +47,7 @@
 - [x] 米游社管理 (genshin_cookie)
 - [x] 米游社签到 (genshin_sign)
 - [x] 原神便笺查询 (genshin_query)
+- [x] 原神战绩查询 (genshin_record)
 
 ### 实用工具
 - [x] B站订阅 (bilibili)：UP主、番剧、直播更新时自动推送

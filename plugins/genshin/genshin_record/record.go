@@ -443,7 +443,7 @@ func updateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
 	return nil
 }
 
-// 获取尘歌壶背景图
+// 获取尘歌壶背景图  计划另外写一个功能实现尘歌壶
 func updateHomeworldPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinHomeworldPicDir)
 	if err != nil {
