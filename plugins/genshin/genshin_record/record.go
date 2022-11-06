@@ -37,69 +37,69 @@ type GenShinInfo struct {
 	Message string `json:"message"` //状态信息
 	Data    struct {
 		Role struct {
-			AvatarUrl string `json:"AvatarUrl"`
-			Nickname  string `json:"nickname"`
-			Region    string `json:"region"`
-			Level     int    `json:"level"`
+			AvatarUrl string `json:"AvatarUrl"` //无返回,未知
+			Nickname  string `json:"nickname"`  // 角色名称
+			Region    string `json:"region"`    //服务器位置
+			Level     int    `json:"level"`     //等级
 		} `json:"role"`
 		Avatars []struct {
-			Id                      int    `json:"id"`
-			Image                   string `json:"image"`
-			Name                    string `json:"name"`
-			Element                 string `json:"element"`
-			Fetter                  int    `json:"fetter"`
-			Level                   int    `json:"level"`
-			Rarity                  int    `json:"rarity"`
-			ActivedConstellationNum int    `json:"actived_constellation_num"`
-			CardImage               string `json:"card_image"`
-			IsChosen                bool   `json:"is_chosen"`
+			Id                      int    `json:"id"`                        //角色ID
+			Image                   string `json:"image"`                     //角色头像图片
+			Name                    string `json:"name"`                      //角色名称
+			Element                 string `json:"element"`                   //元素
+			Fetter                  int    `json:"fetter"`                    //好感度
+			Level                   int    `json:"level"`                     //角色等级
+			Rarity                  int    `json:"rarity"`                    //星级
+			ActivedConstellationNum int    `json:"actived_constellation_num"` //命座数
+			CardImage               string `json:"card_image"`                //角色卡片名称
+			IsChosen                bool   `json:"is_chosen"`                 //未知
 		} `json:"avatars"`
 		Stats struct {
-			ActiveDayNumber      int    `json:"active_day_number"`
-			AchievementNumber    int    `json:"achievement_number"`
-			AnemoculusNumber     int    `json:"anemoculus_number"`
-			GeoculusNumber       int    `json:"geoculus_number"`
-			AvatarNumber         int    `json:"avatar_number"`
-			WayPointNumber       int    `json:"way_point_number"`
-			DomainNumber         int    `json:"domain_number"`
-			SpiralAbyss          string `json:"spiral_abyss"`
-			PreciousChestNumber  int    `json:"precious_chest_number"`
-			LuxuriousChestNumber int    `json:"luxurious_chest_number"`
-			ExquisiteChestNumber int    `json:"exquisite_chest_number"`
-			CommonChestNumber    int    `json:"common_chest_number"`
-			ElectroculusNumber   int    `json:"electroculus_number"`
-			MagicChestNumber     int    `json:"magic_chest_number"`
-			DendroculusNumber    int    `json:"dendroculus_number"`
+			ActiveDayNumber      int    `json:"active_day_number"`      //活跃天数
+			AchievementNumber    int    `json:"achievement_number"`     //达成成就数
+			AnemoculusNumber     int    `json:"anemoculus_number"`      //风神瞳数量
+			GeoculusNumber       int    `json:"geoculus_number"`        //岩神瞳数量
+			AvatarNumber         int    `json:"avatar_number"`          //拥有角色数量
+			WayPointNumber       int    `json:"way_point_number"`       //解锁锚点数
+			DomainNumber         int    `json:"domain_number"`          //解锁秘境数
+			SpiralAbyss          string `json:"spiral_abyss"`           //深境螺旋层数
+			PreciousChestNumber  int    `json:"precious_chest_number"`  //珍贵宝箱数
+			LuxuriousChestNumber int    `json:"luxurious_chest_number"` //华丽宝箱数
+			ExquisiteChestNumber int    `json:"exquisite_chest_number"` //精致宝箱数
+			CommonChestNumber    int    `json:"common_chest_number"`    //普通宝箱数
+			ElectroculusNumber   int    `json:"electroculus_number"`    //雷神瞳数
+			MagicChestNumber     int    `json:"magic_chest_number"`     //奇馈宝箱数
+			DendroculusNumber    int    `json:"dendroculus_number"`     //风神瞳数量
 		} `json:"stats"`
-		CityExplorations  []interface{} `json:"city_explorations"`
+		CityExplorations  []interface{} `json:"city_explorations"` // 未知
 		WorldExplorations []struct {
-			Level                 int    `json:"level"`
-			ExplorationPercentage int    `json:"exploration_percentage"`
-			Icon                  string `json:"icon"`
-			Name                  string `json:"name"`
-			Type                  string `json:"type"`
+			Level                 int    `json:"level"`                  //声望等级
+			ExplorationPercentage int    `json:"exploration_percentage"` //
+			Icon                  string `json:"icon"`                   //地区图标
+			Name                  string `json:"name"`                   //地区名称
+			Type                  string `json:"type"`                   //类型 具体未知
 			Offerings             []struct {
-				Name  string `json:"name"`
-				Level int    `json:"level"`
-				Icon  string `json:"icon"`
+				Name  string `json:"name"`  //地区贡献名称 例如忍冬之树
+				Level int    `json:"level"` //等级
+				Icon  string `json:"icon"`  //图标
 			} `json:"offerings"`
-			Id              int    `json:"id"`
-			ParentId        int    `json:"parent_id"`
-			MapUrl          string `json:"map_url"`
-			StrategyUrl     string `json:"strategy_url"`
-			BackgroundImage string `json:"background_image"`
-			InnerIcon       string `json:"inner_icon"`
-			Cover           string `json:"cover"`
+			Id              int    `json:"id"`               //
+			ParentId        int    `json:"parent_id"`        //
+			MapUrl          string `json:"map_url"`          //
+			StrategyUrl     string `json:"strategy_url"`     //
+			BackgroundImage string `json:"background_image"` //地区背景图片
+			InnerIcon       string `json:"inner_icon"`       //地区图标(深色)
+			Cover           string `json:"cover"`            //
 		} `json:"world_explorations"`
 		Homes []struct {
-			Level            int    `json:"level"`
-			VisitNum         int    `json:"visit_num"`
-			ComfortNum       int    `json:"comfort_num"`
-			ItemNum          int    `json:"item_num"`
-			Name             string `json:"name"`
-			Icon             string `json:"icon"`
-			ComfortLevelName string `json:"comfort_level_name"`
-			ComfortLevelIcon string `json:"comfort_level_icon"`
+			Level            int    `json:"level"`              // 尘歌壶等级
+			VisitNum         int    `json:"visit_num"`          //来访人数
+			ComfortNum       int    `json:"comfort_num"`        //舒适度
+			ItemNum          int    `json:"item_num"`           //放置物品树
+			Name             string `json:"name"`               //地区名称
+			Icon             string `json:"icon"`               //图标
+			ComfortLevelName string `json:"comfort_level_name"` //舒适度名
+			ComfortLevelIcon string `json:"comfort_level_icon"` //舒适度图标
 		} `json:"homes"`
 	} `json:"data"`
 }
