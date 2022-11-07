@@ -142,7 +142,7 @@ func getRecord(ctx *zero.Ctx) {
 			log.Errorf("GenshinRecord Err:达到原神战绩API日请求次数限制")
 			log.Errorf("GenshinRecord Message(10101):  " + Info.Message)
 			log.Errorf("GenshinRecord Retcode(10101):" + strconv.Itoa(Info.Retcode))
-			ctx.Send("请求次数太多了,明天试试把!")
+			ctx.Send("请求次数太多了,明天试试吧!")
 		} else if Info.Retcode == 0 {
 			log.Errorf("获取原神战绩成功")
 			Image, _ := getRecordImage(Info, UID)
@@ -165,14 +165,14 @@ func getRecord(ctx *zero.Ctx) {
 		log.Errorf("GenshinRecord Err:达到原神战绩API日请求次数限制")
 		log.Errorf("GenshinRecord Message(10101):  " + Info.Message)
 		log.Errorf("GenshinRecord Retcode:" + strconv.Itoa(Info.Retcode))
-		ctx.Send("请求次数太多了,明天试试把!")
+		ctx.Send("请求次数太多了,明天试试吧!")
 		break
 
 	default:
 		log.Errorf("GenshinRecord Err:???")
 		log.Errorf("GenshinRecord Message:  " + Info.Message)
 		log.Errorf("GenshinRecord Retcode " + strconv.Itoa(Info.Retcode))
-		ctx.Send("发生未知错误!!!")
+		ctx.Send("发生未知错误!!!  请查看日志了解详情")
 		break
 
 	}
@@ -305,7 +305,7 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	var All_Y float64 = 2100 //Y坐标
 	var linenum float64 = 0  //列数
 
-	ActiveDayNum := "活跃天数: " + strconv.Itoa(GenShin.Data.Stats.ActiveDayNumber)       //活跃天数
+	ActiveDayNum := "活跃天数: " + strconv.Itoa(GenShin.Data.Stats.ActiveDayNumber)      //活跃天数
 	AchievementNum := "成就达成数: " + strconv.Itoa(GenShin.Data.Stats.AchievementNumber) //成就数
 	RecordImage.DrawString(ActiveDayNum, list1, All_Y+50*linenum)
 	RecordImage.DrawString(AchievementNum, list2, All_Y+50*linenum)
@@ -323,10 +323,10 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	RecordImage.DrawString(DendroculusNum, list2, (All_Y + 50*linenum))
 	linenum++
 
-	AvatarNumber := "角色数: " + strconv.Itoa(GenShin.Data.Stats.AvatarNumber)    //角色数
+	AvatarNumber := "角色数: " + strconv.Itoa(GenShin.Data.Stats.AvatarNumber)   //角色数
 	WayPointNum := "传送点数: " + strconv.Itoa(GenShin.Data.Stats.WayPointNumber) //传送点数量
-	DomainNum := "秘境数: " + strconv.Itoa(GenShin.Data.Stats.DomainNumber)       //秘境数量
-	SpiralAbyss := "深境螺旋层数: " + GenShin.Data.Stats.SpiralAbyss              //深境螺旋层数
+	DomainNum := "秘境数: " + strconv.Itoa(GenShin.Data.Stats.DomainNumber)      //秘境数量
+	SpiralAbyss := "深境螺旋层数: " + GenShin.Data.Stats.SpiralAbyss                //深境螺旋层数
 	RecordImage.DrawString(AvatarNumber, list1, (All_Y + 50*linenum))
 	RecordImage.DrawString(WayPointNum, list2, (All_Y + 50*linenum))
 	linenum++
