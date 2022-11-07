@@ -313,9 +313,9 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 	//各种神瞳数量
 	AnemoculusNum := "风神瞳数: " + strconv.Itoa(GenShin.Data.Stats.AnemoculusNumber)     //风
-	GeoculusNum := "风神瞳数: " + strconv.Itoa(GenShin.Data.Stats.GeoculusNumber)         //岩
-	ElectroculusNum := "风神瞳数: " + strconv.Itoa(GenShin.Data.Stats.ElectroculusNumber) //雷
-	DendroculusNum := "风神瞳数: " + strconv.Itoa(GenShin.Data.Stats.DendroculusNumber)   //草
+	GeoculusNum := "岩神瞳数: " + strconv.Itoa(GenShin.Data.Stats.GeoculusNumber)         //岩
+	ElectroculusNum := "雷神瞳数: " + strconv.Itoa(GenShin.Data.Stats.ElectroculusNumber) //雷
+	DendroculusNum := "草神瞳数: " + strconv.Itoa(GenShin.Data.Stats.DendroculusNumber)   //草
 	RecordImage.DrawString(AnemoculusNum, list1, (All_Y + 50*linenum))
 	RecordImage.DrawString(GeoculusNum, list2, (All_Y + 50*linenum))
 	linenum++
