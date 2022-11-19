@@ -144,7 +144,7 @@ type Client struct {
 }
 
 func NewClient() *Client {
-	c := client.NewHttpClient(nil)
+	c := client.NewHttpClient(&client.HttpOptions{SetJar: true})
 	c.SetUserAgent()
 	c.SetHeader("Referer", "https://www.bilibili.com/")
 	cli := &Client{
@@ -160,13 +160,23 @@ func (c *Client) SetCookie(cookie string) {
 	c.SetHeader("Cookie", cookie)
 }
 
+func (c *Client) GetDefaultCookie() error {
+	_, err := c.Get("https://www.bilibili.com/")
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Search Bilibili搜索相关
 type Search struct {
 	c *Client
 }
 
 func NewSearch() *Search {
-	return NewClient().NewSearch()
+	c := NewClient()
+	_ = c.GetDefaultCookie()
+	return c.NewSearch()
 }
 
 func (c *Client) NewSearch() *Search {

@@ -7,11 +7,13 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"strings"
 	"time"
 
 	"github.com/tidwall/gjson"
+	"golang.org/x/net/publicsuffix"
 )
 
 type HttpClient struct {
@@ -24,6 +26,7 @@ type HttpClient struct {
 type HttpOptions struct {
 	TryTime int
 	Timeout time.Duration
+	SetJar  bool
 }
 
 // NewHttpClient 创建新Http请求器
@@ -37,9 +40,14 @@ func NewHttpClient(option *HttpOptions) *HttpClient {
 	if option.Timeout == 0 {
 		option.Timeout = 10 * time.Second
 	}
+	hc := &http.Client{Timeout: option.Timeout}
+	if option.SetJar {
+		jar, _ := cookiejar.New(&cookiejar.Options{PublicSuffixList: publicsuffix.List})
+		hc.Jar = jar
+	}
 	return &HttpClient{
 		HttpOptions: *option,
-		client:      &http.Client{Timeout: option.Timeout},
+		client:      hc,
 		header:      make(map[string]string),
 	}
 }
