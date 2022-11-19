@@ -22,13 +22,11 @@ var info = manager.PluginInfo{
 	Usage: `用法：
 	猜成语：扔给你一张图片，猜出来是什么成语吧
 	猜不出来的话，发送"算了"或"不知道"结束游戏
-	
+
 	猜成语排行榜：按成功猜出成语个数排名的用户总排行榜
 	猜成语群排行榜：按成功猜出成语个数排名的本群排行榜`,
-	SuperUsage: `
-config-plugin文件配置项：
-	idioms.localfirst: 是(true)否(false)优先使用本地成语图片，图片放于data/img/idioms目录即可，文件名为答案`,
-	Classify: "小游戏",
+	SuperUsage: `请将待猜成语图片放在data/img/idioms目录下，并以对应答案为文件名`,
+	Classify:   "小游戏",
 }
 var proxy *manager.PluginProxy
 
@@ -40,7 +38,7 @@ func init() {
 	proxy.OnFullMatch([]string{"猜成语"}).SetBlock(true).SetPriority(9).Handle(guessIdioms)
 	proxy.OnFullMatch([]string{"猜成语排行榜", "猜成语总排行榜"}).SetBlock(true).SetPriority(4).Handle(rankHandler)
 	proxy.OnFullMatch([]string{"猜成语群排行榜"}, zero.OnlyGroup).SetBlock(true).SetPriority(4).Handle(groupRankHandler)
-	proxy.AddConfig("localFirst", false) // 优先使用本地词库IdiomsImageDir, 文件名：某个成语.png/jpg
+	proxy.AddConfig("localFirst", true) // 优先使用本地词库IdiomsImageDir, 文件名：某个成语.png/jpg
 	_, _ = utils.MakeDir(consts.IdiomsImageDir)
 }
 
@@ -109,18 +107,19 @@ func guessIdioms(ctx *zero.Ctx) {
 // 获取猜成语图片：
 
 func getIdiomsPicture() (msg message.MessageSegment, key string, err error) {
-	if proxy.GetConfigBool("localFirst") {
-		msg, key, err = getIdiomsPictureLocal()
-		if err == nil {
-			return
-		}
-	}
-	// 尝试API
-	msg, key, err = getIdiomsPictureByIYK0()
-	if err != nil {
-		return getIdiomsPictureLocal()
-	}
-	return
+	return getIdiomsPictureLocal()
+	//if proxy.GetConfigBool("localFirst") {
+	//	msg, key, err = getIdiomsPictureLocal()
+	//	if err == nil {
+	//		return
+	//	}
+	//}
+	//// 尝试API
+	//msg, key, err = getIdiomsPictureByIYK0()
+	//if err != nil {
+	//	return getIdiomsPictureLocal()
+	//}
+	//return
 }
 
 func getIdiomsPictureLocal() (msg message.MessageSegment, key string, err error) {
@@ -131,29 +130,32 @@ func getIdiomsPictureLocal() (msg message.MessageSegment, key string, err error)
 			return err
 		}
 		ext := filepath.Ext(d.Name())
-		if d.IsDir() || len(d.Name()) <= 4 || len(ext) == 0 || !(ext == ".jpg" || ext == ".png") {
+		if d.IsDir() || len(d.Name()) <= 4 || len(ext) == 0 || !(ext == ".jpg" || ext == ".png" || ext == ".jpeg") {
 			return nil
 		}
 		count += 1
 		return nil
 	})
 	if count == 0 {
-		return message.MessageSegment{}, "", fmt.Errorf("%v is empty", consts.IdiomsImageDir)
+		return message.MessageSegment{}, "", fmt.Errorf("%v目录为空，请及时放置成语图片文件", consts.IdiomsImageDir)
 	}
 	// 随机选取
-	num := rand.Int() % count
+	num := rand.Intn(count)
 	err = filepath.WalkDir(consts.IdiomsImageDir, func(path string, d fs.DirEntry, ferr error) error {
 		if ferr != nil {
 			return ferr
 		}
 		ext := filepath.Ext(d.Name())
-		if d.IsDir() || len(d.Name()) <= 4 || len(ext) == 0 || !(ext == ".jpg" || ext == ".png") {
+		if d.IsDir() || len(d.Name()) <= 4 || len(ext) == 0 || !(ext == ".jpg" || ext == ".png" || ext == ".jpeg") {
 			return nil
 		}
 		count -= 1
 		if count == num {
 			msg, err = utils.GetImageFileMsg(path)
-			key = d.Name()[:len(d.Name())-4]
+			key = d.Name()[:len(d.Name())-len(ext)]
+			if err == nil {
+				return filepath.SkipDir
+			}
 			return err
 		}
 		return nil
@@ -162,7 +164,7 @@ func getIdiomsPictureLocal() (msg message.MessageSegment, key string, err error)
 		return message.MessageSegment{}, "", fmt.Errorf("filepath walk err: %v", err)
 	}
 	if len(key) == 0 {
-		return message.MessageSegment{}, "", fmt.Errorf("key is empty")
+		return message.MessageSegment{}, "", fmt.Errorf("存在无答案图片文件")
 	}
 	return
 }
