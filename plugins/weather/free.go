@@ -1,45 +1,16 @@
 package weather
 
 import (
-	"encoding/xml"
 	"fmt"
 	"math"
 	"time"
 
+	"github.com/RicheyJang/PaimengBot/utils"
+
 	"github.com/RicheyJang/PaimengBot/utils/client"
 )
 
-type etouchWeather struct {
-	XMLName     xml.Name          `xml:"resp"`
-	Error       string            `xml:"error"`
-	City        string            `xml:"city"`
-	UpdatedTime string            `xml:"updatetime"`
-	NextDays    []etouchDailyData `xml:"forecast>weather"`
-	Tips        []etouchTip       `xml:"zhishus>zhishu"`
-}
-
-type etouchDailyData struct {
-	Date            string             `xml:"date"`
-	LowTemperature  string             `xml:"low"`
-	HighTemperature string             `xml:"high"`
-	Day             etouchDetailedData `xml:"day"`
-	Night           etouchDetailedData `xml:"night"`
-}
-
-type etouchDetailedData struct {
-	Weather      string `xml:"type"`      // 天气状况
-	WindClass    string `xml:"fengli"`    // 风力级别
-	WindDirector string `xml:"fengxiang"` // 风向
-}
-
-type etouchTip struct {
-	XMLName xml.Name `xml:"zhishu"`
-	Name    string   `xml:"name"`
-	Value   string   `xml:"value"`
-	Detail  string   `xml:"detail"`
-}
-
-const freeWeatherURL = "http://wthrcdn.etouch.cn/WeatherApi?city=%v"
+const freeWeatherURL = "https://v0.yiketianqi.com/api?unescape=1&version=v91&appid=43656176&appsecret=I42og6Lm&ext=&cityid=&city=%v"
 
 // FreeGetWeather 调用免费API获取天气数据
 func FreeGetWeather(city string) (Weather, error) {
@@ -47,57 +18,66 @@ func FreeGetWeather(city string) (Weather, error) {
 	url := fmt.Sprintf(freeWeatherURL, city)
 	c := client.NewHttpClient(nil)
 	now := time.Now()
-	r, err := c.GetReader(url)
+	res, err := c.GetGJson(url)
 	if err != nil {
 		return Weather{}, err
 	}
-	defer r.Close()
 	// 数据解析
-	d := xml.NewDecoder(r)
-	var etouch etouchWeather
-	err = d.Decode(&etouch)
-	if err != nil {
-		return Weather{}, err
-	}
-	if etouch.Error == "invalid city" {
+	errCode := res.Get("errcode").Int()
+	if errCode == 100 {
 		return Weather{}, ErrorOfInvalidCity
 	}
-	if len(etouch.Error) != 0 {
-		return Weather{}, fmt.Errorf(etouch.Error)
+	if errCode != 0 {
+		return Weather{}, fmt.Errorf(res.Get("errmsg").String())
 	}
 	// 数据格式转换
-	update, err := time.Parse("15:04", etouch.UpdatedTime)
+	update, err := time.Parse("2006-01-02 15:04:05", res.Get("update_time").String())
 	if err != nil {
 		update = now
 	}
 	weather := Weather{
-		City:      etouch.City,
+		City:      res.Get("city").String(),
 		UpdatedAt: update,
 	}
-	for _, tip := range etouch.Tips {
-		weather.Tips = append(weather.Tips, fmt.Sprintf("%s：%s", tip.Name, tip.Value))
-	}
 	// 各天数据
-	for i, data := range etouch.NextDays {
+	for i, data := range res.Get("data").Array() {
+		date, err := time.Parse("2006-01-02", data.Get("date").String())
+		if err != nil {
+			date = now.AddDate(0, 0, i)
+		}
 		daily := DailyData{
-			Date:            now.AddDate(0, 0, i),
-			LowTemperature:  getNumberFromString(data.LowTemperature),
-			HighTemperature: getNumberFromString(data.HighTemperature),
+			Date:            date,
+			HighTemperature: int(data.Get("tem1").Int()),
+			LowTemperature:  int(data.Get("tem2").Int()),
 		}
 		year, month, day := daily.Date.Date()
 		dayD := DetailedData{
 			Time:         time.Date(year, month, day, 9, 0, 0, 0, daily.Date.Location()),
 			Temperature:  math.MaxInt,
-			Weather:      data.Day.Weather,
-			WindClass:    getNumberFromString(data.Day.WindClass),
-			WindDirector: data.Day.WindDirector,
+			Weather:      data.Get("wea_day").String(),
+			WindClass:    getNumberFromString(data.Get("win_speed").String()),
+			WindDirector: data.Get("win.0").String(),
+		}
+		if utils.StringRealLength(dayD.WindDirector) > 3 {
+			if dayD.WindClass > 0 {
+				dayD.WindDirector = "风力"
+			} else {
+				dayD.WindDirector = ""
+			}
 		}
 		nightD := DetailedData{
 			Time:         time.Date(year, month, day, 22, 0, 0, 0, daily.Date.Location()),
 			Temperature:  math.MaxInt,
-			Weather:      data.Night.Weather,
-			WindClass:    getNumberFromString(data.Night.WindClass),
-			WindDirector: data.Night.WindDirector,
+			Weather:      data.Get("wea_night").String(),
+			WindClass:    0,
+			WindDirector: data.Get("win.1").String(),
+		}
+		if utils.StringRealLength(nightD.WindDirector) > 3 {
+			if nightD.WindClass > 0 {
+				nightD.WindDirector = "风力"
+			} else {
+				nightD.WindDirector = ""
+			}
 		}
 		daily.Periods = append(daily.Periods, dayD, nightD)
 		weather.Future = append(weather.Future, daily)
@@ -111,6 +91,9 @@ func getNumberFromString(s string) (v int) {
 		if r >= '0' && r <= '9' {
 			v *= 10
 			v += int(r - '0')
+		}
+		if r == '-' || r == '级' {
+			return
 		}
 	}
 	return

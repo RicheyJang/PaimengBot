@@ -186,7 +186,13 @@ func drawTemperatureCurve(img *images.ImageCtx, x, y, w, h float64, series ...[]
 	}
 	h -= 60
 	y += 30
-	xInterval, yInterval := w/float64(num-1), h/float64(max-min)
+	xInterval, yInterval := w, float64(0)
+	if num > 1 {
+		xInterval = w / float64(num-1)
+	}
+	if max-min > 0 {
+		yInterval = h / float64(max-min)
+	}
 	img.Push()
 	defer img.Pop()
 	img.SetLineWidth(2)
@@ -229,7 +235,11 @@ func drawWeatherDetail(img *images.ImageCtx, x, y, W, H float64, detail Detailed
 		img.SetLineWidth(1)
 		img.DrawRoundedRectangle(x-40, y+H-26, 80, 20, 3)
 		img.Stroke()
-		img.DrawStringWrapped(fmt.Sprintf("%s%d级", detail.WindDirector, detail.WindClass), x, y+H-10,
+		windStr := fmt.Sprintf("%s", detail.WindDirector)
+		if detail.WindClass > 0 {
+			windStr += fmt.Sprintf("%d级", detail.WindClass)
+		}
+		img.DrawStringWrapped(windStr, x, y+H-10,
 			0.5, 1, W, 1, gg.AlignCenter)
 	}
 }
