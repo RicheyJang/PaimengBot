@@ -30,11 +30,10 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/contact"
 	_ "github.com/RicheyJang/PaimengBot/plugins/echo"
 	_ "github.com/RicheyJang/PaimengBot/plugins/emoji_mix"
-	_ "github.com/RicheyJang/PaimengBot/plugins/geng"
 	_ "github.com/RicheyJang/PaimengBot/plugins/genshin"
 	_ "github.com/RicheyJang/PaimengBot/plugins/github"
 	_ "github.com/RicheyJang/PaimengBot/plugins/hhsh"
-	_ "github.com/RicheyJang/PaimengBot/plugins/idioms"
+	_ "github.com/RicheyJang/PaimengBot/plugins/idioms" // 半失效
 	_ "github.com/RicheyJang/PaimengBot/plugins/inspection"
 	_ "github.com/RicheyJang/PaimengBot/plugins/keyword"
 	_ "github.com/RicheyJang/PaimengBot/plugins/music"
@@ -53,6 +52,7 @@ import (
 	_ "github.com/RicheyJang/PaimengBot/plugins/whatanime"
 	_ "github.com/RicheyJang/PaimengBot/plugins/whatpicture"
 	_ "github.com/RicheyJang/PaimengBot/plugins/withdraw"
+	// _ "github.com/RicheyJang/PaimengBot/plugins/geng" // 已失效
 )
 
 func main() {
