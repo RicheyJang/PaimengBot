@@ -226,6 +226,12 @@ func (manager *PluginManager) SetupDatabase(config DBConfig) error {
 			log.Errorf("初始化数据库失败；%v", err)
 			return err
 		}
+		sqlDB, err := db.DB()
+		if err != nil {
+			log.Errorf("初始化数据库失败；%v", err)
+			return err
+		}
+		sqlDB.SetMaxOpenConns(1)
 		manager.db = db
 		log.Infof("初始化SQLite数据库成功：%v", dsn)
 	default:
