@@ -3,7 +3,11 @@ package genshin_record
 import (
 	"encoding/json"
 	"fmt"
+	"image"
+	"strconv"
+
 	"github.com/RicheyJang/PaimengBot/manager"
+	"github.com/RicheyJang/PaimengBot/plugins/genshin/genshin_cookie"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/client"
 	"github.com/RicheyJang/PaimengBot/utils/consts"
@@ -12,9 +16,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/message"
-	"image"
-	"os"
-	"strconv"
 )
 
 const GenshinCardDir = consts.GenshinImageDir + "/card" //原神角色卡片位置
@@ -24,9 +25,19 @@ const GenshinHomeworldPicDir = consts.GenshinImageDir + "/homeworld"
 
 var info = manager.PluginInfo{
 	Name: "原神战绩",
-	Usage: `
-	原神战绩：即可查询原神战绩 ，使用前需要使用“米游社管理”绑定UID`,
+	Usage: `需要预先绑定uid，参见：帮助 米游社管理
+用法：
+	原神战绩：即可查询原神战绩`,
 	Classify: "原神相关",
+}
+var proxy *manager.PluginProxy
+
+func init() {
+	proxy = manager.RegisterPlugin(info)
+	if proxy == nil {
+		return
+	}
+	proxy.OnCommands([]string{"原神战绩"}).SetBlock(true).SetPriority(3).Handle(getRecord) //绑定账号
 }
 
 /**
@@ -105,19 +116,12 @@ type GenShinInfo struct {
 	} `json:"data"`
 }
 
-var proxy *manager.PluginProxy
-
-func init() {
-	proxy = manager.RegisterPlugin(info)
-	if proxy == nil {
+func getRecord(ctx *zero.Ctx) {
+	UID := genshin_cookie.GetUserUid(ctx.Event.UserID)
+	if len(UID) <= 5 {
+		ctx.SendChain(message.Text("请使用 [米游社管理] 绑定UID"))
 		return
 	}
-	proxy.OnCommands([]string{"原神战绩"}).SetBlock(true).Handle(getRecord) //绑定账号
-}
-
-func getRecord(ctx *zero.Ctx) {
-	UID := getUserUid(ctx.Event.UserID)
-	UID = UID[0:len(UID)]
 
 	ServerNum := "0"
 	API := "https://api.daidr.me/apis/genshinUserinfo?uid=" + UID + "&server=" + ServerNum
@@ -125,14 +129,11 @@ func getRecord(ctx *zero.Ctx) {
 	Info, err := GetInfo(API)
 	if err != nil {
 		log.Errorf("GetInfo Err: %v", err)
+		ctx.Send("失败了...")
+		return
 	}
 
 	switch Info.Retcode {
-
-	case 2000:
-		log.Errorf(Info.Message)
-		ctx.Send(Info.Message + ",请使用 [米游社管理] 绑定UID")
-		break
 
 	case 1008:
 		ServerNum = "1"
@@ -141,38 +142,40 @@ func getRecord(ctx *zero.Ctx) {
 		if Info.Retcode == 10101 {
 			log.Errorf("GenshinRecord Err:达到原神战绩API日请求次数限制")
 			log.Errorf("GenshinRecord Message(10101):  " + Info.Message)
-			log.Errorf("GenshinRecord Retcode(10101):" + strconv.Itoa(Info.Retcode))
-			ctx.Send("请求次数太多了,明天试试吧!")
+			ctx.Send("请求次数太多了，明天试试吧!")
 		} else if Info.Retcode == 0 {
-			log.Errorf("获取原神战绩成功")
-			Image, _ := getRecordImage(Info, UID)
+			Image, err := getRecordImage(Info, UID)
+			if err != nil {
+				log.Errorf("getRecordImage Err: %v", err)
+				ctx.Send("失败了...")
+				return
+			}
 			ctx.Send(Image)
 		} else {
-			log.Errorf("GenshinRecord Err:???")
-			log.Errorf("GenshinRecord Message:  " + Info.Message)
-			log.Errorf("GenshinRecord Retcode " + strconv.Itoa(Info.Retcode))
+			log.Errorf("GenshinRecord Message(%d): %s", Info.Retcode, Info.Message)
+			ctx.Send("失败了...")
 		}
-
 		break
 
 	case 0:
-		log.Errorf("获取原神战绩成功")
-		Image, _ := getRecordImage(Info, UID)
+		Image, err := getRecordImage(Info, UID)
+		if err != nil {
+			log.Errorf("getRecordImage Err: %v", err)
+			ctx.Send("失败了...")
+			return
+		}
 		ctx.Send(Image)
 		break
 
 	case 10101:
 		log.Errorf("GenshinRecord Err:达到原神战绩API日请求次数限制")
 		log.Errorf("GenshinRecord Message(10101):  " + Info.Message)
-		log.Errorf("GenshinRecord Retcode:" + strconv.Itoa(Info.Retcode))
-		ctx.Send("请求次数太多了,明天试试吧!")
+		ctx.Send("请求次数太多了，明天试试吧!")
 		break
 
 	default:
-		log.Errorf("GenshinRecord Err:???")
-		log.Errorf("GenshinRecord Message:  " + Info.Message)
-		log.Errorf("GenshinRecord Retcode " + strconv.Itoa(Info.Retcode))
-		ctx.Send("发生未知错误!!!  请查看日志了解详情")
+		log.Errorf("GenshinRecord Message(%d): %s", Info.Retcode, Info.Message)
+		ctx.Send("失败了...")
 		break
 
 	}
@@ -197,7 +200,9 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	Server := getUserServer(GenShin.Data.Role.Region)  //所属服务器
 	UserLevel := strconv.Itoa(GenShin.Data.Role.Level) //玩家等级
 
-	RecordImage.UseDefaultFont(25)
+	if err := RecordImage.UseDefaultFont(25); err != nil {
+		return message.MessageSegment{}, err
+	}
 	RecordImage.SetHexColor("#e5e5e5")
 
 	ImgName, _ := manager.DecodeStaticImage("genshin/module/module01.png")
@@ -350,9 +355,15 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	/********************************世界探索***********************************/
 
 	//这里计划写一个Goroutine
-	updateWorldICONPicture(GenShin)
-	updateWorldBackgroundPicture(GenShin)
-	updateWorldOfferingsPicture(GenShin)
+	if err = updateWorldICONPicture(GenShin); err != nil {
+		return message.MessageSegment{}, err
+	}
+	if err = updateWorldBackgroundPicture(GenShin); err != nil {
+		return message.MessageSegment{}, err
+	}
+	if err = updateWorldOfferingsPicture(GenShin); err != nil {
+		return message.MessageSegment{}, err
+	}
 
 	RecordImage.UseDefaultFont(50) //这里应该改为usedefeafont
 	WorldExploration := "世界探索"
@@ -384,8 +395,8 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 		WorldName := GenShin.Data.WorldExplorations[x].Name
 		RecordImage.DrawString(WorldName, float64(WE_N_X), float64(WE_N_Y+(180*x)))
 
+		RecordImage.UseDefaultFont(30)
 		if len(GenShin.Data.WorldExplorations[x].Offerings) != 0 {
-			RecordImage.LoadFontFace("./ttf/zh-cn.ttf", 30)
 			OfferingPic, _ := gg.LoadImage(GenshinWorldBackgroundPicDir + "/offerings" + "/" + GenShin.Data.WorldExplorations[x].Offerings[0].Name + "Off.png")
 
 			OfferimgLevel := strconv.Itoa(GenShin.Data.WorldExplorations[x].Offerings[0].Level)
@@ -435,16 +446,6 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 }
 
-func getUserUid(id int64) (u string) {
-	key := fmt.Sprintf("genshin_uid.u%v", id)
-	v, err := proxy.GetLevelDB().Get([]byte(key), nil)
-	if err != nil {
-		return
-	}
-	_ = json.Unmarshal(v, &u)
-	return
-}
-
 // 获取尘歌壶舒适度图标
 func updateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
 	dir, err := utils.MakeDir(GenshinHomeworldPicDir + "/levelicon")
@@ -456,17 +457,14 @@ func updateHomeworldComfortLevelIconPicture(info GenShinInfo) error {
 		HomeworldComfortLevelName := info.Data.Homes[i].ComfortLevelName
 		path := utils.PathJoin(dir, fmt.Sprintf("%vHWC.png", HomeworldComfortLevelName))
 		url := info.Data.Homes[i].ComfortLevelIcon
-		bool, err := PathExists(path)
-		if bool {
+		if utils.FileExists(path) {
 			continue
 		} else {
 			err = client.DownloadToFile(path, url, 2)
 			if err != nil {
 				return err
 			}
-
 		}
-
 	}
 	return nil
 }
@@ -482,21 +480,16 @@ func updateHomeworldPicture(info GenShinInfo) error {
 		HomeworldName := info.Data.Homes[i].Name
 		path := utils.PathJoin(dir, fmt.Sprintf("%vHW.png", HomeworldName))
 		url := info.Data.Homes[i].Icon
-		bool, err := PathExists(path)
-		if bool {
+		if utils.FileExists(path) {
 			continue
 		} else {
 			err = client.DownloadToFile(path, url, 2)
 			if err != nil {
 				return err
 			}
-
 		}
-
 	}
-
 	return nil
-
 }
 
 // 下载需要的世界背景图
@@ -510,19 +503,15 @@ func updateWorldBackgroundPicture(info GenShinInfo) error {
 		Explorations := info.Data.WorldExplorations[i].Name
 		path := utils.PathJoin(dir, fmt.Sprintf("%vBG.png", Explorations))
 		url := info.Data.WorldExplorations[i].BackgroundImage
-		bool, err := PathExists(path)
-		if bool {
+		if utils.FileExists(path) {
 			continue
 		} else {
 			err = client.DownloadToFile(path, url, 2)
 			if err != nil {
 				return err
 			}
-
 		}
-
 	}
-
 	return nil
 }
 
@@ -538,19 +527,16 @@ func updateWorldOfferingsPicture(info GenShinInfo) error {
 			OfferingName := info.Data.WorldExplorations[i].Offerings[0].Name
 			offeringPath := utils.PathJoin(dir, fmt.Sprintf("%vOff.png", OfferingName))
 			Offeringurl := info.Data.WorldExplorations[i].Offerings[0].Icon
-			bool, err := PathExists(offeringPath)
-			if bool {
+			if utils.FileExists(offeringPath) {
 				continue
 			} else {
 				err = client.DownloadToFile(offeringPath, Offeringurl, 2)
 				if err != nil {
 					return err
 				}
-
 			}
 		}
 	}
-
 	return nil
 }
 
@@ -565,8 +551,7 @@ func updateWorldICONPicture(info GenShinInfo) error {
 		Explorations := info.Data.WorldExplorations[i].Name
 		path := utils.PathJoin(dir, fmt.Sprintf("%v.png", Explorations))
 		url := info.Data.WorldExplorations[i].Icon
-		bool, err := PathExists(path)
-		if bool {
+		if utils.FileExists(path) {
 			continue
 		} else {
 			err = client.DownloadToFile(path, url, 2)
@@ -575,9 +560,7 @@ func updateWorldICONPicture(info GenShinInfo) error {
 			}
 
 		}
-
 	}
-
 	return nil
 }
 
@@ -592,23 +575,19 @@ func updateCharacterPicture(info GenShinInfo) error {
 		name := info.Data.Avatars[i].Name
 		path := utils.PathJoin(dir, fmt.Sprintf("%v.png", name))
 		url := info.Data.Avatars[i].CardImage //卡片照片
-		bool, err := PathExists(path)
-		if bool {
+		if utils.FileExists(path) {
 			continue
 		} else {
 			err = client.DownloadToFile(path, url, 2)
 			if err != nil {
 				return err
 			}
-
 		}
-
 	}
-
 	return nil
 }
 
-// 获取返回的Json
+// GetInfo 获取返回的Json
 func GetInfo(API string) (GenShinInfo, error) {
 	c := client.NewHttpClient(nil)
 	r, err := c.GetReader(API)
@@ -618,38 +597,21 @@ func GetInfo(API string) (GenShinInfo, error) {
 	defer r.Close()
 	// 解析JSON
 	d := json.NewDecoder(r)
-	var GenShinInfo GenShinInfo
-	if err = d.Decode(&GenShinInfo); err != nil {
-		return GenShinInfo, err
+	var genShinInfo GenShinInfo
+	if err = d.Decode(&genShinInfo); err != nil {
+		return genShinInfo, err
 	}
-	return GenShinInfo, nil
-
+	return genShinInfo, nil
 }
 
 // 将服务器信息转化
 func getUserServer(Region string) string {
-
 	switch Region {
-
 	case "cn_qd01":
 		return "B服 - 世界树"
-
 	default:
 		return "官服 - 天空岛"
-
 	}
-}
-
-// 判断是否存在文件
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
 }
 
 // 获取元素图片
