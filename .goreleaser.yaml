@@ -17,12 +17,15 @@ builds:
     goarch:
       - amd64
       - arm64
+      - arm
     goarm:
       - '7'
     ignore:
       - goos: windows
         goarch: arm64
       - goos: windows
+        goarch: arm
+      - goos: darwin
         goarch: arm
     ldflags:
       - -X github.com/RicheyJang/PaimengBot/plugins/inspection.Version=v{{.Version}}
