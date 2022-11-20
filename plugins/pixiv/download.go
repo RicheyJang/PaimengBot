@@ -62,7 +62,7 @@ func (d *downloader) get() {
 	d.has = true
 	// 从getter获取图片信息
 	sum := 0
-	for k, _ := range getterMap {
+	for k := range getterMap {
 		sum += int(proxy.GetConfigInt64(fmt.Sprintf("scale.%s", k)))
 	}
 	for k, getter := range getterMap {
@@ -125,7 +125,7 @@ func (d *downloader) send(ctx *zero.Ctx) {
 }
 
 // 处理图片消息的撤回
-func dealWithdraw(msgID int64) {
+func dealWithdraw(msgID message.MessageID) {
 	withdraw := proxy.GetConfigString("withdraw")
 	if len(withdraw) == 0 || withdraw == "0" {
 		return
@@ -325,8 +325,5 @@ func isCNOrEn(str string) bool {
 			return true
 		}
 	}
-	if asciiReg.MatchString(str) {
-		return true
-	}
-	return false
+	return asciiReg.MatchString(str)
 }

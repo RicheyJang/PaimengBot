@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/cast"
 )
 
 func GoAndWait(handlers ...func() error) (err error) {
@@ -59,7 +60,7 @@ func StringLimit(s string, limit int) string {
 // MergeStringSlices 合并多个字符串切片并去重、去除空字符串
 func MergeStringSlices(slices ...[]string) (res []string) {
 	mp := FormSetByStrings(slices...)
-	for s, _ := range mp {
+	for s := range mp {
 		if len(s) == 0 {
 			continue
 		}
@@ -153,4 +154,20 @@ func BytesToUInt32(b []byte) uint32 {
 		b = append(b, byte(0))
 	}
 	return binary.LittleEndian.Uint32(b)
+}
+
+//将int切片转换为int64切片
+func IntSlice2int64Slice(slice []int) (newslice []int64) {
+	for i := 0; i < len(slice); i++ {
+		newslice = append(newslice, int64(slice[i]))
+	}
+	return
+}
+
+//将string切片转换为int64切片
+func StringSlice2int64Slice(slice []string) (newslice []int64) {
+	for i := 0; i < len(slice); i++ {
+		newslice = append(newslice, cast.ToInt64(slice[i]))
+	}
+	return
 }

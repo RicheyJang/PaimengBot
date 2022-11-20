@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cast"
 	zero "github.com/wdvxdr1123/ZeroBot"
+	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
 var info = manager.PluginInfo{
@@ -134,7 +135,7 @@ func getCancelWholeBanFunc(groupID int64) func() {
 func muteReply(ctx *zero.Ctx) {
 	replyID := cast.ToInt64(ctx.State["reply_id"])
 	// 追溯消息
-	msg := ctx.GetMessage(replyID)
+	msg := ctx.GetMessage(message.NewMessageIDFromInteger(replyID))
 	if msg.Sender == nil {
 		ctx.Send("消息失效了")
 		return

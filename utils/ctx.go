@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"io"
-	"strconv"
 	"strings"
 	"time"
 
@@ -83,7 +82,7 @@ func WaitNextMessage(ctx *zero.Ctx) *zero.Event {
 	defer cancel()
 	select {
 	case e := <-r:
-		return e
+		return e.Event
 	case <-t.C: // 超时取消
 		return nil
 	}
@@ -97,10 +96,10 @@ func GetConfirm(tip string, ctx *zero.Ctx) bool {
 		return false
 	}
 	confirm := strings.TrimSpace(event.Message.ExtractPlainText())
-	if !(confirm == "是" || confirm == "确定" || confirm == "确认") {
-		return false
+	if confirm == "是" || confirm == "确定" || confirm == "确认" {
+		return true
 	}
-	return true
+	return false
 }
 
 // GetImageURL 通过消息获取其中的图片URL
@@ -265,9 +264,8 @@ func GetBotID() int64 {
 
 // IsSuperUser userID是否为超级用户
 func IsSuperUser(userID int64) bool {
-	uid := strconv.FormatInt(userID, 10)
 	for _, su := range GetBotConfig().SuperUsers {
-		if su == uid {
+		if su == userID {
 			return true
 		}
 	}
@@ -279,11 +277,7 @@ func SendToSuper(message ...message.MessageSegment) {
 	supers := GetBotConfig().SuperUsers
 	zero.RangeBot(func(id int64, ctx *zero.Ctx) bool {
 		for _, user := range supers {
-			userID, err := strconv.ParseInt(user, 10, 64)
-			if err != nil {
-				continue
-			}
-			ctx.SendPrivateMessage(userID, message)
+			ctx.SendPrivateMessage(user, message)
 		}
 		return true
 	})

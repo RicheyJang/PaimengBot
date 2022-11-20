@@ -84,13 +84,13 @@ func guessIdioms(ctx *zero.Ctx) {
 			if e == nil {
 				return
 			}
-			guess := strings.TrimSpace(e.Message.ExtractPlainText())
+			guess := strings.TrimSpace(e.Event.Message.ExtractPlainText())
 			if guess == key { // 猜对，结束游戏
-				ctx.SendChain(message.At(e.UserID), message.Text("猜对啦"))
-				addSuccess(e.GroupID, e.UserID)
+				ctx.SendChain(message.At(e.Event.UserID), message.Text("猜对啦"))
+				addSuccess(e.Event.GroupID, e.Event.UserID)
 				return
 			} else if utils.StringSliceContain(cancelMessage, guess) { // 取消，结束游戏
-				ctx.SendChain(message.At(e.UserID), message.Text(fmt.Sprintf("那算啦，其实正确答案是%v哦", key)))
+				ctx.SendChain(message.At(e.Event.UserID), message.Text(fmt.Sprintf("那算啦，其实正确答案是%v哦", key)))
 				return
 			} else { // 猜错，继续游戏
 				if ctx.Event.GroupID == 0 { // 只有私聊提示
