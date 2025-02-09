@@ -18,7 +18,7 @@ import (
 const defaultClassify = "一般功能"
 const passiveClassify = "被动"
 
-func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
+func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.Segment {
 	plugins := manager.GetAllPluginConditions()
 	// 获取所有插件信息
 	var helps helpSummaryMap = make(map[string]*blockInfo)

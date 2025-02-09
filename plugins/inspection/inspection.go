@@ -194,7 +194,7 @@ func formatBytesSize(size uint64) string {
 	return strconv.FormatUint(size, 10)
 }
 
-func formResponse(texts ...string) message.MessageSegment {
+func formResponse(texts ...string) message.Segment {
 	var defaultInfo string
 	for i, str := range texts {
 		if i != 0 {

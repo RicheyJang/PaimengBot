@@ -14,14 +14,14 @@ import (
 
 const idiomsPictureAPI = "https://api.iyk0.com/ktc/"
 
-func getIdiomsPictureByIYK0() (msg message.MessageSegment, key string, err error) {
+func getIdiomsPictureByIYK0() (msg message.Segment, key string, err error) {
 	c := client.NewHttpClient(&client.HttpOptions{TryTime: 2})
 	rsp, err := c.GetGJson(idiomsPictureAPI)
 	if err != nil {
-		return message.MessageSegment{}, "", err
+		return message.Segment{}, "", err
 	}
 	if rsp.Get("code").Int() != 200 {
-		return message.MessageSegment{}, "", fmt.Errorf("rsp code != 200, msg: %v", rsp.Get("msg"))
+		return message.Segment{}, "", fmt.Errorf("rsp code != 200, msg: %v", rsp.Get("msg"))
 	}
 	key = rsp.Get("key").String()
 	url := rsp.Get("img").String()

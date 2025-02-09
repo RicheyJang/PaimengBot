@@ -89,7 +89,7 @@ func PathJoin(paths ...string) string {
 }
 
 // GetImageFileMsg 将本地图片文件自动转换为CQ码消息
-func GetImageFileMsg(file string) (message.MessageSegment, error) {
+func GetImageFileMsg(file string) (message.Segment, error) {
 	if !FileExists(file) {
 		return message.Text("图片消失了"), os.ErrNotExist
 	}

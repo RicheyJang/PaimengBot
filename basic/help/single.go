@@ -9,7 +9,7 @@ import (
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
+func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.Segment {
 	plugins := manager.GetAllPluginConditions()
 	// 寻找插件
 	var selected *manager.PluginCondition

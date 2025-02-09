@@ -90,11 +90,11 @@ func GetRecentPlay(API string) (Recent, error) {
 	return recents[0], nil
 }
 
-func ToImageRecent(recent Recent, Model string, OsuId string) (message.MessageSegment, error) { //生成图片
+func ToImageRecent(recent Recent, Model string, OsuId string) (message.Segment, error) { //生成图片
 
 	ModelImage, err := getModelImage(Model)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 
 	width := float64(800)

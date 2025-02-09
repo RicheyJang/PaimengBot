@@ -138,7 +138,7 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 		link := fmt.Sprintf("\n主页：https://space.bilibili.com/%v/dynamic", sub.BID)
 
 		// 按动态类型附加内容
-		var appendMsg []message.MessageSegment
+		var appendMsg []message.Segment
 		switch d.Type {
 		case DynamicTypeShare: // 分享动态
 			appendMsg = DynamicTypeShareMessage(d)
@@ -167,7 +167,7 @@ func checkUpStatus(sub Subscription) (msg []message.Message) {
 		if proxy.GetConfigBool("link") {
 			appendMsg = append(appendMsg, message.Text(link))
 		}
-		msg = []message.Message{append([]message.MessageSegment{message.Text(str)}, appendMsg...)}
+		msg = []message.Message{append([]message.Segment{message.Text(str)}, appendMsg...)}
 
 		// 更新状态
 		sub.DynamicLastTime = d.Time

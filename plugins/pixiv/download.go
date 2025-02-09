@@ -125,7 +125,7 @@ func (d *downloader) send(ctx *zero.Ctx) {
 }
 
 // 处理图片消息的撤回
-func dealWithdraw(msgID int64) {
+func dealWithdraw(msgID message.ID) {
 	withdraw := proxy.GetConfigString("withdraw")
 	if len(withdraw) == 0 || withdraw == "0" {
 		return

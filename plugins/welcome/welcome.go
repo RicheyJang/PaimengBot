@@ -122,7 +122,7 @@ func handleIncrease(ctx *zero.Ctx) {
 }
 
 // 收到的图片消息，存储至本地消息
-func recvImage2Local(groupID, num int64, msg message.MessageSegment) message.MessageSegment {
+func recvImage2Local(groupID, num int64, msg message.Segment) message.Segment {
 	url := utils.GetImageURL(msg)
 	if len(url) == 0 {
 		return msg
@@ -145,7 +145,7 @@ func recvImage2Local(groupID, num int64, msg message.MessageSegment) message.Mes
 }
 
 // 本地的图片消息，自动转换成可发送消息（若OneBot收发端不在本地，改用Base64）
-func localImage2Send(msg message.MessageSegment) message.MessageSegment {
+func localImage2Send(msg message.Segment) message.Segment {
 	if utils.IsOneBotLocal() || !strings.HasPrefix(msg.Data["file"], "file:///") {
 		return msg
 	}

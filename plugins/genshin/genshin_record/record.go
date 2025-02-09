@@ -182,7 +182,7 @@ func getRecord(ctx *zero.Ctx) {
 
 }
 
-func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, error) {
+func getRecordImage(GenShin GenShinInfo, UID string) (message.Segment, error) {
 
 	RecordImage := images.NewImageCtxWithBGColor(1000, 5000, "#363839")
 
@@ -201,7 +201,7 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 	UserLevel := strconv.Itoa(GenShin.Data.Role.Level) //玩家等级
 
 	if err := RecordImage.UseDefaultFont(25); err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	RecordImage.SetHexColor("#e5e5e5")
 
@@ -356,13 +356,13 @@ func getRecordImage(GenShin GenShinInfo, UID string) (message.MessageSegment, er
 
 	//这里计划写一个Goroutine
 	if err = updateWorldICONPicture(GenShin); err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	if err = updateWorldBackgroundPicture(GenShin); err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	if err = updateWorldOfferingsPicture(GenShin); err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 
 	RecordImage.UseDefaultFont(50) //这里应该改为usedefeafont

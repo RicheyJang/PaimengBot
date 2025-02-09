@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -172,7 +173,15 @@ func flushMainConfig(configPath string, configFileName string) error {
 	}
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) { // 配置文件发生变更之后会调用的回调函数
-		zero.BotConfig.SuperUsers = viper.GetStringSlice("superuser")
+		zero.BotConfig.SuperUsers = []int64{}
+		for _, sid := range viper.GetStringSlice("superuser") {
+			id, err := strconv.ParseInt(sid, 10, 64)
+			if err != nil {
+				log.Warnln("读取更新的超级用户出错", err)
+			}
+			zero.BotConfig.SuperUsers = append(zero.BotConfig.SuperUsers, id)
+		}
+		zero.BotConfig.CommandPrefix = viper.GetString("command_prefix")
 		zero.BotConfig.NickName = []string{viper.GetString("nickname")}
 		_ = setupLogger()
 		log.Infof("reload main config from %v", e.Name)

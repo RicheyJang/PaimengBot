@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 	zero "github.com/wdvxdr1123/ZeroBot"
 	"github.com/wdvxdr1123/ZeroBot/driver"
+	"strconv"
 
 	// 可选插件，若要启用，去除注释即可
 	// _ "github.com/RicheyJang/PaimengBot/plugins/HiOSU"
@@ -64,12 +65,21 @@ func main() {
 	}
 	// 启动服务
 	log.Infof("读取超级管理员列表：%v", viper.GetStringSlice("superuser"))
-	zero.RunAndBlock(zero.Config{
+	config := zero.Config{
 		NickName:      []string{viper.GetString("nickname")},
-		CommandPrefix: "",
-		SuperUsers:    viper.GetStringSlice("superuser"),
+		CommandPrefix: viper.GetString("command_prefix"),
 		Driver: []zero.Driver{
 			driver.NewWebSocketClient(viper.GetString("server.address"), viper.GetString("server.token")),
 		},
+	}
+	for _, sid := range viper.GetStringSlice("superuser") {
+		id, err := strconv.ParseInt(sid, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		config.SuperUsers = append(config.SuperUsers, id)
+	}
+	zero.RunAndBlock(&config, func() {
+		log.Infoln(zero.BotConfig.NickName[0], "启动成功～")
 	})
 }

@@ -127,7 +127,7 @@ func (s signInfo) String() string {
 		RealCoin(s.orgCoin+s.addCoin), RealCoin(s.addCoin), Unit())
 }
 
-func genRankMessage(ctx *zero.Ctx, users []dao.UserOwn, key string) (msg message.MessageSegment, err error) {
+func genRankMessage(ctx *zero.Ctx, users []dao.UserOwn, key string) (msg message.Segment, err error) {
 	var values []images.UserValue
 	if key == "favor" { // 好感度
 		for _, user := range users {

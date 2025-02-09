@@ -92,7 +92,7 @@ func weatherHandler(ctx *zero.Ctx) {
 	ctx.Send(pic)
 }
 
-func genWeatherPicMsg(weather Weather) (message.MessageSegment, error) {
+func genWeatherPicMsg(weather Weather) (message.Segment, error) {
 	// 规整数据
 	if len(weather.Future) > 7 {
 		weather.Future = weather.Future[:7]
@@ -106,12 +106,12 @@ func genWeatherPicMsg(weather Weather) (message.MessageSegment, error) {
 	// 1. 大标题
 	err := img.PasteStringDefault(weather.City, 34, 1, 60, 10, float64(W))
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	w, h := images.MeasureStringDefault(weather.City, 34, 1) // w, h 用于各面板定位
 	err = img.PasteStringDefault("更新于"+weather.UpdatedAt.Format("15:04"), 20, 1, 60+w+20, 25, float64(W))
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	h += 30
 	// 2. 天气面板
@@ -151,7 +151,7 @@ func genWeatherPicMsg(weather Weather) (message.MessageSegment, error) {
 	img.PasteCircle(x, y+18, 5, "black")
 	err = img.PasteStringDefault("小提示：", 28, 1, x+15, y, 370)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	y += 40
 	for i, tip := range weather.Tips {
@@ -161,7 +161,7 @@ func genWeatherPicMsg(weather Weather) (message.MessageSegment, error) {
 		img.PasteCircle(x, y+15, 3, "black")
 		err = img.PasteStringDefault(tip, 24, 1, x+8, y, 370)
 		if err != nil {
-			return message.MessageSegment{}, err
+			return message.Segment{}, err
 		}
 		y += 35
 	}

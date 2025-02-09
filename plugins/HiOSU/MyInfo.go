@@ -97,17 +97,17 @@ func GetMyInfo(API string) (User, error) {
 	return users[0], nil
 }
 
-func ToImageUser(user User, Model string) (message.MessageSegment, error) { //生成图片
+func ToImageUser(user User, Model string) (message.Segment, error) { //生成图片
 	// 读取Logo
 	LogoImage, err := manager.DecodeStaticImage("HiOSU/Logo/Logo_96x97.png")
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 
 	//读取各种模式的图标
 	ModelImage, err := getModelImage(Model)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 
 	width := float64(465)
@@ -117,7 +117,7 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //�
 	// 标题栏
 	err = dc.UseDefaultFont(20)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	dc.SetRGB(1, 1, 1)              // 设置画笔颜色为白
 	dc.DrawImage(LogoImage, 10, 10) //贴OSU图标
@@ -125,12 +125,12 @@ func ToImageUser(user User, Model string) (message.MessageSegment, error) { //�
 	dc.DrawString("Country :"+user.Country, 130, 40)
 	err = dc.UseDefaultFont(40) //字体设置大一些
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	dc.DrawString(user.UserName, 130, 80) //显示UserName
 	err = dc.UseDefaultFont(20)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	dc.DrawString("Join Date: "+user.JoinDate, 130, 100)
 	dc.DrawString("-----------------------------------------------", 0, 123)

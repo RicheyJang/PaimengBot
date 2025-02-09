@@ -450,7 +450,7 @@ func (l *LiveRoom) Info() (LiveRoomInfo, error) {
 	}, nil
 }
 
-func DynamicTypeShareMessage(d DynamicInfo) (m []message.MessageSegment) {
+func DynamicTypeShareMessage(d DynamicInfo) (m []message.Segment) {
 	//简单的分享处理
 	r := gjson.Parse(d.Card)
 	shareUrl := "https://t.bilibili.com/" + r.Get("item.orig_dy_id").String()
@@ -460,7 +460,7 @@ func DynamicTypeShareMessage(d DynamicInfo) (m []message.MessageSegment) {
 	return m
 }
 
-func DynamicTypePicMessage(d DynamicInfo) (m []message.MessageSegment) {
+func DynamicTypePicMessage(d DynamicInfo) (m []message.Segment) {
 	r := gjson.Parse(d.Card)
 	m = append(m, message.Text(utils.StringLimit(r.Get("item.description").String(), getContentLimit())))
 	if proxy.GetConfigInt64("picture") == 0 {
@@ -479,12 +479,12 @@ func DynamicTypePicMessage(d DynamicInfo) (m []message.MessageSegment) {
 	return m
 }
 
-func DynamicTypeTextMessage(d DynamicInfo) (m []message.MessageSegment) {
+func DynamicTypeTextMessage(d DynamicInfo) (m []message.Segment) {
 	r := gjson.Parse(d.Card)
 	return append(m, message.Text(utils.StringLimit(r.Get("item.content").String(), getContentLimit())))
 }
 
-func DynamicTypeReadMessage(d DynamicInfo) (m []message.MessageSegment) {
+func DynamicTypeReadMessage(d DynamicInfo) (m []message.Segment) {
 	r := gjson.Parse(d.Card)
 	return append(m, message.Text("标题："+r.Get("title").String()+
 		"\n概要："+utils.StringLimit(r.Get("summary").String(), getContentLimit())+

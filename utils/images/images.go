@@ -142,7 +142,7 @@ func (img *ImageCtx) SaveTempDefault() (string, error) {
 	return img.SaveTemp("tempimg")
 }
 
-func (img *ImageCtx) GenMessageBase64() (message.MessageSegment, error) {
+func (img *ImageCtx) GenMessageBase64() (message.Segment, error) {
 	resultBuff := bytes.NewBuffer(nil) // 结果缓冲区
 	// 新建Base64编码器（Base64结果写入结果缓冲区resultBuff）
 	encoder := base64.NewEncoder(base64.StdEncoding, resultBuff)
@@ -161,7 +161,7 @@ func (img *ImageCtx) GenMessageBase64() (message.MessageSegment, error) {
 }
 
 // GenMessageAuto 自动生成ZeroBot图片消息
-func (img *ImageCtx) GenMessageAuto() (message.MessageSegment, error) {
+func (img *ImageCtx) GenMessageAuto() (message.Segment, error) {
 	// 消息收发端不在本地
 	if !utils.IsOneBotLocal() {
 		return img.GenMessageBase64()

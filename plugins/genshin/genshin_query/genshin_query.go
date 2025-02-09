@@ -43,7 +43,7 @@ func Query(uid string, cookie string, showLeft bool) (message.Message, *mihoyo.G
 }
 
 // 生成图片便签消息
-func genNotePicMessage(role *mihoyo.GameRole, note *mihoyo.GenshinDailyNote, showLeft bool) (message.MessageSegment, error) {
+func genNotePicMessage(role *mihoyo.GameRole, note *mihoyo.GenshinDailyNote, showLeft bool) (message.Segment, error) {
 	now := time.Now()
 	maxExpedition := "0"
 	for _, r := range note.Expeditions {
@@ -55,11 +55,11 @@ func genNotePicMessage(role *mihoyo.GameRole, note *mihoyo.GenshinDailyNote, sho
 	// 角色
 	err := img.PasteStringDefault(role.NickName, 28, 1, 50, 15, 680)
 	if err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	// 设置参数
 	if err = img.UseDefaultFont(24); err != nil {
-		return message.MessageSegment{}, err
+		return message.Segment{}, err
 	}
 	height := 60.0
 	// 计算文字

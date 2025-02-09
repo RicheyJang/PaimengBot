@@ -155,7 +155,7 @@ func deleteAllHandler(ctx *zero.Ctx) {
 	return
 }
 
-func genBottleMsg(bottle DriftingBottleModel) (msg message.MessageSegment) {
+func genBottleMsg(bottle DriftingBottleModel) (msg message.Segment) {
 	var err error
 	defer func() {
 		if err != nil {

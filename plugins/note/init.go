@@ -259,7 +259,7 @@ func genBriefMessage(msg message.Message) string {
 		return str
 	}
 	// 不含文字，挑选第一个不是@的消息类型
-	var selectSeg message.MessageSegment
+	var selectSeg message.Segment
 	for _, seg := range msg {
 		selectSeg = seg
 		if seg.Type != "at" {

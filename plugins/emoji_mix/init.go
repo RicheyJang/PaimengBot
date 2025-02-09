@@ -90,7 +90,7 @@ func match(ctx *zero.Ctx) bool {
 }
 
 // 获取qq表情 或 emoji对应的索引
-func face2emoji(face message.MessageSegment) rune {
+func face2emoji(face message.Segment) rune {
 	if face.Type == "face" {
 		id, err := strconv.Atoi(face.Data["id"])
 		if err != nil {

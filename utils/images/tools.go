@@ -86,7 +86,7 @@ func MeasureStringDefault(str string, fontSize, lineSpace float64) (float64, flo
 }
 
 // GenStringMsg 以默认方式生成纯文字图片消息，若生成失败，则返回message.Text
-func GenStringMsg(str string) message.MessageSegment {
+func GenStringMsg(str string) message.Segment {
 	fontSize := 18.0
 	w, h := MeasureStringDefault(str, fontSize, 1.3)
 	img := NewImageCtxWithBGColor(int(w)+10, int(h)+20, "white")
@@ -161,7 +161,7 @@ func ClipImgToCircle(img image.Image) image.Image {
 }
 
 // GenQQListMsgWithAva 生成带QQ头像的用户或群（以isUser参数区分）列表
-func GenQQListMsgWithAva(data map[int64]string, w float64, isUser bool) (msg message.MessageSegment, err error) {
+func GenQQListMsgWithAva(data map[int64]string, w float64, isUser bool) (msg message.Segment, err error) {
 	var avaReader io.ReadCloser
 	avaSize, fontSize, height := 100, 24.0, 10
 	img := NewImageCtxWithBGRGBA255(int(w)+avaSize+30, len(data)*(avaSize+20)+30, 255, 255, 255, 255)
@@ -197,7 +197,7 @@ func GenQQListMsgWithAva(data map[int64]string, w float64, isUser bool) (msg mes
 }
 
 // GenQQRankMsgWithValue 生成默认样式用户排行榜，users中可不填nickname，无需任何其它操作
-func GenQQRankMsgWithValue(title string, users []UserValue, unit string) (msg message.MessageSegment, err error) {
+func GenQQRankMsgWithValue(title string, users []UserValue, unit string) (msg message.Segment, err error) {
 	defer func() {
 		if err != nil { // 生成图片失败时，生成文字消息
 			log.Warnf("GenQQRankMsgWithValue err: %v", err)

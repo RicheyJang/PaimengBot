@@ -179,7 +179,7 @@ func globalStatistics(ctx *zero.Ctx) {
 	ctx.Send(dealStatistic(title, prefix))
 }
 
-func dealStatistic(title string, prefix string) message.MessageSegment {
+func dealStatistic(title string, prefix string) message.Segment {
 	resMap := make(map[string]uint32)
 	iter := proxy.GetLevelDB().NewIterator(levelutil.BytesPrefix([]byte(prefix)), nil)
 	skips := proxy.GetConfigStrings("ignore")
@@ -237,7 +237,7 @@ func BytesToUInt32(b []byte) uint32 {
 	return binary.LittleEndian.Uint32(b)
 }
 
-func drawGraph(title string, mp map[string]uint32) message.MessageSegment {
+func drawGraph(title string, mp map[string]uint32) message.Segment {
 	// 初始化
 	var sum float64
 	var values []chart.Value

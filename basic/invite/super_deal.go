@@ -261,7 +261,7 @@ func formAllGroupRequest(has map[int64]string, ctx *zero.Ctx) (map[int64]string,
 	return data, least
 }
 
-func formResponse(info string) message.MessageSegment {
+func formResponse(info string) message.Segment {
 	w, h := images.MeasureStringDefault(info, 16, 1.3)
 	img := images.NewImageCtxWithBGRGBA255(int(w)+20, int(h), 255, 255, 255, 255)
 	err := img.PasteStringDefault(info, 16, 1.3, 10, 0, w)

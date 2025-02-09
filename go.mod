@@ -1,6 +1,6 @@
 module github.com/RicheyJang/PaimengBot
 
-go 1.17
+go 1.20
 
 require (
 	github.com/PuerkitoBio/goquery v1.8.0
@@ -13,20 +13,23 @@ require (
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/shirou/gopsutil/v3 v3.21.10
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.4.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.10.1
 	github.com/syndtr/goleveldb v1.0.0
-	github.com/tidwall/gjson v1.11.0
+	github.com/tidwall/gjson v1.17.3
 	github.com/wcharczuk/go-chart/v2 v2.1.0
-	github.com/wdvxdr1123/ZeroBot v1.4.1
+	github.com/wdvxdr1123/ZeroBot v1.8.1-0.20250128033423-46f06a25cb99
+	golang.org/x/net v0.21.0
 	gorm.io/driver/mysql v1.3.2
 	gorm.io/driver/postgres v1.3.1
 	gorm.io/gorm v1.23.1
 )
 
 require (
+	github.com/FloatTech/ttl v0.0.0-20240716161252-965925764562 // indirect
+	github.com/RomiChan/websocket v1.4.3-0.20220227141055-9b2c6168c9c5 // indirect
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/chromedp/cdproto v0.0.0-20211126220118-81fa0469ad77 // indirect
@@ -38,8 +41,8 @@ require (
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.1.0 // indirect
 	github.com/golang/snappy v0.0.3 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/uuid v1.3.0 // indirect
-	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgconn v1.10.1 // indirect
@@ -70,11 +73,10 @@ require (
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
 	github.com/tklauser/numcpus v0.3.0 // indirect
-	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
+	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
-	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8 // indirect
-	golang.org/x/sys v0.0.0-20211210111614-af8b64212486 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.29.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
