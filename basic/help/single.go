@@ -3,25 +3,38 @@ package help
 import (
 	"fmt"
 
+	"github.com/RicheyJang/PaimengBot/basic/ban"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils/images"
 	log "github.com/sirupsen/logrus"
 	"github.com/wdvxdr1123/ZeroBot/message"
 )
 
-func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
+func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, userID int64, groupID int64) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
 	// 寻找插件
+	var keys = make(map[string]struct{})
+	for _, plugin := range plugins {
+		if !ban.GetUserPluginStatus(0, plugin) {
+			keys[plugin.Key] = struct{}{}
+		}
+		if !ban.GetUserPluginStatus(userID, plugin) {
+			keys[plugin.Key] = struct{}{}
+		}
+		if groupID > 0 && !ban.GetGroupPluginStatus(groupID, plugin) {
+			keys[plugin.Key] = struct{}{}
+		}
+	}
 	var selected *manager.PluginCondition
 	for _, plugin := range plugins { // 优先找插件名
-		if plugin.Name == cmd && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
+		if plugin.Name == cmd && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, keys) {
 			selected = plugin
 			break
 		}
 	}
 	if selected == nil { // 尝试通过命令
 		for _, plugin := range plugins {
-			if isCmdContains(plugin, cmd, isSuper) && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
+			if isCmdContains(plugin, cmd, isSuper) && checkPluginCouldShow(plugin, isSuper, isPrimary, priority, keys) {
 				selected = plugin
 				break
 			}
@@ -31,7 +44,7 @@ func formSingleHelpMsg(cmd string, isSuper, isPrimary bool, priority int, blackK
 		return message.Text("没有找到这个功能哦，或在群聊中无法查看功能详情")
 	}
 	// 插件状态检查
-	if _, ok := blackKeys[selected.Key]; ok {
+	if _, ok := keys[selected.Key]; ok {
 		return message.Text("功能被禁用中")
 	}
 	// 生成图片 名称|普通用法|超级用户用法

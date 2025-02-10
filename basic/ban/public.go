@@ -16,21 +16,29 @@ func SetUserPluginStatus(status bool, userID int64, plugin *manager.PluginCondit
 	var key string
 	if plugin != nil {
 		key = plugin.Key
-	} else { // plugin 为空，代表所有插件
-		key = AllPluginKey
+	} else {
+		panic("SetGroupPluginStatus: plugin is nil")
 	}
 	// 更新数据库
 	var preUser dao.UserSetting
 	proxy.GetDB().Take(&preUser, userID)
 	preUser.ID = userID
-	if status { // 启用
-		preUser.BlackPlugins = delPluginKey(preUser.BlackPlugins, key)
-	} else { // 关闭
-		preUser.BlackPlugins = addPluginKey(preUser.BlackPlugins, key)
+	if preUser.WhiteMode {
+		if status { // 启用
+			preUser.WhitePlugins = addPluginKey(preUser.WhitePlugins, key)
+		} else { // 关闭
+			preUser.WhitePlugins = delPluginKey(preUser.WhitePlugins, key)
+		}
+	} else {
+		if status { // 启用
+			preUser.BlackPlugins = delPluginKey(preUser.BlackPlugins, key)
+		} else { // 关闭
+			preUser.BlackPlugins = addPluginKey(preUser.BlackPlugins, key)
+		}
 	}
 	if err := proxy.GetDB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"black_plugins"}), // Upsert
+		DoUpdates: clause.AssignmentColumns([]string{"black_plugins", "white_plugins"}), // Upsert
 	}).Create(&preUser).Error; err != nil {
 		log.Errorf("set user(%v) black_plugins error(sql): %v", userID, err)
 		return err
@@ -51,21 +59,29 @@ func SetGroupPluginStatus(status bool, groupID int64, plugin *manager.PluginCond
 	var key string
 	if plugin != nil {
 		key = plugin.Key
-	} else { // plugin 为空，代表所有插件
-		key = AllPluginKey
+	} else {
+		panic("SetGroupPluginStatus: plugin is nil")
 	}
 	// 更新数据库
 	var preGroup dao.GroupSetting
 	proxy.GetDB().Take(&preGroup, groupID)
 	preGroup.ID = groupID
-	if status { // 启用
-		preGroup.BlackPlugins = delPluginKey(preGroup.BlackPlugins, key)
-	} else { // 关闭
-		preGroup.BlackPlugins = addPluginKey(preGroup.BlackPlugins, key)
+	if preGroup.WhiteMode {
+		if status { // 启用
+			preGroup.WhitePlugins = addPluginKey(preGroup.WhitePlugins, key)
+		} else { // 关闭
+			preGroup.WhitePlugins = delPluginKey(preGroup.WhitePlugins, key)
+		}
+	} else {
+		if status { // 启用
+			preGroup.BlackPlugins = delPluginKey(preGroup.BlackPlugins, key)
+		} else { // 关闭
+			preGroup.BlackPlugins = addPluginKey(preGroup.BlackPlugins, key)
+		}
 	}
 	if err := proxy.GetDB().Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "id"}},
-		DoUpdates: clause.AssignmentColumns([]string{"black_plugins"}), // Upsert
+		DoUpdates: clause.AssignmentColumns([]string{"black_plugins", "white_plugins"}), // Upsert
 	}).Create(&preGroup).Error; err != nil {
 		log.Errorf("set group(%v) black_plugins error(sql): %v", groupID, err)
 		return err
@@ -92,7 +108,11 @@ func GetUserPluginStatus(userID int64, plugin *manager.PluginCondition) bool {
 	// 查询
 	var preUser dao.UserSetting
 	proxy.GetDB().Take(&preUser, userID)
-	return !(hasPluginKey(preUser.BlackPlugins, key) || hasPluginKey(preUser.BlackPlugins, AllPluginKey))
+	if preUser.WhiteMode { // 白名单模式
+		return hasPluginKey(preUser.WhitePlugins, key)
+	} else {
+		return !(hasPluginKey(preUser.BlackPlugins, key) || hasPluginKey(preUser.BlackPlugins, AllPluginKey))
+	}
 }
 
 // GetGroupPluginStatus 获取群插件状态（能否使用）
@@ -101,11 +121,29 @@ func GetGroupPluginStatus(groupID int64, plugin *manager.PluginCondition) bool {
 	var key string
 	if plugin != nil {
 		key = plugin.Key
-	} else { // plugin 为空，代表所有插件
+	} else {
 		key = AllPluginKey
 	}
 	// 查询
 	var preGroup dao.GroupSetting
 	proxy.GetDB().Take(&preGroup, groupID)
-	return !(hasPluginKey(preGroup.BlackPlugins, key) || hasPluginKey(preGroup.BlackPlugins, AllPluginKey))
+	if preGroup.WhiteMode { // 白名单模式
+		return hasPluginKey(preGroup.WhitePlugins, key)
+	} else {
+		return !(hasPluginKey(preGroup.BlackPlugins, key) || hasPluginKey(preGroup.BlackPlugins, AllPluginKey))
+	}
+}
+
+// GetGroupRunningMode 获取群运行模式（白名单模式为true，黑名单为false）
+func GetGroupRunningMode(groupID int64) bool {
+	var preGroup dao.GroupSetting
+	proxy.GetDB().Take(&preGroup, groupID)
+	return preGroup.WhiteMode
+}
+
+// GetUserRunningMode 获取用户运行模式（白名单模式为true，黑名单为false）
+func GetUserRunningMode(userID int64) bool {
+	var preUser dao.UserSetting
+	proxy.GetDB().Take(&preUser, userID)
+	return preUser.WhiteMode
 }

@@ -10,8 +10,9 @@ import (
 
 type UserSetting struct {
 	ID           int64   `gorm:"primaryKey;autoIncrement:false"`
-	BlackPlugins string  `gorm:"size:512"` // 白名单插件
-	WhitePlugins string  `gorm:"size:512"` // 黑名单插件
+	BlackPlugins string  `gorm:"size:512"` // 黑名单插件
+	WhitePlugins string  `gorm:"size:512"` // 白名单插件
+	WhiteMode    bool    //是否以白名单模式运行
 	Nickname     string  // 昵称
 	Likeability  float64 // 好感度（无用，抱歉...）
 	Flag         string  // 非空时代表该用户尚未成为好友，是他的好友请求flag
@@ -22,6 +23,7 @@ type GroupSetting struct {
 	ID           int64  `gorm:"primaryKey;autoIncrement:false"`
 	BlackPlugins string `gorm:"size:512"`
 	WhitePlugins string `gorm:"size:512"`
+	WhiteMode    bool   //是否以白名单模式运行
 	Flag         string // 非空时代表该群尚未加入，是邀请入群请求flag
 	CouldAdd     bool   `gorm:"default:false"` // 能否入此群标志位
 	Welcome      string

@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/RicheyJang/PaimengBot/basic/ban"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 	"github.com/RicheyJang/PaimengBot/utils/images"
@@ -18,21 +19,37 @@ import (
 const defaultClassify = "一般功能"
 const passiveClassify = "被动"
 
-func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, blackKeys map[string]struct{}) message.MessageSegment {
+func formSummaryHelpMsg(isSuper, isPrimary bool, priority int, userID int64, groupID int64) message.MessageSegment {
 	plugins := manager.GetAllPluginConditions()
 	// 获取所有插件信息
 	var helps helpSummaryMap = make(map[string]*blockInfo)
+	var globalBan = make(map[string]struct{})
+	var groupBan = make(map[string]struct{})
+	for _, plugin := range plugins {
+		if !ban.GetUserPluginStatus(0, plugin) {
+			globalBan[plugin.Key] = struct{}{}
+		}
+		if !ban.GetUserPluginStatus(userID, plugin) {
+			groupBan[plugin.Key] = struct{}{}
+		}
+		if groupID > 0 && !ban.GetGroupPluginStatus(groupID, plugin) {
+			groupBan[plugin.Key] = struct{}{}
+		}
+	}
 	for _, plugin := range plugins {
 		// 过滤
-		if !checkPluginCouldShow(plugin, isSuper, isPrimary, priority, blackKeys) {
+		if _, ok := globalBan[plugin.Key]; !isSuper && ok {
+			continue
+		}
+		if !checkPluginCouldShow(plugin, isSuper, isPrimary, priority, globalBan) {
 			continue
 		}
 		// 生成项目(一个插件)
 		var item blockItem
 		item.name = plugin.Name
 		item.color = "black"
-		if _, ok := blackKeys[plugin.Key]; ok {
-			item.disabled = true // 插件对该用户或群被禁用
+		if _, ok := groupBan[plugin.Key]; ok {
+			item.disabled = true
 		}
 		if plugin.IsPassive && len(plugin.Classify) != 0 && plugin.Classify != passiveClassify {
 			item.name += "（被动）" // 被动且已有其它分类

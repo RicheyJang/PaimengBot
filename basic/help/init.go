@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/RicheyJang/PaimengBot/basic/auth"
-	"github.com/RicheyJang/PaimengBot/basic/dao"
 	"github.com/RicheyJang/PaimengBot/manager"
 	"github.com/RicheyJang/PaimengBot/utils"
 
@@ -41,15 +40,14 @@ func helpHandle(ctx *zero.Ctx) {
 	isSuper := utils.IsSuperUser(ctx.Event.UserID)
 	arg := strings.TrimSpace(utils.GetArgs(ctx))
 	level := auth.GetGroupUserPriority(ctx.Event.GroupID, ctx.Event.UserID)
-	blacks := getBlackKeys(ctx.Event.UserID, ctx.Event.GroupID)
 	if utils.IsGroupAnonymous(ctx) { // 匿名用户单独处理
 		isSuper = false
 		level = math.MaxInt
 	}
 	if len(arg) == 0 {
-		ctx.SendChain(formSummaryHelpMsg(isSuper, utils.IsMessagePrimary(ctx), level, blacks))
+		ctx.SendChain(formSummaryHelpMsg(isSuper, utils.IsMessagePrimary(ctx), level, ctx.Event.UserID, ctx.Event.GroupID))
 	} else {
-		ctx.SendChain(formSingleHelpMsg(arg, isSuper, utils.IsMessagePrimary(ctx), level, blacks))
+		ctx.SendChain(formSingleHelpMsg(arg, isSuper, utils.IsMessagePrimary(ctx), level, ctx.Event.UserID, ctx.Event.GroupID))
 	}
 }
 
@@ -69,19 +67,4 @@ func checkPluginCouldShow(plugin *manager.PluginCondition, isSuper, isPrimary bo
 		}
 	}
 	return true
-}
-
-func getBlackKeys(userID, groupID int64) map[string]struct{} {
-	var users []dao.UserSetting
-	var groupS dao.GroupSetting
-	proxy.GetDB().Find(&users, []int64{0, userID})
-	if groupID != 0 {
-		proxy.GetDB().Find(&groupS, groupID)
-	}
-	var usersKey string
-	for _, user := range users {
-		usersKey += user.BlackPlugins
-	}
-	return utils.FormSetByStrings(strings.Split(groupS.BlackPlugins, "|"),
-		strings.Split(usersKey, "|"))
 }
